@@ -37,7 +37,7 @@ Resting_State/AfterWhole
 fooof/Results/1*_2*/
 AudSteadyState/*/1*_2*/
 resources/
-attic/
+#attic/
 fooof_mat-main*
 maybe-missing_AdditionalFunctionsfromEEGLAB/
 python/fooof/venv/
