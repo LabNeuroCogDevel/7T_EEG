@@ -9,9 +9,37 @@
 *asv
 *log
 *gif
+*set
+*fdt
+*npz
+*~
+*jpg
+Results/ERPs/ERP_Graphcs
+SEEG/SubjectFolders/
+Rscripts/OldScripts*
+Rscripts/oldscripts*
+Resting_State/AfterWhole
+*elp
+*tsv
+*db
+*docx
+*ns2
+*ns5
+*xfg
+*fif
+*txt
+*cache
+*nev
+*Rda
+*RData
+*xls
+*zip
+fooof/Results/1*_2*/
+AudSteadyState/*/1*_2*/
 resources/
 attic/
 fooof_mat-main*
 maybe-missing_AdditionalFunctionsfromEEGLAB/
+python/fooof/venv/
 
 
