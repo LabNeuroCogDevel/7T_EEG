@@ -12,7 +12,7 @@ function [setfiles] = all_remarked_set(varargin)
     p.parse(varargin{:})
     
     % search for files
-    setfiles = dir(hera('Projects/7TBrainMech/scripts/eeg/Shane/SNR/remarked/1*_20*.set'));
+    setfiles = dir(hera('Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data/SNR/remarked/1*_20*.set'));
     % remove those that don't match a lunaid
     good_name = arrayfun(@(x) ~isempty(regexp(x.name,'\d{5}_\d{8}','once')), setfiles);
     setfiles = setfiles(good_name);

@@ -45,17 +45,6 @@ else
     setfiles = all_remarked_set_SNR();
 
 end
-% 
-    
-% redo = [11694];
-% for i = 1: length(redo) 
-%     file = sprintf('Projects/7TBrainMech/scripts/eeg/Shane/Prep/remarked/%d', redo(i));
-%     setfiles = dir(hera([file '*_*.set']));
-%     setfiles = arrayfun(@(x) fullfile(x.folder, x.name), setfiles(~[setfiles.isdir]), 'Uni',0); % cell array with EEG file names
-%     allfiles(i,:) = setfiles; 
-% end
-
-%setfiles =  allfiles;
 
 
 %% allocate cell
