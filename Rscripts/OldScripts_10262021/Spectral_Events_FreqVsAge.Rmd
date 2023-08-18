@@ -1,0 +1,356 @@
+---
+title: "Spectral Events Frequency vs Age"
+author: "Shane McKeon"
+date: "11/16/2020"
+geometry: margin = 1in
+output:
+  pdf_document:  
+    toc: true
+    toc_depth: 4    
+    fig_caption: yes
+  latex_engine: xelatex
+
+  html_document:
+    df_print: paged
+    code_folding: hide 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev='png', dpi=150, fig.width = 6, fig.height=6, fig.align = 'left', fig.margin = TRUE)
+```
+
+
+```{r load-libraries, message=FALSE}
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(dplyr, ggplot2,lme4, multcomp, tidyr, tidyverse,wesanderson, reshape2, corrplot, ggExtra, cowplot, ggsci, mgcv, ggpointdensity, devtools, ggpubr, itsadug, useful, rmarkdown, tinytex, gratia, gamm4, car, GGally, CCA)
+
+#devtools::install_github('LabneuroCogDevel/LNCDR')
+#library(devtools)
+#devtools::install_github("strengejacke/sjPlot")
+library(LNCDR)
+library(data.table)
+require(dplyr)
+library(factoextra)
+library(tidyverse)
+require(knitr)
+library(ggplot2)
+library(e1071)
+library(caret)
+library(sjPlot)
+library(directlabels)
+
+```
+
+# Frequency Bands Across Age 
+```{r  echo=FALSE, message=FALSE, warning=FALSE, cashe = FALSE, include = TRUE}
+
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+
+
+#only delay variables, trial level
+# alldf_trialLevel <- Only_Take_One_Delay_Bin_TrialLevel()
+# alldata_TrialLevel <- alldf_trialLevel$alldata_TrialLevel
+# alldata_TrialLevel$Task <- "Delay"
+
+
+#only the delay variables at the subject level 
+alldf_subLevel <- DelayOnly_Sublevel()
+delayOnly_SubLevel <- alldf_subLevel$alldata_delayOnly
+
+
+# #resting state at the trial level 
+# alldf_RS <- Resting_State_Data_TrialLevel()
+# alldata_RS <- alldf_RS$alldata_TrialLevel
+# alldata_RS$Task <- "Rest"
+
+#resting state at the subject level
+alldf_SubjectLevel_RS <- Resting_State_Data_SubjectLevel()
+alldata_RS_SubLevel <- alldf_SubjectLevel_RS$alldata_TrialLevel
+alldata_RS_SubLevel$Task <- "Rest"
+alldata_RS_SubLevel <- subset(alldata_RS_SubLevel, select = -Trial)
+
+#merging delay and rest, at the subject level 
+delayRest <- merge(alldata, alldata_RS_SubLevel[1:30], by = "Subject")
+delayRest_long <- rbind(delayOnly, alldata_RS_SubLevel)
+
+#merging delay and rest, at the trial level
+delayRest_long_trialLevel <- rbind(alldata_RS, alldata_trialLevel)
+
+```
+
+## Delay Period
+### Average Trial Power
+```{r  echo=FALSE, message=FALSE, warning=FALSE, cashe = FALSE, include = TRUE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+AverageTrialPower(delayOnly_SubLevel)
+```
+
+### Trial Power Variability 
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+# this has to be done at the sub level 
+TrialPowerVariability(delayOnly_SubLevel)
+```
+
+### Number of Events
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+NumberofEvents(alldata_TrialLevel)
+```
+
+#### Gamma:Beta Ratio
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+alldata_trialLevel$RatioNumberofEvents <- alldata_trialLevel$Gamma.Event_Number/alldata_trialLevel$Beta.Event_Number
+alldata_trialLevel$RatioNumberofEvents[which(is.infinite(alldata_trialLevel$RatioNumberofEvents))] <- 0
+
+cleandata <-  alldata_trialLevel %>% filter(abs(RatioNumberofEvents - mean(RatioNumberofEvents, na.rm= T)) < (sd(RatioNumberofEvents, na.rm= T) * 2))
+
+lunaize(ggplot(data = cleandata, aes(x = age, y = RatioNumberofEvents)) + stat_smooth(method = 'lm',  formula='y~I(1/x)')+ ylab('Gamma:Beta Number of Events') + xlab('Age') + ggtitle('Gamma:Beta \nNumber of Events vs Age'))  + theme(plot.title = element_text(hjust = 0.5))
+
+ lm.model <- lmer(data = cleandata, RatioNumberofEvents ~ inverseAge + (1|Subject))
+ print(car::Anova(lm.model))
+  
+
+
+```
+
+#### Gamma:Beta Ratio Variability
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+alldata_trialLevel$RatioNumberofEvents <- alldata_trialLevel$Gamma.Event_Number/alldata_trialLevel$Beta.Event_Number
+alldata_trialLevel$RatioNumberofEvents[which(is.infinite(alldata_trialLevel$RatioNumberofEvents))] <- 0
+
+cleandata <-  alldata_trialLevel %>% filter(abs(RatioNumberofEvents - mean(RatioNumberofEvents, na.rm= T)) < (sd(RatioNumberofEvents, na.rm= T) * 2))
+
+sd_cleanData <- aggregate(. ~ Subject, cleandata, sd)
+sd_cleanData <- merge(sd_cleanData, agefile, by = 'Subject')
+sd_cleanData$inverseAge <- 1/sd_cleanData$age.y
+
+lunaize(ggplot(data = sd_cleanData, aes(x = age.y, y = RatioNumberofEvents)) + stat_smooth(method = 'lm',  formula='y~I(1/x)')+ ylab('Gamma:Beta Number of Events Variability') + xlab('Age') + ggtitle('Gamma:Beta Variability \nNumber of Events vs Age'))  + theme(plot.title = element_text(hjust = 0.5))
+
+ lm.model <- lm(data = sd_cleanData, RatioNumberofEvents ~ inverseAge)
+ print(car::Anova(lm.model))
+  
+
+
+```
+
+### Number of Events Variability
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+NumberofEventsVariability(delayOnly_SubLevel)
+```
+
+### Duration of Events
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DurationofEvents(alldata_TrialLevel)
+```
+
+### Duration of Events Variability
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DurationofEventsVariability(delayOnly_SubLevel)
+```
+
+## Fixation Period
+### Average Trial Power
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+AverageTrialPowerFix()
+```
+
+### Trial Power Variability
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+TrialPowerVariabilityFix()
+```
+
+
+### Number of Events
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+NumberofEventsFix()
+```
+
+### Number of Events Variability
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+NumberofEventsVariabilityFix()
+```
+
+### Duration of Events
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DurationofEventsFix()
+```
+
+### Duration of Events Variability
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DurationofEventsVariabilityFix()
+```
+
+## Delay Minus Fix
+### Delay Minus Fix Trial Power
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DelayMinusFix()
+DelayMinusFix_TrialPower()
+```
+
+### Delay Minus Fix Trial Power Variability
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DelayMinusFix_TrialPowerVar()
+```
+
+### Delay Minus Fix Event Number
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DelayMinusFix_EventNumber()
+```
+
+### Delay Minus Fix Event Number Variability 
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DelayMinusFix_EventNumberVar()
+```
+
+### Delay Minus Fix Event Duration
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DelayMinusFix_EventDuration()
+```
+
+### Delay Minus Fix Event Duration Variability
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DelayMinusFix_EventDurationVar()
+```
+
+
+
+
+## Resting State 
+### Average Trial Power
+```{r  echo=FALSE, message=FALSE, warning=FALSE, cashe = FALSE, include = TRUE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+AverageTrialPowerRS()
+
+#Doing outlier detection 
+delayRest_long_TrialLevel_outlierDetection  <- delayRest_long_trialLevel %>% group_by(Subject) %>% filter(abs(Gamma.log1p_Trial_Power - mean(Gamma.log1p_Trial_Power, na.rm= T)) < (sd(Gamma.log1p_Trial_Power, na.rm = T) * 2)) 
+  
+
+#plotting delay and rest age vs gamma power in one plot
+lunaize(ggplot(data = delayRest_long_TrialLevel_outlierDetection[delayRest_long_TrialLevel_outlierDetection$visitno <2,], aes(x = age, y = Gamma.log1p_Trial_Power, group = Task, color = Task)) + stat_smooth(method = 'lm',  formula='y~I(1/x)') + xlab("Age") + ylab("log(Trial Power)"))
+
+ 
+  lm.model <- lm(data = delayRest_long_TrialLevel_outlierDetection[delayRest_long_TrialLevel_outlierDetection$visitno < 2 & delayRest_long_TrialLevel_outlierDetection$Task == 'Delay',], Gamma.log1p_Trial_Power ~ inverseAge)
+  print(anova(lm.model))
+```
+
+### Trial Power Variability
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+TrialPowerVariabilityRS()
+```
+
+### Number of Events
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+NumberofEventsRS()
+
+#OUTLIER DETECTION
+delayRest_long_TrialLevel_outlierDetection  <- delayRest_long_trialLevel %>% group_by(Subject) %>% filter(abs(Gamma.Event_Number - mean(Gamma.Event_Number, na.rm= T)) < (sd(Gamma.Event_Number, na.rm = T) * 2)) 
+
+#interaction on sub level
+EventAgeInteraction <- lm(Gamma.Event_Number ~ age * Task, data = delayRest_long)
+car::Anova(EventAgeInteraction)
+summary(EventAgeInteraction)
+
+#interaction on trial level
+EventAgeInteraction_trialLevel <- lmer(Gamma.Event_Number ~ age*Task + (1|Subject), data = delayRest_long_trialLevel)
+car::Anova(EventAgeInteraction_trialLevel)
+summary(EventAgeInteraction_trialLevel)
+
+#plotting delay and rest age vs gamma event numbers in one plot
+lunaize(ggplot(data = delayRest_long_TrialLevel_outlierDetection[delayRest_long_TrialLevel_outlierDetection$visitno <2,], aes(x = age, y = Gamma.Event_Number, group = Task, color = Task)) + stat_smooth(method = 'lm',  formula='y~I(1/x)') + xlab("Age") + ylab("Number of Events"))
+
+  
+  lm.model <- lm(data = delayRest_long_TrialLevel_outlierDetection[delayRest_long_TrialLevel_outlierDetection$visitno < 2 & delayRest_long_TrialLevel_outlierDetection$Task == 'Rest',], Gamma.Event_Number ~ inverseAge)
+  print(anova(lm.model))
+
+```
+
+### Number of Events Variability
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+NumberofEventsVariabilityRS()
+```
+
+### Duration of Events
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DurationofEventsRS()
+
+#plotting delay and rest age vs gamma event duration in one plot
+lunaize(ggplot(data = delayRest_long_trialLevel, aes(x = age, y = Gamma.Event_Duration, group = Task, color = Task)) + stat_smooth(method = 'lm',  formula='y~I(1/x)') + xlab("Age") + ylab("Duration of Events"))
+```
+
+### Duration of Events Variability
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DurationofEventsVariabilityRS()
+```
+
+#Delay Minus Resting State
+## Delay Minus Rest Trial Power
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DelayMinusRest()
+DelayMinusRest_TrialPower()
+```
+
+## Delay Minus Rest Trial Power Variability
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DelayMinusRest_TrialPowerVar()
+```
+
+## Delay Minus Rest Event Number
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DelayMinusRest_EventNumber()
+```
+
+## Delay Minus Rest Event Number Variability 
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DelayMinusRest_EventNumberVar()
+```
+
+## Delay Minus Rest Event Duration
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DelayMinusRest_EventDuration()
+```
+
+## Delay Minus Rest Event Duration Variability
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+DelayMinusRest_EventDurationVar()
+```
+
+
+# Rest-Delay/Delay Percent Change 
+## Trial Power
+
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include = TRUE}
+
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+
+alldf_Rs <- Resting_State_Data_SubjectLevel()
+rest_SubLevel <- alldf_Rs$rest_SubLevel
+
+alldf <- DelayOnly_Sublevel()
+delay_SubLevel <- alldf$alldata_delayOnly
+
+restDelay_SubLevel <- merge(delay_SubLevel, rest_SubLevel, by = "Subject", suffixes = c("_Delay", "_Rest"))
+
+restDelay_SubLevel$PercentChange <- (restDelay_SubLevel$Gamma.log1p_Trial_Power_Rest - restDelay_SubLevel$Gamma.log1p_Trial_Power_Delay) / restDelay_SubLevel$Gamma.log1p_Trial_Power_Delay
+
+lunaize(ggplot(data = restDelay_SubLevel, aes(x = age_Delay, y = PercentChange)) + stat_smooth(method = 'lm', formula = 'y~I(1/x)') + xlab("Age") + ylab("Percent Change"))
+
+lm.model <- lm(data = restDelay_SubLevel, PercentChange ~ inverseAge_Delay)
+anova(lm.model)
+
+```
+
+
+
+
+
+
+
+

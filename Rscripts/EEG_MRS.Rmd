@@ -1,0 +1,480 @@
+---
+title: "EEG MRS"
+author: "Shane McKeon"
+date: "11/11/2021"
+geometry: margin = 1in
+output:
+  pdf_document:  
+    toc: true
+    toc_depth: 4    
+    fig_caption: yes
+  latex_engine: xelatex
+
+  html_document:
+    df_print: paged
+    code_folding: hide 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev='png', dpi=150, fig.width = 6, fig.height= 6, fig.align = 'center', fig.margin = TRUE, comment = NA)
+```
+
+
+```{r load-libraries, message=FALSE}
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+library(LNCDR)
+library(data.table)
+require(dplyr)
+library(factoextra)
+library(tidyverse)
+require(knitr)
+library(ggplot2)
+library(e1071)
+library(caret)
+library(sjPlot)
+library(directlabels)
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(Hmisc)
+library(lmerTest)
+library(corrplot)
+library(RColorBrewer)
+library(data.table)
+library(mediation)
+
+
+```
+
+
+# Behavior Across Age 
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/03.BehaviorAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+agefile <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/agefile_20220204.csv')
+Behavior <- Behavior_Sublevel_Maria()
+```
+
+# Load MRS Regions
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/PrepMRSdata.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+MRS <- LoadMRS()
+
+ROIs <- data.frame(MRS$roi, MRS$label)
+
+ACC <- function() {
+# ACC
+roinumber = 7
+z_thres = 2
+
+ACC_Glu <- cleanGlutamate(MRS, roinumber)
+
+ACC_Glu <- ACC_Glu %>%
+  filter(GABA.SD <= 20, !is.na(GMrat)) %>% filter(roi == roinumber) %>%
+  group_by(roi) %>%
+  mutate(zscore_gaba=scale(GABA.Cr, center=T, scale=T)) %>%
+  filter(abs(zscore_gaba) <= z_thres)
+
+ACC_Glu_invage <- lm(data=ACC_Glu, Glu.Cr ~ invage + sex + GMrat)
+#summary(ROI_Glu_invage)
+
+var_Glu <- lm(Glu.Cr ~ invage + sex + GMrat, data=ACC_Glu, na.action=na.exclude)
+ACC_Glu$Glu_ageResids <- (residuals(var_Glu))
+ACC_Glu$Glu_ageResidsABS <- abs(residuals(var_Glu))
+
+ACC_Glu$Subject <- ACC_Glu$ld8
+
+ACC_Glu <- ACC_Glu %>% separate(ld8,c("luna","vdate"), remove=F)
+
+# looking at GABA - Glu
+ACC_Glu$zscoredGABAMinusGlu <- (ACC_Glu$zscore_gaba) - (ACC_Glu$zscore_glu)
+ACC_Glu$zscoredGABAMinusGlu_abs <- abs(ACC_Glu$zscoredGABAMinusGlu)
+
+
+}
+
+RposteriorInsulta <- function() {
+
+  roinumber = 3
+  RPI_Glu <- cleanGlutamate(MRS, roinumber)
+  
+  RPI_Glu <- RPI_Glu %>%
+    filter(GABA.SD <= 20, !is.na(GMrat)) %>% filter(roi == roinumber) %>%
+    group_by(roi) %>%
+    mutate(zscore_gaba=scale(GABA.Cr, center=T, scale=T)) %>%
+    filter(abs(zscore_gaba) <= z_thres)
+  
+  RPI_Glu_invage <- lm(data=RPI_Glu, Glu.Cr ~ invage + sex + GMrat)
+  #summary(ROI_Glu_invage)
+  
+  var_Glu <- lm(Glu.Cr ~ invage + sex + GMrat, data=RPI_Glu, na.action=na.exclude)
+  RPI_Glu$Glu_ageResidsABS <- abs(residuals(var_Glu))
+  RPI_Glu$Glu_ageResids <- (residuals(var_Glu))
+  
+  RPI_Glu$Subject <- RPI_Glu$ld8
+  
+  RPI_Glu <- RPI_Glu %>% separate(ld8,c("luna","vdate"), remove=F)
+  
+  # looking at GABA - Glu
+  RPI_Glu$zscoredGABAMinusGlu <- (RPI_Glu$zscore_gaba) - (RPI_Glu$zscore_glu)
+  RPI_Glu$zscoredGABAMinusGlu_abs <- abs(RPI_Glu$zscoredGABAMinusGlu)
+  
+}
+
+
+LposteriorInsulta <- function() {
+  
+  roinumber = 4
+  LPI_Glu <- cleanGlutamate(MRS, roinumber)
+  
+  LPI_Glu <- LPI_Glu %>%
+    filter(GABA.SD <= 20, !is.na(GMrat)) %>% filter(roi == roinumber) %>%
+    group_by(roi) %>%
+    mutate(zscore_gaba=scale(GABA.Cr, center=T, scale=T)) %>%
+    filter(abs(zscore_gaba) <= z_thres)
+  
+  LPI_Glu_invage <- lm(data=LPI_Glu, Glu.Cr ~ invage + sex + GMrat)
+  #summary(ROI_Glu_invage)
+  
+  var_Glu <- lm(Glu.Cr ~ invage + sex + GMrat, data=LPI_Glu, na.action=na.exclude)
+  LPI_Glu$Glu_ageResids <- (residuals(var_Glu))
+  LPI_Glu$Glu_ageResidsABS <- abs(residuals(var_Glu))
+  
+  LPI_Glu$Subject <- LPI_Glu$ld8
+  
+  LPI_Glu <- LPI_Glu %>% separate(ld8,c("luna","vdate"), remove=F)
+  
+  # looking at GABA - Glu
+  LPI_Glu$zscoredGABAMinusGlu <- (LPI_Glu$zscore_gaba) - (LPI_Glu$zscore_glu)
+  LPI_Glu$zscoredGABAMinusGlu_abs <- abs(LPI_Glu$zscoredGABAMinusGlu)
+  
+
+}
+
+
+MPFC <- function() {
+  
+roinumber = 8
+MPFC_Glu <- cleanGlutamate(MRS, roinumber)
+
+MPFC_Glu <- MPFC_Glu %>%
+  filter(GABA.SD <= 20, !is.na(GMrat)) %>% filter(roi == roinumber) %>%
+  group_by(roi) %>%
+  mutate(zscore_gaba=scale(GABA.Cr, center=T, scale=T)) %>%
+  filter(abs(zscore_gaba) <= z_thres)
+
+MPFC_Glu_invage <- lm(data=MPFC_Glu, Glu.Cr ~ invage + sex + GMrat)
+#summary(ROI_Glu_invage)
+
+var_Glu <- lm(Glu.Cr ~ invage + sex + GMrat, data=MPFC_Glu, na.action=na.exclude)
+MPFC_Glu$Glu_ageResidsABS <- abs(residuals(var_Glu))
+MPFC_Glu$Glu_ageResids <- (residuals(var_Glu))
+
+MPFC_Glu$Subject <- MPFC_Glu$ld8
+
+MPFC_Glu <- MPFC_Glu %>% separate(ld8,c("luna","vdate"), remove=F)
+
+MPFC_Glu$zscoredGABAMinusGlu <- (MPFC_Glu$zscore_gaba) - (MPFC_Glu$zscore_glu)
+MPFC_Glu$zscoredGABAMinusGlu_abs <- abs(MPFC_Glu$zscoredGABAMinusGlu)
+
+
+
+}
+
+rightDLPFC <- function() {
+
+roinumber = 9
+z_thres = 2
+RDLPFC <- cleanGlutamate(MRS, roinumber)
+
+RDLPFC <- RDLPFC %>%
+  filter(GABA.SD <= 20, !is.na(GMrat)) %>% filter(roi == roinumber) %>%
+  group_by(roi) %>%
+  mutate(zscore_gaba=scale(GABA.Cr, center=T, scale=T)) %>%
+  filter(abs(zscore_gaba) <= z_thres)
+
+
+RDLPFC_invage <- lm(data=RDLPFC, Glu.Cr ~ invage + sex + GMrat)
+#summary(ROI_Glu_invage)
+
+var_Glu <- lm(Glu.Cr ~ invage + sex + GMrat, data=RDLPFC, na.action=na.exclude)
+
+RDLPFC$Glu_ageResidsABS <- abs(residuals(var_Glu))
+RDLPFC$Glu_ageResids <- (residuals(var_Glu))
+
+RDLPFC$Subject <- RDLPFC$ld8
+
+RDLPFC<- RDLPFC %>% separate(Subject,c("luna","vdate"), remove=F)
+
+#GABA - Glu vs age
+
+RDLPFC$zscoredGABAMinusGlu <- RDLPFC$zscore_gaba - RDLPFC$zscore_glu
+
+RDLPFC$zscoredGABAMinusGlu_abs <- abs(RDLPFC$zscoredGABAMinusGlu)
+
+
+
+
+}
+
+leftDLPFC <- function() {
+  
+roinumber = 10
+LDLPFC <- cleanGlutamate(MRS, roinumber)
+
+LDLPFC <- LDLPFC %>%
+  filter(GABA.SD <= 20, !is.na(GMrat)) %>% filter(roi == roinumber) %>%
+  group_by(roi) %>%
+  mutate(zscore_gaba=scale(GABA.Cr, center=T, scale=T)) %>%
+  filter(abs(zscore_gaba) <= z_thres)
+
+LDLPFC_invage <- lm(data=LDLPFC, Glu.Cr ~ invage + sex + GMrat)
+#summary(ROI_Glu_invage)
+
+var_Glu <- lm(Glu.Cr ~ invage + sex + GMrat, data=LDLPFC, na.action=na.exclude)
+
+LDLPFC$Glu_ageResidsABS <- abs(residuals(var_Glu))
+LDLPFC$Glu_ageResids <- (residuals(var_Glu))
+
+LDLPFC$Subject <- LDLPFC$ld8
+
+# GABA - Glu 
+LDLPFC$zscoredGABAMinusGlu<- LDLPFC$zscore_gaba - LDLPFC$zscore_glu
+LDLPFC$zscoredGABAMinusGlu_abs <- abs(LDLPFC$zscoredGABAMinusGlu)
+
+LDLPFC<- LDLPFC %>% separate(Subject,c("luna","vdate"), remove=F)
+
+
+}
+
+vars <- c("Subject", "luna", "label", "age", "Glu.Cr", "GABA.Cr", "zscore_glu", "zscore_gaba", "Glu_ageResids", "Glu_ageResidsABS", "zscoredGABAMinusGlu", "zscoredGABAMinusGlu_abs")
+  ACCdf <- ACC_Glu[vars]
+  MPFCdf <- MPFC_Glu[vars]
+  RDLPFCdf <- RDLPFC[vars]
+  LDLPFCdf <- LDLPFC[vars]
+  RPIdf <- RPI_Glu[vars]
+  LPIdf <- LPI_Glu[vars]
+  
+
+allMRSregions <- rbind(ACCdf, MPFCdf) %>% rbind(., RDLPFCdf) %>% rbind(., LDLPFCdf) %>% rbind(., RPIdf) %>% rbind(., LPIdf)
+
+```
+
+# Delay 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+delayOnly <- DelayOnly_Sublevel_3_4()
+delayOnly_TrialLevel <- Only_Take_One_Delay_Bin_TrialLevel()
+delayOnly_TrialLevel_gamma <- delayOnly_TrialLevel$allGamma
+delayOnly_SubLevel <- delayOnly$alldata_delayOnly
+
+gammavars <- grep("Gamma",names(delayOnly_SubLevel),value=TRUE)
+allGamma <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+allGamma$epoch <- "Delay"
+allGamma$Region <- "Whole Brain"
+
+
+### Regional Data 
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+delayRegions3_4 <- RegionstoSpectralEventData_SubjectLevel()
+
+gammavars <- grep("Gamma",names(delayRegions3_4),value=TRUE)
+allGamma <- delayRegions3_4[,c("Subject", "inverseAge","age", "Group",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+WBgammavars <- grep("Gamma",names(delayOnly_SubLevel),value=TRUE)
+WBallGamma <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",WBgammavars)]
+colnames(WBallGamma) <-  sub("Gamma.", "", colnames(WBallGamma))
+colnames(WBallGamma) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(WBallGamma))
+colnames(WBallGamma) <-  sub("_sd", "_Variability", colnames(WBallGamma))
+WBallGamma$Region <- "Whole Brain"
+WBallGamma$epoch <- "Delay"
+WBallGamma$Band <- "Gamma"
+
+selectiveFrontalVars <-  grep("selectiveFrontal",names(allGamma),value=TRUE)
+allselectiveFrontal3_4 <- allGamma[,c("Subject", "inverseAge","age", "Band", "Group",selectiveFrontalVars)]
+colnames(allselectiveFrontal3_4) <-  sub("_selectiveFrontal", "", colnames(allselectiveFrontal3_4))
+colnames(allselectiveFrontal3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allselectiveFrontal3_4))
+colnames(allselectiveFrontal3_4) <-  sub("_sd", "_Variability", colnames(allselectiveFrontal3_4))
+allselectiveFrontal3_4$Region <- "SelectiveFrontal"
+allselectiveFrontal3_4$epoch <- "Delay"
+
+# Frontal
+FrontalVars <-  grep("_Frontal",names(allGamma),value=TRUE)
+allFrontal3_4 <- allGamma[,c("Subject", "inverseAge","age", "Band", "Group",FrontalVars)]
+colnames(allFrontal3_4) <-  sub("_Frontal", "", colnames(allFrontal3_4))
+colnames(allFrontal3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allFrontal3_4))
+colnames(allFrontal3_4) <-  sub("_sd", "_Variability", colnames(allFrontal3_4))
+allFrontal3_4$Region <- "Frontal"
+allFrontal3_4$epoch <- "Delay"
+
+# occipital
+Occipitalvars <-  grep("Occipital",names(allGamma),value=TRUE)
+allOccipital3_4 <- allGamma[,c("Subject", "inverseAge","age", "Band", "Group",Occipitalvars)]
+colnames(allOccipital3_4) <-  sub("_Occipital", "", colnames(allOccipital3_4))
+colnames(allOccipital3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allOccipital3_4))
+colnames(allOccipital3_4) <-  sub("_sd", "_Variability", colnames(allOccipital3_4))
+allOccipital3_4$Region <- "Occipital"
+allOccipital3_4$epoch <- "Delay"
+
+
+# parietal 
+Parietalvars <-  grep("Parietal",names(allGamma),value=TRUE)
+allParietal3_4 <- allGamma[,c("Subject", "inverseAge","age", "Band", "Group",Parietalvars)]
+colnames(allParietal3_4) <-  sub("_Parietal", "", colnames(allParietal3_4))
+colnames(allParietal3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allParietal3_4))
+colnames(allParietal3_4) <-  sub("_sd", "_Variability", colnames(allParietal3_4))
+allParietal3_4$Region <- "Parietal"
+allParietal3_4$epoch <- "Delay"
+
+
+# dlpfc 
+dlpfcvars <-  grep("dlpfc",names(allGamma),value=TRUE)
+alldlpfc3_4 <- allGamma[,c("Subject", "inverseAge","age", "Band", "Group",dlpfcvars)]
+colnames(alldlpfc3_4) <-  sub("_dlpfc", "", colnames(alldlpfc3_4))
+colnames(alldlpfc3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(alldlpfc3_4))
+colnames(alldlpfc3_4) <-  sub("_sd", "_Variability", colnames(alldlpfc3_4))
+alldlpfc3_4$Region <- "DLPFC"
+alldlpfc3_4$epoch <- "Delay"
+
+# combine all regions 
+allRegions3_4 <- rbind(allselectiveFrontal3_4, allOccipital3_4) %>% rbind(., allParietal3_4)%>% rbind(.,alldlpfc3_4)%>% rbind(.,allFrontal3_4) %>% rbind(., WBallGamma)
+
+```
+
+
+# Fix
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+FixOnly <- FixOnly_Sublevel()
+FixOnly_SubLevel <- FixOnly$alldata_FixOnly
+
+gammavars <- grep("Gamma",names(FixOnly_SubLevel),value=TRUE)
+allGammaFix <- FixOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",gammavars)]
+colnames(allGammaFix) <-  sub("Gamma.", "", colnames(allGammaFix))
+allGammaFix$Band <- "Gamma"
+
+allGammaFix$epoch <- "Fix"
+allGammaFix$Region <- "Whole Brain"
+
+
+### Regional Data
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+fixRegions_fix <- RegionstoSpectralEventData_SubjectLevel_fix()
+
+
+gammavars <- grep("Gamma",names(fixRegions_fix),value=TRUE)
+allGamma <- fixRegions_fix[,c("Subject", "inverseAge", "age", "Group",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+WBgammavars <- grep("Gamma",names(FixOnly_SubLevel),value=TRUE)
+WBallGamma <- FixOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",WBgammavars)]
+colnames(WBallGamma) <-  sub("Gamma.", "", colnames(WBallGamma))
+colnames(WBallGamma) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(WBallGamma))
+colnames(WBallGamma) <-  sub("_sd", "_Variability", colnames(WBallGamma))
+WBallGamma$Region <- "Whole Brain"
+WBallGamma$epoch <- "Fix"
+WBallGamma$Band <- "Gamma"
+
+# selective frontal
+selectiveFrontalVars <-  grep("selectiveFrontal",names(allGamma),value=TRUE)
+allselectiveFrontal_fix <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",selectiveFrontalVars)]
+colnames(allselectiveFrontal_fix) <-  sub("_selectiveFrontal", "", colnames(allselectiveFrontal_fix))
+colnames(allselectiveFrontal_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allselectiveFrontal_fix))
+colnames(allselectiveFrontal_fix) <-  sub("_sd", "_Variability", colnames(allselectiveFrontal_fix))
+allselectiveFrontal_fix$Region <- "SelectiveFrontal"
+allselectiveFrontal_fix$epoch <- "Fix"
+
+# frontal
+FrontalVars <-  grep("_Frontal",names(allGamma),value=TRUE)
+allFrontal_fix <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",FrontalVars)]
+colnames(allFrontal_fix) <-  sub("_Frontal", "", colnames(allFrontal_fix))
+colnames(allFrontal_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allFrontal_fix))
+colnames(allFrontal_fix) <-  sub("_sd", "_Variability", colnames(allFrontal_fix))
+allFrontal_fix$Region <- "Frontal"
+allFrontal_fix$epoch <- "Fix"
+
+# occipital
+Occipitalvars <-  grep("Occipital",names(allGamma),value=TRUE)
+allOccipital_fix <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",Occipitalvars)]
+colnames(allOccipital_fix) <-  sub("_Occipital", "", colnames(allOccipital_fix))
+colnames(allOccipital_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allOccipital_fix))
+colnames(allOccipital_fix) <-  sub("_sd", "_Variability", colnames(allOccipital_fix))
+allOccipital_fix$Region <- "Occipital"
+allOccipital_fix$epoch <- "Fix"
+
+
+# parietal 
+Parietalvars <-  grep("Parietal",names(allGamma),value=TRUE)
+allParietal_fix <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",Parietalvars)]
+colnames(allParietal_fix) <-  sub("_Parietal", "", colnames(allParietal_fix))
+colnames(allParietal_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allParietal_fix))
+colnames(allParietal_fix) <-  sub("_sd", "_Variability", colnames(allParietal_fix))
+allParietal_fix$Region <- "Parietal"
+allParietal_fix$epoch <- "Fix"
+
+# dlpfc 
+dlpfcvars <-  grep("dlpfc",names(allGamma),value=TRUE)
+alldlpfc_fix <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",dlpfcvars)]
+colnames(alldlpfc_fix) <-  sub("_dlpfc", "", colnames(alldlpfc_fix))
+colnames(alldlpfc_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(alldlpfc_fix))
+colnames(alldlpfc_fix) <-  sub("_sd", "_Variability", colnames(alldlpfc_fix))
+alldlpfc_fix$Region <- "DLPFC"
+alldlpfc_fix$epoch <- "Fix"
+
+# combine all regions 
+allRegions_fix <- rbind(allselectiveFrontal_fix, allOccipital_fix) %>% rbind(., allParietal_fix) %>% rbind(.,alldlpfc_fix) %>% rbind(., allFrontal_fix) %>% rbind(., WBallGamma)
+
+```
+```
+
+# Combine Delay, Fix, MRS, and Behavior
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+allepochs <- rbind(allRegions3_4, allRegions_fix )
+allepochs <- allepochs %>% separate(Subject,c("luna","vdate"), remove=F)
+ 
+EEGMRSBehavior <- merge(allepochs, Behavior, by = c("Subject", "inverseAge", "age"), all.x = T, all.y = T) %>% merge(., allMRSregions, by = "luna")
+
+lunaize(ggplot(data = allepochs , 
+               aes(x = age, y = log1p_Trial_Power, color = epoch)) +geom_point()
+     + stat_smooth(method='gam', alpha=0.15) + facet_wrap( . ~ Region, ncol = 6))
+
+lunaize(ggplot(data = EEGMRSBehavior %>% filter(., Region == 'DLPFC') %>% mutate(ageGroup = as.factor(ifelse(age.x <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power, y = zscoredGABAMinusGlu_abs, color = epoch)) 
+     + stat_smooth(method='gam', alpha=0.15) + facet_wrap( . ~ label, ncol = 6))
+
+gam.model <- gam(zscoredGABAMinusGlu_abs ~ s(Event_Number_Variability, k = 4 , by = as.factor(epoch)) +  s(age.x, k=4, by = as.factor(epoch)),
+                 data = EEGMRSBehavior  %>% filter(label == 'MPFC') %>% mutate(ageGroup = as.factor(ifelse(age.x <= 18, 'Adol', 'Adult'))))
+summary(gam.model)
+
+
+
+
+# mediation 
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/06.Mediation.R", envir = knitr::knit_global(), chdir = TRUE)
+
+other_vars <- c("log1p_Trial_Power","zscoredGABAMinusGlu_abs")
+
+mediationAnalysis(EEGMRSBehavior %>% filter(label == 'MPFC') %>% filter(epoch == 'Delay'), other_vars)
+
+
+```
+

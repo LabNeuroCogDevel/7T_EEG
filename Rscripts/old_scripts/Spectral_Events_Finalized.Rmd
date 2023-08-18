@@ -1,0 +1,1283 @@
+---
+title: "EE Results"
+author: "Shane McKeon"
+date: "6/11/2020"
+geometry: margin = 1in
+output:
+  pdf_document:  
+    toc: true
+    toc_depth: 4    
+    fig_caption: yes
+  latex_engine: xelatex
+
+  html_document:
+    df_print: paged
+---
+
+
+
+
+
+
+
+
+
+# Frequency Bands Across Age 
+
+
+## Delay Period
+### Average Trial Power 
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdTheta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdAlpha' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdBeta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdGamma' not found
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+### Trial Power Variability
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdTheta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdAlpha' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdBeta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdGamma' not found
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+### Number of Events
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdTheta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdAlpha' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdBeta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdGamma' not found
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+### Number of Events Variabiltiy
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdTheta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdAlpha' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdBeta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdGamma' not found
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+
+### Duration of Events
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdTheta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdAlpha' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdBeta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdGamma' not found
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+### Duration of Events Variability
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdTheta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdAlpha' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdBeta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdGamma' not found
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+
+## Fixation Period
+### Average Trial Power 
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdTheta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdAlpha' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdBeta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdGamma' not found
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+### Trial Power Variability
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdTheta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdAlpha' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdBeta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdGamma' not found
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+### Number of Events
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdTheta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdAlpha' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdBeta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdGamma' not found
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+### Number of Events Variabiltiy
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdTheta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdAlpha' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdBeta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdGamma' not found
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+
+### Duration of Events
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdTheta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdAlpha' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdBeta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdGamma' not found
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+### Duration of Events Variability
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdTheta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdAlpha' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdBeta' not found
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in as.data.frame.default(data): cannot coerce class '"knitr_kable"' to a data.frame
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'sdGamma' not found
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Gamma.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Beta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Alpha.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in alldata$Theta.visitno: $ operator is invalid for atomic vectors
+```
+
+```
+## Error in anova(lm.model): object 'lm.model' not found
+```
+
+
+#Support Vector Regression
+
+
+```
+## Error in eval(expr, envir, enclos): object 'allGamma' not found
+```
+
+```
+## Error in merge(Gamma_baselineclean, agefile, by = "Subject"): object 'Gamma_baselineclean' not found
+```
+
+```
+## Error in SVRfunctionAge(Gamma_baselineclean): object 'Gamma_baselineclean' not found
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'allBeta' not found
+```
+
+```
+## Error in merge(Beta_baselineclean, agefile, by = "Subject"): object 'Beta_baselineclean' not found
+```
+
+```
+## Error in SVRfunctionAge(Beta_baselineclean): object 'Beta_baselineclean' not found
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'allAlpha' not found
+```
+
+```
+## Error in merge(Alpha_baselineclean, agefile, by = "Subject"): object 'Alpha_baselineclean' not found
+```
+
+```
+## Error in SVRfunctionAge(Alpha_baselineclean): object 'Alpha_baselineclean' not found
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'allTheta' not found
+```
+
+```
+## Error in merge(Theta_baselineclean, agefile, by = "Subject"): object 'Theta_baselineclean' not found
+```
+
+```
+## Error in SVRfunctionAge(Theta_baselineclean): object 'Theta_baselineclean' not found
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'ThetaSVRage' not found
+```
+
+```
+## Error in data.frame(ThetaPredictingAge): object 'ThetaPredictingAge' not found
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'AlphaSVRage' not found
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'BetaSVRage' not found
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'GammaSVRage' not found
+```
+
+```
+## Error in as.matrix(allBandsPredictingAge): object 'allBandsPredictingAge' not found
+```

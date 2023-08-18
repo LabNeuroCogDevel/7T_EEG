@@ -1,0 +1,963 @@
+---
+title: "Spectral Events EEG vs Behavior"
+author: "Shane McKeon"
+date: "11/16/2020"
+geometry: margin = 1in
+output:
+  pdf_document:  
+    toc: true
+    toc_depth: 4    
+    fig_caption: yes
+  latex_engine: xelatex
+
+  html_document:
+    df_print: paged
+    code_folding: hide 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev='png', dpi=150, fig.width = 6, fig.height=6, fig.align = 'left', fig.margin = TRUE)
+```
+
+
+```{r load-libraries, message=FALSE}
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(dplyr, ggplot2,lme4, multcomp, tidyr, tidyverse,wesanderson, reshape2, corrplot, ggExtra, cowplot, ggsci, mgcv, ggpointdensity, devtools, ggpubr, itsadug, useful, rmarkdown, tinytex, gratia, gamm4, car, GGally, CCA)
+
+#devtools::install_github('LabneuroCogDevel/LNCDR')
+#library(devtools)
+#devtools::install_github("strengejacke/sjPlot")
+library(LNCDR)
+library(data.table)
+require(dplyr)
+library(factoextra)
+library(tidyverse)
+require(knitr)
+library(ggplot2)
+library(e1071)
+library(caret)
+
+```
+
+
+```{r  echo=FALSE, message=FALSE, warning=FALSE, cashe = FALSE, include = TRUE}
+
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/09.EEGvsBehavior.R", envir = knitr::knit_global(), chdir = TRUE)
+
+
+alldf <- Only_Take_One_Delay_Bin_and_Fix()
+alldata <- alldf$alldata
+
+# on the subject level
+alldata_DelayminusFix <- DelayMinusFix()
+
+# delay only on the trial level 
+alldf <- Only_Take_One_Delay_Bin_TrialLevel()
+alldata_TrialLevel <- alldf$alldata_TrialLevel
+
+Behavior <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Behavior_20200921.csv')
+agefile <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/agefile_20210204.csv')
+
+#behavioral data contains each trial 
+Behavior$Subject <- paste0(Behavior$LunaID, '_', Behavior$ScanDate)
+Behavior$absPositionError <- abs(Behavior$PositionError)
+
+alldata_TrialLevel_Behavior <- merge(alldata_TrialLevel, Behavior, by = c("Subject", "Trial"))
+alldata_TrialLevel_Behavior$Group <- factor(alldata_TrialLevel_Behavior$Group)
+
+
+
+
+```
+
+# EEG Activity vs. Behavior Subject Level
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/09.EEGvsBehavior.R")
+```
+
+## Delay Period
+### Position Error
+#### Gamma Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.log1p_Trial_Power_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Number_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Duration_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.log1p_Trial_Power_Variability_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Number_Variability_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Duration_Variability_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+
+#### Beta Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.log1p_Trial_Power_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Number_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Duration_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.log1p_Trial_Power_Variability_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Number_Variability_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Duration_Variability_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+#### Alpha Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.log1p_Trial_Power_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Number_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Duration_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.log1p_Trial_Power_Variability_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Number_Variability_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Duration_Variability_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+#### Theta Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.log1p_Trial_Power_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Number_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Duration_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.log1p_Trial_Power_Variability_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Number_Variability_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Duration_Variability_Delay", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+#### Gamma:Beta Ratio
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+ 
+alldata_TrialLevel_Behavior$RatioNumberofEvents <- alldata_TrialLevel_Behavior$Gamma.Event_Number/alldata_TrialLevel_Behavior$Beta.Event_Number
+alldata_TrialLevel_Behavior$RatioNumberofEvents[which(is.infinite(alldata_TrialLevel_Behavior$RatioNumberofEvents))] <- 0
+
+cleandata <-  alldata_TrialLevel_Behavior %>% filter(abs(RatioNumberofEvents - mean(RatioNumberofEvents, na.rm= T)) < (sd(RatioNumberofEvents, na.rm= T) * 2)) %>% filter(abs(PositionError - mean(PositionError, na.rm= T)) < (sd(PositionError, na.rm= T) * 2))
+
+# all together 
+lunaize(ggplot(data = cleandata, aes(x = absPositionError, y = RatioNumberofEvents)) + stat_smooth(method = 'lm')+ ylab('Gamma:Beta Number of Events') + xlab('abs(Position Error)') + ggtitle('Gamma:Beta \nNumber of Events vs Accuracy'))  + theme(plot.title = element_text(hjust = 0.5))
+
+ lm.model <- lmer(data = cleandata, RatioNumberofEvents ~ absPositionError + (1|Subject))
+ print(car::Anova(lm.model))
+ 
+ # split by age group 
+lunaize(ggplot(data = cleandata, aes(x = RatioNumberofEvents, y = absPositionError, group = Group, color = Group)) + stat_smooth(method = 'lm', se = F)+ ylab('abs(Position Error)') + xlab('Gamma:Beta Number of Events') + ggtitle('Gamma:Beta \nNumber of Events vs Position Error'))  + theme(plot.title = element_text(hjust = 0.5))
+
+ lm.model <- lmer(data = cleandata[cleandata$Group == 4,], absPositionError ~ RatioNumberofEvents+ (1|Subject))
+ print(car::Anova(lm.model))
+ 
+```
+
+#### Gamma:Beta Ratio Variability 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+alldata_TrialLevel_Behavior$RatioNumberofEvents <- alldata_TrialLevel_Behavior$Gamma.Event_Number/alldata_TrialLevel_Behavior$Beta.Event_Number
+alldata_TrialLevel_Behavior$RatioNumberofEvents[which(is.infinite(alldata_TrialLevel_Behavior$RatioNumberofEvents))] <- 0
+
+cleandata <-  alldata_TrialLevel_Behavior %>% filter(abs(RatioNumberofEvents - mean(RatioNumberofEvents, na.rm= T)) < (sd(RatioNumberofEvents, na.rm= T) * 2)) %>% filter(abs(PositionError - mean(PositionError, na.rm= T)) < (sd(PositionError, na.rm= T) * 2))
+
+avg_cleanData <- aggregate(. ~ Subject, cleandata, mean)
+sd_cleanData <- aggregate(. ~ Subject, cleandata, sd)
+sd_cleanData <- merge(sd_cleanData, agefile, by = 'Subject')
+sd_cleanData$Group.y <- factor(sd_cleanData$Group.y)
+
+#all together
+lunaize(ggplot(data = sd_cleanData, aes(x = absPositionError, y = RatioNumberofEvents)) + stat_smooth(method = 'lm')+ ylab('Gamma:Beta Number of Events Variability') + xlab('Accuracy Variability') + ggtitle('Gamma:Beta Variability \nNumber of Events vs Accuracy'))  + theme(plot.title = element_text(hjust = 0.5))
+
+lm.model <- lm(data = sd_cleanData, RatioNumberofEvents ~ absPositionError)
+ print(car::Anova(lm.model))
+ 
+  # split by age group 
+lunaize(ggplot(data = sd_cleanData, aes(x = RatioNumberofEvents, y = absPositionError, group = Group.y, color = Group.y)) + stat_smooth(method = 'lm', se = F)+ ylab('Accuracy Variability') + xlab('Gamma:Beta Number of Events Variability') + ggtitle('Gamma:Beta Variability \nNumber of Events vs Accuracy'))  + theme(plot.title = element_text(hjust = 0.5))
+
+ lm.model <- lm(data = sd_cleanData[sd_cleanData$Group.y == 1,], absPositionError ~ RatioNumberofEvents)
+ print(car::Anova(lm.model))
+
+```
+
+
+### MGS Latency
+#### Gamma Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.log1p_Trial_Power_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Number_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Duration_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.log1p_Trial_Power_Variability_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Number_Variability_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Duration_Variability_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+
+#### Beta Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.log1p_Trial_Power_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Number_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Duration_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.log1p_Trial_Power_Variability_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Number_Variability_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Duration_Variability_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+#### Alpha Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.log1p_Trial_Power_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Number_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Duration_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.log1p_Trial_Power_Variability_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Number_Variability_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Duration_Variability_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+#### Theta Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.log1p_Trial_Power_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Number_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Duration_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.log1p_Trial_Power_Variability_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Number_Variability_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Duration_Variability_Delay", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+#### Gamma:Beta Ratio
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+ 
+alldata_TrialLevel_Behavior$RatioNumberofEvents <- alldata_TrialLevel_Behavior$Gamma.Event_Number/alldata_TrialLevel_Behavior$Beta.Event_Number
+alldata_TrialLevel_Behavior$RatioNumberofEvents[which(is.infinite(alldata_TrialLevel_Behavior$RatioNumberofEvents))] <- 0
+
+cleandata <-  alldata_TrialLevel_Behavior %>% filter(abs(RatioNumberofEvents - mean(RatioNumberofEvents, na.rm= T)) < (sd(RatioNumberofEvents, na.rm= T) * 2)) %>% filter(abs(mgsLatency - mean(mgsLatency, na.rm= T)) < (sd(mgsLatency, na.rm= T) * 2))
+
+# all together 
+lunaize(ggplot(data = cleandata, aes(x = mgsLatency, y = RatioNumberofEvents)) + stat_smooth(method = 'lm')+ ylab('Gamma:Beta Number of Events') + xlab('mgs Latency') + ggtitle('Gamma:Beta \nNumber of Events vs Latency'))  + theme(plot.title = element_text(hjust = 0.5))
+
+ lm.model <- lmer(data = cleandata, RatioNumberofEvents ~ mgsLatency + (1|Subject))
+ print(car::Anova(lm.model))
+ 
+ # split by age group 
+lunaize(ggplot(data = cleandata, aes(x = RatioNumberofEvents, y = mgsLatency, group = Group, color = Group)) + stat_smooth(method = 'lm', se = F)+ ylab('mgs Latency') + xlab('Gamma:Beta Number of Events') + ggtitle('Gamma:Beta \nNumber of Events vs Latency'))  + theme(plot.title = element_text(hjust = 0.5))
+
+ lm.model <- lmer(data = cleandata[cleandata$Group == 1,], mgsLatency ~ RatioNumberofEvents+ (1|Subject))
+ print(car::Anova(lm.model))
+ 
+```
+
+#### Gamma:Beta Ratio Variability 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+alldata_TrialLevel_Behavior$RatioNumberofEvents <- alldata_TrialLevel_Behavior$Gamma.Event_Number/alldata_TrialLevel_Behavior$Beta.Event_Number
+alldata_TrialLevel_Behavior$RatioNumberofEvents[which(is.infinite(alldata_TrialLevel_Behavior$RatioNumberofEvents))] <- 0
+
+cleandata <-  alldata_TrialLevel_Behavior %>% filter(abs(RatioNumberofEvents - mean(RatioNumberofEvents, na.rm= T)) < (sd(RatioNumberofEvents, na.rm= T) * 2)) %>% filter(abs(mgsLatency - mean(mgsLatency, na.rm= T)) < (sd(mgsLatency, na.rm= T) * 2))
+
+avg_cleanData <- aggregate(. ~ Subject, cleandata, mean)
+sd_cleanData <- aggregate(. ~ Subject, cleandata, sd)
+sd_cleanData <- merge(sd_cleanData, agefile, by = 'Subject')
+sd_cleanData$Group.y <- factor(sd_cleanData$Group.y)
+
+#all together
+lunaize(ggplot(data = sd_cleanData, aes(x = mgsLatency, y = RatioNumberofEvents)) + stat_smooth(method = 'lm')+ ylab('Gamma:Beta Number of Events Variability') + xlab('mgs Latency Variability') + ggtitle('Gamma:Beta Variability \nNumber of Events vs Latency'))  + theme(plot.title = element_text(hjust = 0.5))
+
+lm.model <- lm(data = sd_cleanData, RatioNumberofEvents ~ mgsLatency)
+ print(car::Anova(lm.model))
+ 
+  # split by age group 
+lunaize(ggplot(data = sd_cleanData, aes(x = RatioNumberofEvents, y = mgsLatency, group = Group.y, color = Group.y)) + stat_smooth(method = 'lm', se = F)+ ylab('mgs Latency Variability') + xlab('Gamma:Beta Number of Events Variability') + ggtitle('Gamma:Beta Variability \nNumber of Events vs Latency'))  + theme(plot.title = element_text(hjust = 0.5))
+
+ lm.model <- lm(data = sd_cleanData[sd_cleanData$Group.y == 4,], mgsLatency ~ RatioNumberofEvents)
+ print(car::Anova(lm.model))
+
+```
+
+
+
+## Fixation Period
+### Position Error
+#### Gamma Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.log1p_Trial_Power_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Number_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Duration_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.log1p_Trial_Power_Variability_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Number_Variability_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Duration_Variability_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+
+#### Beta Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.log1p_Trial_Power_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Number_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Duration_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.log1p_Trial_Power_Variability_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Number_Variability_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Duration_Variability_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+#### Alpha Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.log1p_Trial_Power_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Number_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Duration_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.log1p_Trial_Power_Variability_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Number_Variability_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Duration_Variability_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+#### Theta Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.log1p_Trial_Power_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Number_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Duration_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.log1p_Trial_Power_Variability_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Number_Variability_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Duration_Variability_Fix", "absPositionError") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+
+### MGS Latency
+#### Gamma Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.log1p_Trial_Power_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Number_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Duration_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.log1p_Trial_Power_Variability_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Number_Variability_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Gamma.Event_Duration_Variability_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+
+#### Beta Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.log1p_Trial_Power_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Number_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Duration_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.log1p_Trial_Power_Variability_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Number_Variability_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Beta.Event_Duration_Variability_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+#### Alpha Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.log1p_Trial_Power_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Number_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Duration_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.log1p_Trial_Power_Variability_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Number_Variability_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Alpha.Event_Duration_Variability_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+#### Theta Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.log1p_Trial_Power_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Number_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Duration_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.log1p_Trial_Power_Variability_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Number_Variability_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+selected_vars <-c("Theta.Event_Duration_Variability_Fix", "mgsLatency") 
+EEGvsBehavior(selected_vars, alldata)
+
+```
+
+
+# Delay Minus Fixation Subject Level 
+## Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+DelayMinusFixvsBehavior_TrialPower()
+
+```
+
+
+## Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+DelayMinusFixvsBehavior_TrialPowerVar()
+
+```
+
+
+## Event Number 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+DelayMinusFixvsBehavior_EventNumber()
+
+```
+
+## Event Number Variability 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+DelayMinusFixvsBehavior_EventNumberVar()
+
+```
+
+## Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+DelayMinusFixvsBehavior_EventDuration()
+
+```
+
+
+## Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+DelayMinusFixvsBehavior_EventDurationVar()
+
+```
+
+
+
+## Event Number Adults Only
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+DelayMinusFixvsBehavior_EventNumber_AdultsOnly()
+
+```
+
+
+
+#EEG Avtivity vs. Behavior Trial Level
+## Delay Period
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+alldf_TrialLevel <- Only_Take_One_Delay_Bin_TrialLevel()
+alldata_TrialLevel <- alldf_TrialLevel$alldata_TrialLevel
+
+DelayvsBehavior_TrialLevel()
+
+```
+## Fixation Period
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+alldf_Fix_TrialLevel <- Only_Take_Fix_TrialLevel()
+alldata_Fix_TrialLevel <- alldf_Fix_TrialLevel$alldata_Fix_TrialLevel
+
+FixvsBehavior_TrialLevel()
+
+```
+
+# Delay Minus Fixation Trial Level 
+## Event Number 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+DelayMinusFixvsBehavior_TrialLevel()
+
+```
+
+
+

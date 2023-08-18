@@ -1,0 +1,1308 @@
+---
+title: "Development of EEG-derived spectral processing of working memory through adolescence"
+author: "Shane McKeon"
+date: "4/17/2020"
+geometry: margin = 1in
+output:
+  pdf_document:  
+    toc: true
+    toc_depth: 4    
+    fig_caption: yes
+  latex_engine: xelatex
+
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev='png', dpi=150, fig.width = 6, fig.height=6, fig.align = 'left', fig.margin = TRUE)
+```
+
+
+```{r load-libraries, message=FALSE}
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(dplyr, ggplot2,lme4, multcomp, tidyr, tidyverse,wesanderson, reshape2, corrplot, ggExtra, cowplot, ggsci, mgcv, ggpointdensity, devtools, ggpubr, itsadug, useful, rmarkdown, tinytex, gratia, gamm4, car, GGally, CCA)
+
+#devtools::install_github('LabneuroCogDevel/LNCDR')
+#library(devtools)
+#devtools::install_github("strengejacke/sjPlot")
+#library(LNCDR)
+library(data.table)
+require(dplyr)
+library(factoextra)
+library(tidyverse)
+require(knitr)
+
+
+
+#Delay Epoch 
+delayGamma <-  read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Gamma/delayGamma.csv')
+delayAlpha <-  read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Alpha/delayAlpha.csv')
+delayTheta <-  read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Theta/delayTheta.csv')
+delayBeta <-  read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Beta/delayBeta.csv')
+
+delayGammaPeaks <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Gamma/delayGamma_Peaks.csv')
+delayAlphaPeaks <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Alpha/delayAlpha_Peaks.csv')
+delayThetaPeaks <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Theta/delayTheta_Peaks.csv')
+delayBetaPeaks <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Beta/delayBeta_Peaks.csv')
+
+
+delayGamma <- merge(delayGamma, delayGammaPeaks, by = "Subject", suffix = c("",""))
+delayAlpha <- merge(delayAlpha, delayAlphaPeaks,  by = "Subject", suffix = c("",""))
+delayTheta <- merge(delayTheta, delayThetaPeaks,  by = "Subject", suffix = c("",""))
+delayBeta <- merge(delayBeta, delayBetaPeaks,  by = "Subject",  suffix = c("",""))
+
+# write.csv(delayGamma, 'H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Gamma/delayGamma_allVariables.csv')
+# write.csv(delayAlpha, 'H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Alpha/delayAlpha_allVariables.csv')
+# write.csv(delayTheta, 'H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Theta/delayTheta_allVariables.csv')
+# write.csv(delayBeta, 'H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Beta/delayBeta_allVariables.csv')
+
+
+
+#Fixation Epoch 
+fixGamma <-  read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Gamma/Fix/fixGamma.csv')
+fixAlpha <-  read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Alpha/Fix/fixAlpha.csv')
+fixTheta <-  read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Theta/Fix/fixTheta.csv')
+fixBeta <-  read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Beta/Fix/fixBeta.csv')
+
+fixGammaPeaks <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Gamma/Fix/fixGamma_Peak.csv')
+fixAlphaPeaks <-read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Alpha/Fix/fixAlpha_Peak.csv')
+fixThetaPeaks <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Theta/Fix/fixTheta_Peak.csv')
+fixBetaPeaks <-  read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Beta/Fix/fixBeta_Peak.csv')
+
+fixGamma <- merge(fixGamma, fixGammaPeaks,  by = "Subject",suffix = c("",""))
+fixAlpha <- merge(fixAlpha, fixAlphaPeaks, by = "Subject", suffix = c("",""))
+fixTheta <- merge(fixTheta, fixThetaPeaks,  by = "Subject",suffix = c("",""))
+fixBeta <- merge(fixBeta, fixBetaPeaks, by = "Subject", suffix = c("",""))
+
+# 
+# write.csv(fixGamma, 'H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Gamma/Fix/fixGamma_allVariables.csv')
+# write.csv(fixAlpha, 'H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Alpha/Fix/fixAlpha_allVariables.csv')
+# write.csv(fixTheta, 'H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Theta/Fix/fixTheta_allVariables.csv')
+# write.csv(fixBeta, 'H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Beta/Fix/fixBeta_allVariables.csv')
+
+
+#combine fixation and delay 
+allGamma <- merge(delayGamma, fixGamma, by = "Subject", suffix = c("_Delay", "_Fix"))
+allAlpha <- merge(delayAlpha, fixAlpha, by = "Subject", suffix = c("_Delay", "_Fix"))
+allTheta <- merge(delayTheta, fixTheta, by = "Subject", suffix = c("_Delay", "_Fix"))
+allBeta <- merge(delayBeta, fixBeta, by = "Subject", suffix = c("_Delay", "_Fix"))
+
+# write.csv(allGamma,'H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Gamma/Gamma_allVariables.csv' )
+# write.csv(allAlpha,'H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Alpha/Alpha_allVariables.csv' )
+# write.csv(allTheta,'H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Theta/Theta_allVariables.csv' )
+# write.csv(allBeta,'H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Beta/Beta_allVariables.csv' )
+
+
+Behavior <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Behavior.csv')
+
+Behavior$log_absPositionError <- log10(abs(Behavior$PositionError))
+Behavior$log_mgsLatency <- log10(Behavior$mgsLatency)
+behavior <- setnames(aggregate(list(Behavior$log_mgsLatency, Behavior$log_absPositionError), list(Subject =  paste0(Behavior$LunaID, '_', Behavior$ScanDate)), na.rm = TRUE, mean), c("Subject", "log_mgsLatency", "log_absPositionError"))
+
+agefile <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/agefile.csv')
+agefile$Subject <- agefile$idvalues 
+
+
+
+# Setting up the dataframes 
+#theta frequency band 
+theta <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Theta/Theta_allVariables.csv')
+analysisvars <- grep("Trial|Power|Duration|Variability|Delay|Number|visit",names(theta),value=TRUE) 
+analysisvars <- analysisvars[!grepl("id|age|Age|Group|X",analysisvars)]
+names(theta)[names(theta) %in% analysisvars] <- paste("Theta",names(theta[,analysisvars]),sep=".")
+thetavars <- grep("Theta",names(theta),value=TRUE)
+
+allTheta <- theta[,c("Subject",thetavars)]
+
+allTheta <- allTheta[complete.cases(allTheta),]
+allTheta <- allTheta[!duplicated(allTheta),]
+
+
+#alpha frequency band 
+alpha <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Alpha/Alpha_allVariables.csv')
+analysisvars <- grep("Trial|Power|Duration|Variability|Delay|Number|visit",names(alpha),value=TRUE) 
+analysisvars <- analysisvars[!grepl("id|age|Age|X|Group",analysisvars)]
+names(alpha)[names(alpha) %in% analysisvars] <- paste("Alpha",names(alpha[,analysisvars]),sep=".")
+alphavars <- grep("Alpha",names(alpha),value=TRUE)
+
+allAlpha <- alpha[,c("Subject",alphavars)]
+
+allAlpha <- allAlpha[complete.cases(allAlpha),]
+allAlpha <- allAlpha[!duplicated(allAlpha),]
+
+
+#beta frequency band 
+beta <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Beta/Beta_allVariables.csv' )
+analysisvars <- grep("Trial|Power|Duration|Variability|Delay|Number|visit",names(beta),value=TRUE) 
+analysisvars <- analysisvars[!grepl("id|age|X|Age|Group",analysisvars)]
+names(beta)[names(beta) %in% analysisvars] <- paste("Beta",names(beta[,analysisvars]),sep=".")
+betavars <- grep("Beta",names(beta),value=TRUE)
+
+allBeta <- beta[,c("Subject",betavars)]
+
+allBeta <- allBeta[complete.cases(allBeta),]
+allBeta <- allBeta[!duplicated(allBeta),]
+
+
+#gamma frequency band 
+gamma <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Gamma/Gamma_allVariables.csv')
+analysisvars <- grep("Trial|Power|Duration|Variability|Delay|Number|visit",names(gamma),value=TRUE) ###matches names
+analysisvars <- analysisvars[!grepl("id|age|X",analysisvars)] ### removes "id" "age" names etc
+names(gamma)[names(gamma) %in% analysisvars] <- paste("Gamma",names(gamma[,analysisvars]),sep=".") ##add Gamma to analysis var names
+gammavars <- grep("Gamma",names(gamma),value=TRUE)
+
+allGamma <- gamma[,c("Subject",gammavars)]
+
+allGamma <- allGamma[complete.cases(allGamma),]
+allGamma <- allGamma[!duplicated(allGamma),]
+
+
+# all frequency band 
+alldata <- merge(alpha[,c("Subject",alphavars)],beta[,c("Subject",betavars)],by="Subject") %>% 
+  merge(.,theta[,c("Subject",thetavars)],by="Subject") %>% merge(.,gamma[,c("Subject",gammavars)],by="Subject")
+
+agefile <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/agefile.csv')
+agefile$Subject <- agefile$idvalues
+
+alldata <- merge(alldata, agefile, by = "Subject")
+
+
+alldata <- alldata[complete.cases(alldata),]
+alldata <- alldata[!duplicated(alldata),]
+alldata$inverseAge <- 1/alldata$age
+
+```
+
+# Frequency Bands across Age 
+##Trial Power in Delay Period
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+avgTheta <- aggregate(Theta.Trial_Power_Delay ~ visitno , alldata, mean)
+sdTheta <- aggregate(Theta.Trial_Power_Delay ~ visitno , alldata, sd)
+thetaCutoff <- 3* sdTheta[1,2] + avgTheta[1,2]
+
+avgAlpha <- aggregate(Alpha.Trial_Power_Delay ~ visitno , alldata, mean)
+sdAlpha <- aggregate(Alpha.Trial_Power_Delay ~ visitno , alldata, sd)
+alphaCutoff <- 3* sdAlpha[1,2] + avgAlpha[1,2]
+
+avgBeta <- aggregate(Beta.Trial_Power_Delay ~ visitno , alldata, mean)
+sdBeta <- aggregate(Beta.Trial_Power_Delay ~ visitno , alldata, sd)
+betaCutoff <- 3* sdBeta[1,2] + avgBeta[1,2]
+
+avgGamma <- aggregate(Gamma.Trial_Power_Delay ~ visitno , alldata, mean)
+sdGamma <- aggregate(Gamma.Trial_Power_Delay ~ visitno , alldata, sd)
+gammaCutoff <- 3* sdGamma[1,2] + avgGamma[1,2]
+
+colors <- c("Theta" = "blue", "Alpha" = "red", "Beta" = "green4", "Gamma" = "purple4")
+
+ggplot(data = alldata[alldata$visitno < 2 & alldata$Theta.Trial_Power_Delay < thetaCutoff ,], aes(x = age, y = Theta.Trial_Power_Delay, color = "Theta")) + stat_smooth(method='lm',  formula='y~I(1/x)') + stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Alpha.Trial_Power_Delay < alphaCutoff, ], aes( x = age, y = Alpha.Trial_Power_Delay, color = "Alpha"), method='lm',  formula='y~I(1/x)') + 
+  stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Beta.Trial_Power_Delay < betaCutoff, ], aes( x = age, y = Beta.Trial_Power_Delay, color = "Beta"), method='lm',  formula='y~I(1/x)') +
+  stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Gamma.Trial_Power_Delay < gammaCutoff, ], aes( x = age, y = Gamma.Trial_Power_Delay, color ="Gamma"), method='lm',  formula='y~I(1/x)') + xlab("Age") + ylab("Power") + ggtitle("Trial Power Across Age") + theme(plot.title = element_text(hjust = 0.5, size = 20)) + labs(color = "Legend") + scale_color_manual(values = colors) + theme(axis.title.x = element_text(size = 17) , axis.title.y = element_text(size = 17)) + theme(legend.text=element_text(size=14)) + theme(axis.text.x = element_text(size = 15), axis.text.y = element_text(size = 15)) 
+
+
+```
+
+##Trial Power in Fixation Period
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+avgTheta <- aggregate(Theta.Trial_Power_Fix ~ visitno , alldata, mean)
+sdTheta <- aggregate(Theta.Trial_Power_Fix ~ visitno , alldata, sd)
+thetaCutoff <- 3* sdTheta[1,2] + avgTheta[1,2]
+
+avgAlpha <- aggregate(Alpha.Trial_Power_Fix ~ visitno , alldata, mean)
+sdAlpha <- aggregate(Alpha.Trial_Power_Fix ~ visitno , alldata, sd)
+alphaCutoff <- 3* sdAlpha[1,2] + avgAlpha[1,2]
+
+avgBeta <- aggregate(Beta.Trial_Power_Fix ~ visitno , alldata, mean)
+sdBeta <- aggregate(Beta.Trial_Power_Fix ~ visitno , alldata, sd)
+betaCutoff <- 3* sdBeta[1,2] + avgBeta[1,2]
+
+avgGamma <- aggregate(Gamma.Trial_Power_Fix ~ visitno , alldata, mean)
+sdGamma <- aggregate(Gamma.Trial_Power_Fix ~ visitno , alldata, sd)
+gammaCutoff <- 3* sdGamma[1,2] + avgGamma[1,2]
+
+colors <- c("Theta" = "blue", "Alpha" = "red", "Beta" = "green4", "Gamma" = "purple4")
+
+ggplot(data = alldata[alldata$visitno < 2 & alldata$Theta.Trial_Power_Fix < thetaCutoff ,], aes(x = age, y = Theta.Trial_Power_Fix, color = "Theta")) + stat_smooth(method='lm',  formula='y~I(1/x)') + stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Alpha.Trial_Power_Fix < alphaCutoff, ], aes( x = age, y = Alpha.Trial_Power_Fix, color = "Alpha"), method='lm',  formula='y~I(1/x)') + 
+  stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Beta.Trial_Power_Fix < betaCutoff, ], aes( x = age, y = Beta.Trial_Power_Fix, color = "Beta"), method='lm',  formula='y~I(1/x)') +
+  stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Gamma.Trial_Power_Fix < gammaCutoff, ], aes( x = age, y = Gamma.Trial_Power_Fix, color ="Gamma"), method='lm',  formula='y~I(1/x)') + xlab("Age") + ylab("Power") + ggtitle("Trial Power Across Age: \nFixation Period") + theme(plot.title = element_text(hjust = 0.5, size = 20)) + labs(color = "Legend") + scale_color_manual(values = colors) + theme(axis.title.x = element_text(size = 17) , axis.title.y = element_text(size = 17)) + theme(legend.text=element_text(size=14)) + theme(axis.text.x = element_text(size = 15), axis.text.y = element_text(size = 15)) 
+
+
+```
+
+
+##Trial Power Variability in Delay Period
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+avgTheta <- aggregate(Theta.Trial_Power_Variability_Delay ~ visitno , alldata, mean)
+sdTheta <- aggregate(Theta.Trial_Power_Variability_Delay ~ visitno , alldata, sd)
+thetaCutoff <- 3* sdTheta[1,2] + avgTheta[1,2]
+
+avgAlpha <- aggregate(Alpha.Trial_Power_Variability_Delay ~ visitno , alldata, mean)
+sdAlpha <- aggregate(Alpha.Trial_Power_Variability_Delay ~ visitno , alldata, sd)
+alphaCutoff <- 3* sdAlpha[1,2] + avgAlpha[1,2]
+
+avgBeta <- aggregate(Beta.Trial_Power_Variability_Delay ~ visitno , alldata, mean)
+sdBeta <- aggregate(Beta.Trial_Power_Variability_Delay ~ visitno , alldata, sd)
+betaCutoff <- 3* sdBeta[1,2] + avgBeta[1,2]
+
+avgGamma <- aggregate(Gamma.Trial_Power_Variability_Delay ~ visitno , alldata, mean)
+sdGamma <- aggregate(Gamma.Trial_Power_Variability_Delay ~ visitno , alldata, sd)
+gammaCutoff <- 3* sdGamma[1,2] + avgGamma[1,2]
+
+colors <- c("Theta" = "blue", "Alpha" = "red", "Beta" = "green4", "Gamma" = "purple4")
+
+ggplot(data = alldata[alldata$visitno < 2 & alldata$Theta.Trial_Power_Variability_Delay < thetaCutoff ,], aes(x = age, y = Theta.Trial_Power_Variability_Delay, color = "Theta")) + 
+  stat_smooth(method='lm',  formula='y~I(1/x)') + stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Alpha.Trial_Power_Variability_Delay < alphaCutoff, ], aes( x = age, y = Alpha.Trial_Power_Variability_Delay, color = "Alpha"), method='lm',  formula='y~I(1/x)') + 
+  stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Beta.Trial_Power_Variability_Delay < betaCutoff, ], aes( x = age, y = Beta.Trial_Power_Variability_Delay, color = "Beta"), method='lm',  formula='y~I(1/x)') +
+  stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Gamma.Trial_Power_Variability_Delay < gammaCutoff, ], aes( x = age, y = Gamma.Trial_Power_Variability_Delay, color ="Gamma"), method='lm',  formula='y~I(1/x)') + xlab("Age") + ylab("Power") + ggtitle("Trial Power Variability Across Age") + theme(plot.title = element_text(hjust = 0.5)) + labs(color = "Legend") + scale_color_manual(values = colors) + theme(plot.title = element_text(hjust = 0.5, size = 20)) + labs(color = "Legend") + scale_color_manual(values = colors) + theme(axis.title.x = element_text(size = 17) , axis.title.y = element_text(size = 17)) + theme(legend.text=element_text(size=14)) + theme(axis.text.x = element_text(size = 15), axis.text.y = element_text(size = 15)) 
+
+
+```
+
+
+##Trial Power Variability in Fixation Period
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+avgTheta <- aggregate(Theta.Trial_Power_Variability_Fix ~ visitno , alldata, mean)
+sdTheta <- aggregate(Theta.Trial_Power_Variability_Fix ~ visitno , alldata, sd)
+thetaCutoff <- 3* sdTheta[1,2] + avgTheta[1,2]
+
+avgAlpha <- aggregate(Alpha.Trial_Power_Variability_Fix ~ visitno , alldata, mean)
+sdAlpha <- aggregate(Alpha.Trial_Power_Variability_Fix ~ visitno , alldata, sd)
+alphaCutoff <- 3* sdAlpha[1,2] + avgAlpha[1,2]
+
+avgBeta <- aggregate(Beta.Trial_Power_Variability_Fix ~ visitno , alldata, mean)
+sdBeta <- aggregate(Beta.Trial_Power_Variability_Fix ~ visitno , alldata, sd)
+betaCutoff <- 3* sdBeta[1,2] + avgBeta[1,2]
+
+avgGamma <- aggregate(Gamma.Trial_Power_Variability_Fix ~ visitno , alldata, mean)
+sdGamma <- aggregate(Gamma.Trial_Power_Variability_Fix ~ visitno , alldata, sd)
+gammaCutoff <- 3* sdGamma[1,2] + avgGamma[1,2]
+
+colors <- c("Theta" = "blue", "Alpha" = "red", "Beta" = "green4", "Gamma" = "purple4")
+
+ggplot(data = alldata[alldata$visitno < 2 & alldata$Theta.Trial_Power_Variability_Fix < thetaCutoff ,], aes(x = age, y = Theta.Trial_Power_Variability_Fix, color = "Theta")) + 
+  stat_smooth(method='lm',  formula='y~I(1/x)') + stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Alpha.Trial_Power_Variability_Fix < alphaCutoff, ], aes( x = age, y = Alpha.Trial_Power_Variability_Fix, color = "Alpha"), method='lm',  formula='y~I(1/x)') + 
+  stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Beta.Trial_Power_Variability_Fix < betaCutoff, ], aes( x = age, y = Beta.Trial_Power_Variability_Fix, color = "Beta"), method='lm',  formula='y~I(1/x)') +
+  stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Gamma.Trial_Power_Variability_Fix < gammaCutoff, ], aes( x = age, y = Gamma.Trial_Power_Variability_Fix, color ="Gamma"), method='lm',  formula='y~I(1/x)') + xlab("Age") + ylab("Power") + ggtitle("Trial Power Variability Across Age \n Fixation Period") + theme(plot.title = element_text(hjust = 0.5)) + labs(color = "Legend") + scale_color_manual(values = colors) + theme(plot.title = element_text(hjust = 0.5, size = 20)) + labs(color = "Legend") + scale_color_manual(values = colors) + theme(axis.title.x = element_text(size = 17) , axis.title.y = element_text(size = 17)) + theme(legend.text=element_text(size=14)) + theme(axis.text.x = element_text(size = 15), axis.text.y = element_text(size = 15)) 
+
+
+```
+
+## Trial Power in both Delay and Fix 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+avgBeta <- aggregate(Beta.Trial_Power_Fix ~ visitno , alldata, mean)
+sdBeta <- aggregate(Beta.Trial_Power_Fix ~ visitno , alldata, sd)
+betaCutoffFix <- 3* sdBeta[1,2] + avgBeta[1,2]
+
+avgGamma <- aggregate(Gamma.Trial_Power_Fix ~ visitno , alldata, mean)
+sdGamma <- aggregate(Gamma.Trial_Power_Fix ~ visitno , alldata, sd)
+gammaCutoffFix <- 3* sdGamma[1,2] + avgGamma[1,2]
+
+
+avgBeta <- aggregate(Beta.Trial_Power_Delay ~ visitno , alldata, mean)
+sdBeta <- aggregate(Beta.Trial_Power_Delay ~ visitno , alldata, sd)
+betaCutoffDelay <- 3* sdBeta[1,2] + avgBeta[1,2]
+
+avgGamma <- aggregate(Gamma.Trial_Power_Delay ~ visitno , alldata, mean)
+sdGamma <- aggregate(Gamma.Trial_Power_Delay ~ visitno , alldata, sd)
+gammaCutoffDelay <- 3* sdGamma[1,2] + avgGamma[1,2]
+
+colors <- c("Delay Beta" = "blue", "Delay Gamma" = "red", "Fixation Beta" = "blue", "Fixation Gamma" = "red")
+lines <- c("Delay Beta" = 1, "Delay Gamma" = 1, "Fixation Beta" = 2, "Fixation Gamma" = 2)
+
+ggplot(data = alldata[alldata$visitno < 2 & alldata$Beta.Trial_Power_Delay < betaCutoffDelay,], aes(x = age, y = Beta.Trial_Power_Delay, color = "Delay Beta")) +  stat_smooth(method='lm',  formula='y~I(1/x)') + stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Beta.Trial_Power_Fix < betaCutoffFix, ], aes( x = age, y = Beta.Trial_Power_Fix, color = "Fixation Beta"), linetype = "dashed", method='lm',  formula='y~I(1/x)') + 
+  stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Gamma.Trial_Power_Fix < gammaCutoffFix, ], aes( x = age, y = Gamma.Trial_Power_Fix, color = "Fixation Gamma"), linetype = "dashed" ,method='lm',  formula='y~I(1/x)') + 
+  stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Gamma.Trial_Power_Delay < gammaCutoffDelay, ], aes( x = age, y = Gamma.Trial_Power_Delay, color = "Delay Gamma"), method='lm',  formula='y~I(1/x)') + xlab("Age") + ylab("Power") + ggtitle("Trial Power Across Age \n Fixation vs Delay Period")  +  scale_color_manual(name = "Frequency Band", labels = c("Delay Beta", "Delay Gamma", "Fixation Beta", "Fixation Gamma"), values = c("blue", "red", "blue", "red"))  + scale_linetype_manual(name = "Frequency Band", labels = c("Delay Beta", "Delay Gamma", "Fixation Beta", "Fixation Gamma"), values = c("Delay Beta" = "solid", "Delay Gamma" = "solid", "Fixation Beta" = "dashed", "Fixation Gamma" = "dashed")) + theme(axis.title.x = element_text(size = 17) , axis.title.y = element_text(size = 17)) + theme(legend.text=element_text(size=14)) + theme(axis.text.x = element_text(size = 15), axis.text.y = element_text(size = 15)) + theme(plot.title = element_text(hjust = 0.5, size = 20))
+
+```
+
+
+## Trial Power Variability in both Delay and Fix 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+avgBeta <- aggregate(Beta.Trial_Power_Variability_Fix ~ visitno , alldata, mean)
+sdBeta <- aggregate(Beta.Trial_Power_Variability_Fix ~ visitno , alldata, sd)
+betaCutoffFix <- 3* sdBeta[1,2] + avgBeta[1,2]
+
+avgGamma <- aggregate(Gamma.Trial_Power_Variability_Fix ~ visitno , alldata, mean)
+sdGamma <- aggregate(Gamma.Trial_Power_Variability_Fix ~ visitno , alldata, sd)
+gammaCutoffFix <- 3* sdGamma[1,2] + avgGamma[1,2]
+
+
+avgBeta <- aggregate(Beta.Trial_Power_Variability_Delay ~ visitno , alldata, mean)
+sdBeta <- aggregate(Beta.Trial_Power_Variability_Delay ~ visitno , alldata, sd)
+betaCutoffDelay <- 3* sdBeta[1,2] + avgBeta[1,2]
+
+avgGamma <- aggregate(Gamma.Trial_Power_Variability_Delay ~ visitno , alldata, mean)
+sdGamma <- aggregate(Gamma.Trial_Power_Variability_Delay ~ visitno , alldata, sd)
+gammaCutoffDelay <- 3* sdGamma[1,2] + avgGamma[1,2]
+
+colors <- c("Delay Beta" = "blue", "Delay Gamma" = "red", "Fixation Beta" = "green4", "Fixation Gamma" = "purple4")
+
+ggplot(data = alldata[alldata$visitno < 2 & alldata$Beta.Trial_Power_Variability_Delay < betaCutoffDelay,], aes(x = age, y = Beta.Trial_Power_Variability_Delay, color = "Delay Beta")) +  stat_smooth(method='lm',  formula='y~I(1/x)') + stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Beta.Trial_Power_Variability_Fix < betaCutoffFix, ], aes( x = age, y = Beta.Trial_Power_Variability_Fix, color = "Fixation Beta"), method='lm',  formula='y~I(1/x)') + stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Gamma.Trial_Power_Variability_Fix < gammaCutoffFix, ], aes( x = age, y = Gamma.Trial_Power_Variability_Fix, color = "Fixation Gamma"), method='lm',  formula='y~I(1/x)') + stat_smooth(data = alldata[alldata$visitno < 2 & alldata$Gamma.Trial_Power_Variability_Delay < gammaCutoffDelay, ], aes( x = age, y = Gamma.Trial_Power_Variability_Delay, color = "Delay Gamma"), method='lm',  formula='y~I(1/x)') + xlab("Age") + ylab("Power") + ggtitle("Trial Power Variability Across Age \n Fixation vs Delay Period")  + labs(color = "Legend")  + scale_color_manual(values = colors) + theme(axis.title.x = element_text(size = 17) , axis.title.y = element_text(size = 17)) + theme(legend.text=element_text(size=14)) + theme(axis.text.x = element_text(size = 15), axis.text.y = element_text(size = 15)) + theme(plot.title = element_text(hjust = 0.5, size = 20))
+
+```
+
+
+
+<!-- # Correlation Between Variables -->
+<!-- ## Theta Frequency Band  -->
+
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- colnames <- names(allTheta) -->
+<!-- newDF_Theta <- lapply(colnames[2:16],function(col){as.numeric(as.character(allTheta[,col]))}) -->
+
+<!-- newTheta <- setnames(as.data.frame(newDF_Theta), colnames[2:16]) -->
+
+
+<!-- test <- cor(newTheta, use = "complete") -->
+<!-- corrplot(test, method = "color", col=colorRampPalette(c("blue","white","red"))(200)) -->
+
+
+<!-- ``` -->
+<!-- \newpage -->
+<!-- ## Alpha Frequency Band  -->
+
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- colnames <- names(allAlpha) -->
+<!-- newDF_Alpha <- lapply(colnames[2:16],function(col){as.numeric(as.character(allAlpha[,col]))}) -->
+
+<!-- newAlpha <- setnames(as.data.frame(newDF_Alpha), colnames[2:16]) -->
+
+
+<!-- test <- cor(newAlpha, use = "complete") -->
+<!-- corrplot(test, method = "color", col=colorRampPalette(c("blue","white","red"))(200)) -->
+
+<!-- ``` -->
+
+
+<!-- \newpage -->
+<!-- ## Beta Frequency Band  -->
+
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+
+<!-- colnames <- names(allBeta) -->
+<!-- newDF_Beta <- lapply(colnames[2:16],function(col){as.numeric(as.character(allBeta[,col]))}) -->
+
+<!-- newBeta <- setnames(as.data.frame(newDF_Beta), colnames[2:16]) -->
+
+
+<!-- test <- cor(newBeta, use = "complete") -->
+<!-- corrplot(test, method = "color",  col=colorRampPalette(c("blue","white","red"))(200)) -->
+
+<!-- ``` -->
+
+
+<!-- \newpage -->
+<!-- ## Gamma Frequency Band  -->
+
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+
+
+<!-- colnames <- names(allGamma) -->
+<!-- newDF_Gamma <- lapply(colnames[2:18],function(col){as.numeric(as.character(allGamma[,col]))}) -->
+
+<!-- newGamma <- setnames(as.data.frame(newDF_Gamma), colnames[2:18]) -->
+
+<!-- test <- cor(newGamma, use = "complete") -->
+<!-- corrplot(test, method = "color",  col=colorRampPalette(c("blue","white","red"))(200)) -->
+
+<!-- ``` -->
+
+
+<!-- \newpage -->
+<!-- ## All Frequency Bands  -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+
+<!-- colnames <- names(alldata) -->
+<!-- new_alldata <- lapply(colnames[2:63],function(col){as.numeric(as.character(alldata[,col]))}) -->
+
+<!-- newalldata <- setnames(as.data.frame(new_alldata), colnames[2:63]) -->
+
+
+<!-- corMatrix <- cor(newalldata, use = "complete") -->
+<!-- corrplot(corMatrix,  method = "color", col=colorRampPalette(c("blue","white","red"))(200)) -->
+
+
+<!-- ``` -->
+
+<!-- \newpage -->
+<!-- ## Gamma and Beta Frequency Bands in Fixation -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+
+
+<!-- BGdata <- grep("Beta|Gamma", names(alldata),value=TRUE) -->
+<!-- BGdata<- BGdata[!grepl("Delay", BGdata)] -->
+
+
+<!-- BGdataframe <- alldata[,c("Subject",BGdata)] -->
+<!-- colnames <- names(BGdataframe) -->
+
+
+<!-- new_BGdata <- lapply(colnames[2:16],function(col){as.numeric(as.character(BGdataframe[,col]))}) -->
+<!-- newBGdata <- setnames(as.data.frame(new_BGdata), colnames[2:16]) -->
+
+<!-- corMatrix <- cor(newBGdata, use = "complete") -->
+<!-- corrplot(corMatrix,  method = "color", col=colorRampPalette(c("blue","white","red"))(200)) -->
+
+
+<!-- ``` -->
+
+
+<!-- ## Gamma and Beta Frequency Bands in Delay -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+
+
+<!-- BGdata <- grep("Beta|Gamma", names(alldata),value=TRUE) -->
+<!-- BGdata<- BGdata[!grepl("Fix", BGdata)] -->
+
+
+<!-- BGdataframe <- alldata[,c("Subject",BGdata)] -->
+<!-- colnames <- names(BGdataframe) -->
+
+
+<!-- new_BGdata <- lapply(colnames[2:16],function(col){as.numeric(as.character(BGdataframe[,col]))}) -->
+<!-- newBGdata <- setnames(as.data.frame(new_BGdata), colnames[2:16]) -->
+
+<!-- corMatrix <- cor(newBGdata, use = "complete") -->
+<!-- corrplot(corMatrix,  method = "color", col=colorRampPalette(c("blue","white","red"))(200)) -->
+
+
+<!-- ``` -->
+
+
+<!-- \newpage -->
+
+
+
+
+<!-- # PCA of each Frequency Band -->
+<!-- ## Theta Frequency Band -->
+
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+
+<!-- thetaPCA <- princomp(newTheta, cor = TRUE, scores = TRUE) -->
+<!-- summary(thetaPCA) -->
+<!-- print(thetaPCA$loadings) -->
+<!-- screeplot(thetaPCA) -->
+<!-- fviz_eig(thetaPCA) -->
+<!-- fviz_pca_ind(thetaPCA) -->
+
+<!-- ``` -->
+<!-- \newpage -->
+<!-- ## Alpha Frequency Band -->
+
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+
+<!-- AlphaPCA <- princomp(newAlpha, cor = TRUE, scores = TRUE) -->
+<!-- summary(AlphaPCA) -->
+<!-- print(AlphaPCA$loadings) -->
+<!-- screeplot(AlphaPCA) -->
+<!-- fviz_eig(AlphaPCA) -->
+<!-- fviz_pca_ind(AlphaPCA) -->
+
+<!-- ``` -->
+<!-- \newpage -->
+<!-- ## Beta Frequency Band -->
+
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+
+<!-- BetaPCA <- princomp(newBeta, cor = TRUE, scores = TRUE) -->
+<!-- summary(BetaPCA) -->
+<!-- print(BetaPCA$loadings) -->
+<!-- screeplot(BetaPCA) -->
+<!-- fviz_eig(BetaPCA) -->
+<!-- fviz_pca_ind(BetaPCA) -->
+
+<!-- ``` -->
+<!-- \newpage -->
+<!-- ## Gamma Frequency Band -->
+
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+
+<!-- GammaPCA <- princomp(newGamma, cor = TRUE, scores = TRUE) -->
+<!-- summary(GammaPCA) -->
+<!-- print(GammaPCA$loadings) -->
+<!-- screeplot(GammaPCA) -->
+<!-- fviz_eig(GammaPCA) -->
+<!-- fviz_pca_ind(GammaPCA) -->
+
+<!-- ``` -->
+
+<!-- \newpage -->
+<!-- ## All Frequency Bands  -->
+
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- alldataPCA <- princomp(newalldata, cor = TRUE, scores = TRUE) -->
+<!-- summary(alldataPCA) -->
+<!-- print(alldataPCA$loadings) -->
+<!-- screeplot(alldataPCA) -->
+<!-- fviz_eig(alldataPCA) -->
+<!-- fviz_pca_ind(alldataPCA) -->
+
+<!-- ``` -->
+<!-- \newpage  -->
+# Support Vector Regression to Predict Age
+## Delay Period
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+read_chunk('H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R')
+
+Everything <- merge(allTheta, allAlpha, by = "Subject")
+Everything <- merge(Everything, allBeta, by = "Subject")
+Everything <- merge(Everything, allGamma, by = "Subject")
+
+
+```
+
+
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R")
+
+colsNames <- names(Everything)
+analysisVars <- colsNames[grep("Delay", colsNames)]
+
+Delay_baseline <- Everything[,c("Subject",analysisVars)]
+Delay_baseline <- merge(Delay_baseline, agefile, by = "Subject")
+baselineclean <- Delay_baseline
+
+DelaySVRage <- SVRfunctionAge(baselineclean)
+
+varWeights <- DelaySVRage$plot_env$SVRage$weightmean 
+cols <- ncol(varWeights)
+absVarWeights <- abs(varWeights[1:cols-1])
+
+absValueDF <- gather(absVarWeights, key = "measure", value = "absWeights")
+
+
+ggplot(data = absValueDF, aes(x = reorder(measure, -absWeights), absWeights)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+
+## Fixation Period
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R")
+
+colsNames <- names(Everything)
+analysisVars <- colsNames[grep("Fix", colsNames)]
+
+Fix_baseline <- Everything[,c("Subject",analysisVars)]
+Fix_baseline <- merge(Fix_baseline, agefile, by = "Subject")
+baselineclean <- Fix_baseline
+
+FixSVRage <- SVRfunctionAge(baselineclean)
+
+varWeights <- FixSVRage$plot_env$SVRage$weightmean 
+cols <- ncol(varWeights)
+absVarWeights <- abs(varWeights[1:cols-1])
+
+absValueDF <- gather(absVarWeights, key = "measure", value = "absWeights")
+
+
+ggplot(data = absValueDF, aes(x = reorder(measure, -absWeights), absWeights)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+## Prediction Power: Delay vs Fix
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+DelayPeriodPredictingAge <- DelaySVRage$plot_env$foldparse$cvcor
+EpochsPredictingAge <- data.frame(DelayPeriodPredictingAge)
+
+EpochsPredictingAge$FixPeriodPredictingAge <- FixSVRage$plot_env$foldparse$cvcor
+
+par(mar=c(9,5,8,5))
+barplot(t(as.matrix(EpochsPredictingAge)), beside = TRUE, main = "Epochs Ability to Predict Age", ylab = "Predictive Measure", names.arg = c("Delay Period", "Fixation Period"), ylim = c(0, 0.7), col = "gray", xlim = c(0, 4), las = 2)
+
+
+```
+
+
+## Frequency Bands 
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+read_chunk('H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R')
+
+```
+### Theta Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R")
+
+baselineclean <- allTheta[allTheta$Theta.visitno<2,]
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+
+ThetaSVRage <- SVRfunctionAge(baselineclean)
+
+varWeights <- ThetaSVRage$plot_env$SVRage$weightmean 
+cols <- ncol(varWeights)
+absVarWeights <- abs(varWeights[1:cols-1])
+
+absValueDF <- gather(absVarWeights, key = "measure", value = "absWeights")
+
+
+ggplot(data = absValueDF, aes(x = reorder(measure, -absWeights), absWeights)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+### Alpha Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R")
+
+baselineclean <- allAlpha[allAlpha$Alpha.visitno <2,]
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+
+AlphaSVRage <- SVRfunctionAge(baselineclean)
+
+varWeights <- AlphaSVRage$plot_env$SVRage$weightmean 
+cols <- ncol(varWeights)
+absVarWeights <- abs(varWeights[1:cols-1])
+
+absValueDF <- gather(absVarWeights, key = "measure", value = "absWeights")
+
+
+ggplot(data = absValueDF, aes(x = reorder(measure, -absWeights), absWeights)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+### Beta Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R")
+
+baselineclean <- allBeta[allBeta$Beta.visitno <2,]
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+
+BetaSVRage <- SVRfunctionAge(baselineclean)
+
+varWeights <- BetaSVRage$plot_env$SVRage$weightmean 
+cols <- ncol(varWeights)
+absVarWeights <- abs(varWeights[1:cols-1])
+
+absValueDF <- gather(absVarWeights, key = "measure", value = "absWeights")
+
+
+ggplot(data = absValueDF, aes(x = reorder(measure, -absWeights), absWeights)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+### Gamma Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R")
+
+baselineclean <- allGamma[allGamma$Gamma.visitno<2,]
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+
+GammaSVRage <- SVRfunctionAge(baselineclean)
+
+varWeights <- GammaSVRage$plot_env$SVRage$weightmean 
+cols <- ncol(varWeights)
+absVarWeights <- abs(varWeights[1:cols-1])
+
+absValueDF <- gather(absVarWeights, key = "measure", value = "absWeights")
+
+
+ggplot(data = absValueDF, aes(x = reorder(measure, -absWeights), absWeights)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+
+
+### All Frequency Bands
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R")
+
+
+baselineclean <- alldata
+
+SVRfunctionAge(baselineclean)
+
+ThetaPredictingAge <- ThetaSVRage$plot_env$foldparse$cvcor
+allBandsPredictingAge <- data.frame(ThetaPredictingAge)
+
+allBandsPredictingAge$AlphaPredictingAge <- AlphaSVRage$plot_env$foldparse$cvcor
+allBandsPredictingAge$BetaPredictingAge <- BetaSVRage$plot_env$foldparse$cvcor
+allBandsPredictingAge$GammaPredictingAge <- GammaSVRage$plot_env$foldparse$cvcor
+
+barplot(t(as.matrix(allBandsPredictingAge)), beside = TRUE, main = "Frequency Bands Ability to Predict Age", ylab = "Predictive Measure", names.arg = c("Theta", "Alpha", "Beta", "Gamma"), ylim = c(0, 0.6), col = "gray")
+```
+
+
+
+## Each EEG Measure 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+read_chunk('H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R')
+
+Everything <- merge(allTheta, allAlpha, by = "Subject")
+Everything <- merge(Everything, allBeta, by = "Subject")
+Everything <- merge(Everything, allGamma, by = "Subject")
+
+
+```
+
+
+### Trial Power 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R")
+
+colsNames <- names(Everything)
+analysisVars <- colsNames[grep("Trial_Power", colsNames)]
+analysisVars <- analysisVars[!grepl("Variability", analysisVars)]
+
+TrialPower_baseline <- Everything[,c("Subject",analysisVars)]
+TrialPower_baseline <- merge(TrialPower_baseline, agefile, by = "Subject")
+baselineclean <- TrialPower_baseline
+
+TrialPowerSVRage <- SVRfunctionAge(baselineclean)
+
+varWeights <- TrialPowerSVRage$plot_env$SVRage$weightmean 
+cols <- ncol(varWeights)
+absVarWeights <- abs(varWeights[1:cols-1])
+
+absValueDF <- gather(absVarWeights, key = "measure", value = "absWeights")
+
+
+ggplot(data = absValueDF, aes(x = reorder(measure, -absWeights), absWeights)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+
+
+### Trial Power Variability 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R")
+
+colsNames <- names(Everything)
+analysisVars <- colsNames[grep("Trial_Power_Variability", colsNames)]
+
+TrialPowerVar_baseline <- Everything[,c("Subject",analysisVars)]
+TrialPowerVar_baseline <- merge(TrialPowerVar_baseline, agefile, by = "Subject")
+baselineclean <- TrialPowerVar_baseline
+
+TrialPowerVarSVRage <- SVRfunctionAge(baselineclean)
+
+varWeights <- TrialPowerVarSVRage$plot_env$SVRage$weightmean 
+cols <- ncol(varWeights)
+absVarWeights <- abs(varWeights[1:cols-1])
+
+absValueDF <- gather(absVarWeights, key = "measure", value = "absWeights")
+
+
+ggplot(data = absValueDF, aes(x = reorder(measure, -absWeights), absWeights)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+
+### Event Number
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R")
+
+colsNames <- names(Everything)
+analysisVars <- colsNames[grep("Event_Number", colsNames)]
+analysisVars <- analysisVars[!grepl("Variability", analysisVars)]
+
+EventNumber_baseline <- Everything[,c("Subject",analysisVars)]
+EventNumber_baseline <- merge(EventNumber_baseline, agefile, by = "Subject")
+baselineclean <- EventNumber_baseline
+
+EventNumberSVRage <- SVRfunctionAge(baselineclean)
+
+varWeights <- EventNumberSVRage$plot_env$SVRage$weightmean 
+cols <- ncol(varWeights)
+absVarWeights <- abs(varWeights[1:cols-1])
+
+absValueDF <- gather(absVarWeights, key = "measure", value = "absWeights")
+
+
+ggplot(data = absValueDF, aes(x = reorder(measure, -absWeights), absWeights)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+
+### Event Number Variability
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R")
+
+colsNames <- names(Everything)
+analysisVars <- colsNames[grep("Event_Number_Variability", colsNames)]
+
+EventNumberVar_baseline <- Everything[,c("Subject",analysisVars)]
+EventNumberVar_baseline <- merge(EventNumberVar_baseline, agefile, by = "Subject")
+baselineclean <- EventNumberVar_baseline
+
+EventNumberVarSVRage <- SVRfunctionAge(baselineclean)
+
+varWeights <- EventNumberVarSVRage$plot_env$SVRage$weightmean 
+cols <- ncol(varWeights)
+absVarWeights <- abs(varWeights[1:cols-1])
+
+absValueDF <- gather(absVarWeights, key = "measure", value = "absWeights")
+
+
+ggplot(data = absValueDF, aes(x = reorder(measure, -absWeights), absWeights)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+
+### Event Duration
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R")
+
+colsNames <- names(Everything)
+analysisVars <- colsNames[grep("Event_Duration", colsNames)]
+analysisVars <- analysisVars[!grepl("Variability", analysisVars)]
+
+EventDuration_baseline <- Everything[,c("Subject",analysisVars)]
+EventDuration_baseline <- merge(EventDuration_baseline, agefile, by = "Subject")
+baselineclean <- EventDuration_baseline
+
+EventDurationSVRage <- SVRfunctionAge(baselineclean)
+
+varWeights <- EventDurationSVRage$plot_env$SVRage$weightmean 
+cols <- ncol(varWeights)
+absVarWeights <- abs(varWeights[1:cols-1])
+
+absValueDF <- gather(absVarWeights, key = "measure", value = "absWeights")
+
+
+ggplot(data = absValueDF, aes(x = reorder(measure, -absWeights), absWeights)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+
+### Event Duration variability
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R")
+
+colsNames <- names(Everything)
+analysisVars <- colsNames[grep("Event_Duration_Variability", colsNames)]
+
+EventDurationVar_baseline <- Everything[,c("Subject",analysisVars)]
+EventDurationVar_baseline <- merge(EventDurationVar_baseline, agefile, by = "Subject")
+baselineclean <- EventDurationVar_baseline
+
+EventDurationVarSVRage <- SVRfunctionAge(baselineclean)
+
+varWeights <- EventDurationVarSVRage$plot_env$SVRage$weightmean 
+cols <- ncol(varWeights)
+absVarWeights <- abs(varWeights[1:cols-1])
+
+absValueDF <- gather(absVarWeights, key = "measure", value = "absWeights")
+
+
+ggplot(data = absValueDF, aes(x = reorder(measure, -absWeights), absWeights)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+### All Measures Bar Plot
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+TrialPowerPredictingAge <- TrialPowerSVRage$plot_env$foldparse$cvcor
+allMeasuresPredictingAge <- data.frame(TrialPowerPredictingAge)
+
+allMeasuresPredictingAge$TrialPowerVariability <- TrialPowerVarSVRage$plot_env$foldparse$cvcor
+allMeasuresPredictingAge$EventNumber <- EventNumberSVRage$plot_env$foldparse$cvcor
+allMeasuresPredictingAge$EventNumberVariability <- EventNumberVarSVRage$plot_env$foldparse$cvcor
+
+allMeasuresPredictingAge$EventDuration <- EventDurationSVRage$plot_env$foldparse$cvcor
+allMeasuresPredictingAge$EventDurationVariability <- EventDurationVarSVRage$plot_env$foldparse$cvcor
+
+
+par(mar=c(11,5,7,5))
+barplot(t(as.matrix(allMeasuresPredictingAge)), beside = TRUE, main = "Frequency Band Measures Ability to Predict Age", ylab = "Predictive Measure", names.arg = c("Trial Power", "Trial Power Variability", "Event Number", "Event Number Variability", "Event Duration", "Event Duration Variability"), ylim = c(-0.2, 0.5), col = "gray", xlim = c(0, 7), las = 2)
+
+
+
+
+```
+
+
+
+
+# Support Vector Regression of Frequency Bands to Predict Inverse Age  
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+read_chunk('H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R')
+
+```
+## Theta Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionInverseAge.R")
+
+baselineclean <- allTheta
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+baselineclean$inverseAge <- 1/baselineclean$age
+
+ThetaSVRinverseAge <- SVRfunctionInverseAge(baselineclean)
+
+```
+
+## Alpha Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionInverseAge.R")
+
+baselineclean <- allAlpha
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+baselineclean$inverseAge <- 1/baselineclean$age
+
+AlphaSVRinverseAge <- SVRfunctionInverseAge(baselineclean)
+
+```
+
+## Beta Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionInverseAge.R")
+
+baselineclean <- allBeta
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+baselineclean$inverseAge <- 1/baselineclean$age
+
+BetaSVRinverseAge <- SVRfunctionInverseAge(baselineclean)
+
+```
+
+## Gamma Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionInverseAge.R")
+
+baselineclean <- allGamma
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+baselineclean$inverseAge <- 1/baselineclean$age
+
+GammaSVRinverseAge <- SVRfunctionInverseAge(baselineclean)
+
+```
+
+
+
+## All Frequency Bands
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionInverseAge.R")
+
+
+baselineclean <- alldata
+baselineclean$inverseAge <- 1/baselineclean$age
+
+SVRfunctionInverseAge(baselineclean)
+
+ThetaPredictinginverseAge <- ThetaSVRinverseAge$plot_env$foldparse$cvcor
+allBandsPredictingInverseAge <- data.frame(ThetaPredictinginverseAge)
+
+allBandsPredictingInverseAge$AlphaPredictingAge <- AlphaSVRinverseAge$plot_env$foldparse$cvcor
+allBandsPredictingInverseAge$BetaPredictingAge <- BetaSVRinverseAge$plot_env$foldparse$cvcor
+allBandsPredictingInverseAge$GammaPredictingAge <- GammaSVRinverseAge$plot_env$foldparse$cvcor
+
+barplot(t(as.matrix(allBandsPredictingInverseAge)), beside = TRUE, main = "Frequency Bands Ability to Predict Inverse Age", ylab = "Predictive Measure", names.arg = c("Theta", "Alpha", "Beta", "Gamma"), ylim = c(0, 0.6), col = "gray")
+
+```
+
+
+
+
+
+
+<!-- # Support Vector Regression of Frequency Bands and Behavior Measures to Predict Age --> -->
+
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+
+<!-- read_chunk('H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R') -->
+
+<!-- ``` -->
+<!-- ## Theta Frequency  -->
+<!-- ```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE} -->
+
+<!-- source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R") -->
+
+<!-- baselineclean <- allTheta -->
+<!-- baselineclean <- merge(baselineclean, agefile, by = "Subject") -->
+<!-- baselineclean <-  merge(baselineclean, behavior, by = "Subject") -->
+
+<!-- SVRfunctionAge(baselineclean) -->
+
+<!-- ``` -->
+
+<!-- ## Alpha Frequency  -->
+<!-- ```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE} -->
+
+<!-- source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R") -->
+
+<!-- baselineclean <- allAlpha -->
+<!-- baselineclean <- merge(baselineclean, agefile, by = "Subject") -->
+<!-- baselineclean <-  merge(baselineclean, behavior, by = "Subject") -->
+
+<!-- SVRfunctionAge(baselineclean) -->
+
+<!-- ``` -->
+
+<!-- ## Beta Frequency  -->
+<!-- ```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE} -->
+
+<!-- source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R") -->
+
+<!-- baselineclean <- allBeta -->
+<!-- baselineclean <- merge(baselineclean, agefile, by = "Subject") -->
+<!-- baselineclean <-  merge(baselineclean, behavior, by = "Subject") -->
+
+<!-- SVRfunctionAge(baselineclean) -->
+
+<!-- ``` -->
+
+<!-- ## Gamma Frequency  -->
+<!-- ```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE} -->
+
+<!-- source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R") -->
+
+<!-- baselineclean <- allGamma -->
+<!-- baselineclean <- merge(baselineclean, agefile, by = "Subject") -->
+<!-- baselineclean <-  merge(baselineclean, behavior, by = "Subject") -->
+
+<!-- SVRfunctionAge(baselineclean) -->
+
+<!-- ``` -->
+
+
+
+<!-- ## All Frequency Bands -->
+<!-- ```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE} -->
+
+<!-- source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionAge.R") -->
+
+
+<!-- baselineclean <- alldata -->
+<!-- baselineclean <-  merge(baselineclean, behavior, by = "Subject") -->
+
+<!-- SVRfunctionAge(baselineclean) -->
+
+<!-- ``` -->
+
+
+
+# Support Vector Regression of Frequency Bands to Predict mgsLatency
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+read_chunk('H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionBehaviorLatency.R')
+
+Behavior <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Behavior.csv')
+
+Behavior$log_absPositionError <- log10(abs(Behavior$PositionError))
+Behavior$log_mgsLatency <- log10(Behavior$mgsLatency)
+behavior <- setnames(aggregate(Behavior$log_mgsLatency, list(Subject =  paste0(Behavior$LunaID, '_', Behavior$ScanDate)), na.rm = TRUE, mean), c("Subject", "log_mgsLatency"))
+
+
+```
+## Theta Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionBehaviorLatency.R")
+
+baselineclean <- allTheta
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+baselineclean <-  merge(baselineclean, behavior, by = "Subject")
+
+ThetaSVRlatency <- SVRfunctionBehaviorLatency(baselineclean)
+
+```
+
+## Alpha Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionBehaviorLatency.R")
+
+baselineclean <- allAlpha
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+baselineclean <-  merge(baselineclean, behavior, by = "Subject")
+
+AlphaSVRlatency <- SVRfunctionBehaviorLatency(baselineclean)
+
+```
+
+## Beta Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionBehaviorLatency.R")
+
+baselineclean <- allBeta
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+baselineclean <-  merge(baselineclean, behavior, by = "Subject")
+
+BetaSVRlatency <- SVRfunctionBehaviorLatency(baselineclean)
+
+```
+
+## Gamma Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionBehaviorLatency.R")
+
+baselineclean <- allGamma
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+baselineclean <-  merge(baselineclean, behavior, by = "Subject")
+
+GammaSVRlatency <- SVRfunctionBehaviorLatency(baselineclean)
+
+```
+
+
+
+## All Frequency Bands
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionBehaviorLatency.R")
+
+
+baselineclean <- alldata
+baselineclean <-  merge(baselineclean, behavior, by = "Subject")
+
+SVRfunctionBehaviorLatency(baselineclean)
+
+ThetaPredictingLatency <- ThetaSVRlatency$plot_env$foldparse$cvcor
+allBandsPredictingLatency <- data.frame(ThetaPredictingLatency)
+
+allBandsPredictingLatency$AlphaPredictingLatency <- AlphaSVRlatency$plot_env$foldparse$cvcor
+allBandsPredictingLatency$BetaPredictingLatency <- BetaSVRlatency$plot_env$foldparse$cvcor
+allBandsPredictingLatency$GammaPredictingLatency <- GammaSVRlatency$plot_env$foldparse$cvcor
+
+barplot(t(as.matrix(allBandsPredictingLatency)), beside = TRUE, main = "Frequency Bands Ability to Predict Latency", ylab = "Predictive Measure", names.arg = c("Theta", "Alpha", "Beta", "Gamma"), ylim = c(-0.2, 0.3), col = "gray")
+
+```
+
+
+
+# Support Vector Regression of Frequency Bands to Predict Position Error
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+read_chunk('H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionBehaviorPosition.R')
+
+Behavior <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Behavior.csv')
+
+Behavior$log_absPositionError <- log10(abs(Behavior$PositionError))
+Behavior$log_mgsLatency <- log10(Behavior$mgsLatency)
+behavior <- setnames(aggregate(Behavior$log_absPositionError, list(Subject =  paste0(Behavior$LunaID, '_', Behavior$ScanDate)), na.rm = TRUE, mean), c("Subject", "log_absPositionError"))
+
+
+```
+## Theta Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionBehaviorPosition.R")
+
+baselineclean <- allTheta
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+baselineclean <-  merge(baselineclean, behavior, by = "Subject")
+
+ThetaSVRposition <- SVRfunctionBehaviorPosition(baselineclean)
+
+```
+
+## Alpha Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionBehaviorPosition.R")
+
+baselineclean <- allAlpha
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+baselineclean <-  merge(baselineclean, behavior, by = "Subject")
+
+AlphaSVRposition <- SVRfunctionBehaviorPosition(baselineclean)
+
+```
+
+## Beta Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionBehaviorPosition.R")
+
+baselineclean <- allBeta
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+baselineclean <-  merge(baselineclean, behavior, by = "Subject")
+
+BetaSVRposition <- SVRfunctionBehaviorPosition(baselineclean)
+
+```
+
+## Gamma Frequency 
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionBehaviorPosition.R")
+
+baselineclean <- allGamma
+baselineclean <- merge(baselineclean, agefile, by = "Subject")
+baselineclean <-  merge(baselineclean, behavior, by = "Subject")
+
+GammaSVRposition <- SVRfunctionBehaviorPosition(baselineclean)
+
+```
+
+
+
+## All Frequency Bands
+```{r, results='hide', fig.keep='all', echo= FALSE, message = FALSE, warning = FALSE}
+
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/SVRfunctionBehaviorPosition.R")
+
+
+baselineclean <- alldata
+baselineclean <-  merge(baselineclean, behavior, by = "Subject")
+
+SVRfunctionBehaviorPosition(baselineclean)
+
+ThetaPredictingPosition <- ThetaSVRposition$plot_env$foldparse$cvcor
+allBandsPredictingPosition <- data.frame(ThetaPredictingPosition)
+
+allBandsPredictingPosition$AlphaPredictingPosition <- AlphaSVRposition$plot_env$foldparse$cvcor
+allBandsPredictingPosition$BetaPredictingPosition <- BetaSVRposition$plot_env$foldparse$cvcor
+allBandsPredictingPosition$GammaPredictingPosition <- GammaSVRposition$plot_env$foldparse$cvcor
+
+barplot(t(as.matrix(allBandsPredictingPosition)), beside = TRUE, main = "Frequency Bands Ability to Predict Position Error", ylab = "Predictive Measure", names.arg = c("Theta", "Alpha", "Beta", "Gamma"), ylim = c(-0.1, 0.4), col = "gray")
+
+
+```
+
+
+

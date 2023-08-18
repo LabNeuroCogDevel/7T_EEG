@@ -1,0 +1,619 @@
+---
+title: "SpectralEvents_PaperFigs"
+author: "Shane McKeon"
+date: "02/01/2022"
+geometry: margin = 1in
+output:
+  pdf_document:  
+    toc: true
+    toc_dept/Volumes/Hera 4    
+    fig_caption: yes
+  latex_engine: xelatex
+
+  html_document:
+    df_print: paged
+    code_folding: hide 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev='png', dpi=150, fig.width = 6, fig.height= 6, fig.align = 'center', fig.margin = TRUE, comment = NA)
+```
+
+
+```{r load-libraries, message=FALSE}
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+library(LNCDR)
+library(data.table)
+require(dplyr)
+library(factoextra)
+library(tidyverse)
+require(knitr)
+library(ggplot2)
+library(e1071)
+library(caret)
+library(sjPlot)
+library(directlabels)
+attach(mtcars)
+library(grid)
+library(gridExtra)
+library(cowplot)
+library(plotrix)
+library(mgcv)
+library(plotly)
+
+```
+
+# Behavior Across Age 
+## Best Saccade
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/03.BehaviorAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+agefile <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/agefile_20220204.csv')
+Behavior <- Behavior_Sublevel_Maria()
+
+Behavior <- Behavior %>% filter(visitno ==1)
+
+BS <- bestSaccade(Behavior)
+
+BSV <- bestSaccadeVariability(Behavior)
+
+PE <- absPositionError(Behavior)
+
+PEV <- absPositionErrorVariability(Behavior)
+
+lat <- mgsLatency(Behavior)
+
+latV <- mgsLatencyVariability(Behavior)
+
+# combine all the p values so that we can correct them for multiple comparisons 
+behaviorPvalues <- data.frame(BS$Pvalue[1], BSV$Pvalue[1], PE$Pvalue[1], PEV$Pvalue[1], lat$Pvalue[1], latV$Pvalue[1])
+
+p.adjust((behaviorPvalues), method = "bonferroni")
+
+cowplot::plot_grid(BS$BSgraph, lat$latgraph,BSV$BSVgraph,latV$latvgraph, labels = c('A','B','C','D'), label_size = 30, rel_widths = c(1,1.1))
+
+
+# bar graphs
+behaviorAge <- merge(Behavior, agefile, by = c("Subject", "age"))
+groupBehaviorAge <- aggregate(.~ Group, behaviorAge[2:15], mean)
+sderror<-std.error(groupBehaviorAge$mgsLatency_sd)
+
+YMIN <- groupBehaviorAge$mgsLatency_sd-sderror
+
+YMAX <- groupBehaviorAge$mgsLatency_sd+sderror
+
+lunaize(ggplot(groupBehaviorAge, aes(x=Group, y=mgsLatency_sd, ymin= YMIN, ymax=YMAX , group = Group, fill = Group)) + geom_col(position = 'dodge') + geom_errorbar(position='dodge') )
+
+behaviorAge %>% dplyr::filter(., Group == c(1,2)) %>% t.test(absBestError_sd ~ Group, data = .)
+
+ #significant periods of growth
+  gam.model <- gam(absBestError_sd ~ s(age), data = behaviorAge)
+  gam.growthrate <- gam_growthrate(gam.model, agevar = 'age')
+  gam_growthrate_plot(behaviorAge, gam.model, gam.growthrate, agevar = 'age', yvar = 'absBestError_sd', draw_points = F)
+
+```
+
+# Frequency Bands Across Age
+## Delay Period
+### Whole Brain 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+delayOnly <- DelayOnly_Sublevel_3_4()
+delayOnly_SubLevel <- delayOnly$alldata_delayOnly
+
+alphavars <- grep("Alpha",names(delayOnly_SubLevel),value=TRUE)
+allAlpha <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",alphavars)]
+colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+allAlpha$Band <- "Alpha"
+
+
+thetavars <- grep("Theta",names(delayOnly_SubLevel),value=TRUE)
+allTheta <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",thetavars)]
+colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+allTheta$Band <- "Theta"
+
+betavars <- grep("Beta",names(delayOnly_SubLevel),value=TRUE)
+allBeta <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",betavars)]
+colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+allBeta$Band <- "Beta"
+
+
+gammavars <- grep("Gamma",names(delayOnly_SubLevel),value=TRUE)
+allGamma <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+delay_alldata <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+delay_alldata$epoch <- "Delay"
+delay_alldata$Region <- "Whole Brain"
+
+```
+##### Gamma Band 
+
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+delay_alldata_gamma <- delay_alldata %>% filter(delay_alldata$Band == "Gamma")
+TP <- TrialPower(delay_alldata_gamma[])
+
+delay_alldata_gamma %>% dplyr::filter(., Group == c(1,2)) %>% t.test(Event_Duration_Variability ~ Group, data = .)
+
+lunaize(ggplot(data = delay_alldata_gamma[], aes(x = age, y = log1p_Trial_Power)) + geom_point() + stat_smooth(method = "lm",formula = 'y ~ x + I(x^2)') + ggtitle("Trial Power") + xlab("Age") + ylab("Trial Power (log)")) +theme(plot.title = element_text(hjust = 0.5))
+
+```
+##### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TPV <- TrialPowerVar(delay_alldata_gamma)
+```
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EN <- EventNumber(delay_alldata_gamma)
+
+lunaize(ggplot(data = delay_alldata_gamma[], aes(x = age, y = Event_Number)) + geom_point() + stat_smooth(method = "lm",formula = 'y ~  poly(x,2)') + ggtitle("Event Number") + xlab("Age") + ylab("Event Number")) +theme(plot.title = element_text(hjust = 0.5))
+```
+##### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+ENV <- EventNumberVar(delay_alldata_gamma)
+```
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+ED <- EventDuration(delay_alldata_gamma)
+```
+##### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EDV <- EventDurationVar(delay_alldata_gamma)
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+# combine all the p values so that we can correct them for multiple comparisons 
+EEGPvalues <- data.frame(TP$pvalue[1], TPV$pvalue[1], EN$pvalue[1], ENV$pvalue[1], ED$pvalue[1], EDV$pvalue[1])
+
+p.adjust((EEGPvalues), method = "bonferroni")
+
+cowplot::plot_grid(TP$TPgraph, EN$ENgraph,ED$EDgraph,TPV$TPVgraph,ENV$ENVgraph, EDV$EDVgraph, labels = c('A','B','C','D','E','F'), label_size = 30, rel_widths = c(1,1,1.1))
+
+cowplot::plot_grid(TP$bargraph, EN$bargraph,ED$bargraph,TPV$bargraph,ENV$bargraph, EDV$bargraph, labels = c('A','B','C','D','E','F'), label_size = 30, rel_widths = c(1,1,1.1))
+```
+
+## Fixation Period 
+### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+FixOnly <- FixOnly_Sublevel()
+FixOnly_SubLevel <- FixOnly$alldata_FixOnly
+
+alphavars <- grep("Alpha",names(FixOnly_SubLevel),value=TRUE)
+allAlpha <- FixOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",alphavars)]
+colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+allAlpha$Band <- "Alpha"
+
+
+thetavars <- grep("Theta",names(FixOnly_SubLevel),value=TRUE)
+allTheta <- FixOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",thetavars)]
+colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+allTheta$Band <- "Theta"
+
+betavars <- grep("Beta",names(FixOnly_SubLevel),value=TRUE)
+allBeta <- FixOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",betavars)]
+colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+allBeta$Band <- "Beta"
+
+
+gammavars <- grep("Gamma",names(FixOnly_SubLevel),value=TRUE)
+allGamma <- FixOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+fix_alldata <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+fix_alldata$epoch <- "fix"
+fix_alldata$Region <- "Whole Brain"
+
+
+```
+##### Gamma Band 
+
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+fix_alldata_gamma <- fix_alldata %>% filter(fix_alldata$Band == "Gamma")
+TP <- TrialPower(fix_alldata_gamma[])
+
+fix_alldata_gamma %>% dplyr::filter(., Group == c(1,2)) %>% t.test(Event_Duration_Variability ~ Group, data = .)
+
+```
+##### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TPV <- TrialPowerVar(fix_alldata_gamma)
+```
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EN <- EventNumber(fix_alldata_gamma)
+```
+##### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+ENV <- EventNumberVar(fix_alldata_gamma)
+```
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+ED <- EventDuration(fix_alldata_gamma)
+```
+##### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EDV <- EventDurationVar(fix_alldata_gamma)
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+# combine all the p values so that we can correct them for multiple comparisons 
+EEGPvalues <- data.frame(TP$pvalue[1], TPV$pvalue[1], EN$pvalue[1], ENV$pvalue[1], ED$pvalue[1], EDV$pvalue[1])
+
+p.adjust((EEGPvalues), method = "bonferroni")
+
+cowplot::plot_grid(TP$TPgraph, EN$ENgraph,ED$EDgraph,TPV$TPVgraph,ENV$ENVgraph, EDV$EDVgraph, labels = c('A','B','C','D','E','F'), label_size = 30, rel_widths = c(1,1,1.1))
+
+cowplot::plot_grid(TP$bargraph, EN$bargraph,ED$bargraph,TPV$bargraph,ENV$bargraph, EDV$bargraph, labels = c('A','B','C','D','E','F'), label_size = 30, rel_widths = c(1,1,1.1))
+```
+
+## Resting State
+### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+Restdf <- Resting_State_Data_SubjectLevel()
+Restalldata <- Restdf$alldata_RestOnly
+
+alphavars <- grep("Alpha",names(Restalldata),value=TRUE)
+allAlpha <- Restalldata[,c("Subject", "inverseAge", "age","Group",alphavars)]
+colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+allAlpha$Band <- "Alpha"
+
+
+thetavars <- grep("Theta",names(Restalldata),value=TRUE)
+allTheta <- Restalldata[,c("Subject", "inverseAge", "age","Group",thetavars)]
+colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+allTheta$Band <- "Theta"
+
+betavars <- grep("Beta",names(Restalldata),value=TRUE)
+allBeta <- Restalldata[,c("Subject", "inverseAge", "age","Group",betavars)]
+colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+allBeta$Band <- "Beta"
+
+
+gammavars <- grep("Gamma",names(Restalldata),value=TRUE)
+allGamma <- Restalldata[,c("Subject", "inverseAge", "age","Group",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+rest_alldata <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+rest_alldata$epoch <- "Rest"
+rest_alldata$Region <- "Whole Brain"
+```
+
+##### Gamma Band 
+
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+rest_alldata_gamma <- rest_alldata %>% filter(rest_alldata$Band == "Gamma")
+TP <- TrialPower(rest_alldata_gamma[])
+
+rest_alldata %>% dplyr::filter(., Group == c(2,3)) %>% t.test(Event_Duration ~ Group, data = .)
+
+
+```
+
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EN <- EventNumber(rest_alldata_gamma)
+```
+
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+ED <- EventDuration(rest_alldata_gamma)
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+# combine all the p values so that we can correct them for multiple comparisons 
+EEGPvalues <- data.frame(TP$pvalue[1], EN$pvalue[1], ED$pvalue[1])
+
+p.adjust((EEGPvalues), method = "bonferroni")
+
+cowplot::plot_grid(TP$TPgraph, EN$ENgraph,ED$EDgraph, labels = c('A','B','C'), label_size = 30, rel_widths = c(1,1,1.1))
+
+cowplot::plot_grid(TP$bargraph, EN$bargraph, ED$bargraph, labels = c('A','B','C'), label_size = 30, rel_widths = c(1,1,1), ncol = 3)
+
+```
+
+
+## Delay, Fixation, and Rest
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allepochs <- rbind(delay_alldata_gamma, fix_alldata_gamma )
+
+allepochs <- rbind(allepochs, rest_alldata_gamma)
+allepochs <- merge(allepochs, Behavior, by = c("Subject", "inverseAge", "age"))
+
+  lm.model1 <- lm(data = allepochs[], Event_Duration ~ age + epoch) #if significant, regardless of epoch, theres an age effect
+
+#TEST for a main effect of age on event duration (your main effect model)
+  lm.model <- lm(data = allepochs[], Event_Duration ~ inverseAge + epoch) #if significant, regardless of epoch, theres an age effect
+
+  AIC(lm.model,lm.model1) #check to see if age vs inverse age, which is the better model
+#TEST for an interaction between age and epoch on event duration, which will tell you whether there are age effects that are most prominent in one condition vs the other
+  lm.model <- lm(data = allepochs[], Event_Number ~ inverseAge*epoch) #if significant, means age effects are different across epochs 
+  anova(lm.model)
+lm.model <- lm(data = allepochs[allepochs$epoch=="Delay" | allepochs$epoch=="Rest",], Event_Number ~ inverseAge*epoch) #if significant, means age effects are different across epochs 
+anova(lm.model)
+
+#IF above model is significant, find out where the age effects are. ?are these called simple effects?    
+  lm.model <- lm(data = allepochs[allepochs$epoch=="Delay",], Event_Duration ~ inverseAge) #only trend-level effect of age 
+  lm.model <- lm(data = allepochs[allepochs$epoch=="fix",], Event_Duration ~ inverseAge) #NS effect of age
+  lm.model <- lm(data = allepochs[allepochs$epoch=="Rest",], Event_Duration ~ inverseAge) #most sig age effects in rest 
+  
+  allepochs_wholebraingamma <- allepochs[allepochs$Band == "Gamma" & allepochs$Region == "Whole Brain",]
+  
+  #Bar graph of averages for spectral measures in all three epochs 
+  averageEpochsbyGroup <- aggregate(. ~ Group + epoch, data = allepochs_wholebraingamma[c(4:12,14)], mean, na.rm = T)
+  SDEpochsbyGroup <- aggregate(. ~ Group + epoch, data = allepochs_wholebraingamma[c(4:12,14)], sd, na.rm = T)
+  
+library(plotrix)
+sderror<-std.error(averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",]$Event_Duration_Variability)
+
+YMIN <- averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",]$Event_Duration_Variability-sderror
+
+YMAX <- averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",]$Event_Duration_Variability+sderror
+
+lunaize(ggplot(averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",], aes(x=epoch, y=log1p_Trial_Power_Variability, group = Group, fill=Group, ymin= YMIN, ymax=YMAX )) + geom_col(position = 'dodge') + geom_errorbar(position='dodge'))
+
+
+
+#all 3 epochs
+sderror<-std.error(averageEpochsbyGroup$log1p_Trial_Power)
+
+YMIN <- averageEpochsbyGroup$log1p_Trial_Power-sderror
+
+YMAX <- averageEpochsbyGroup$log1p_Trial_Power+sderror
+
+lunaize(ggplot(averageEpochsbyGroup, aes(x=epoch, y=log1p_Trial_Power, group = Group, fill=Group, ymin= YMIN, ymax=YMAX )) + geom_col(position = 'dodge') + geom_errorbar(position='dodge'))
+
+allepochs_wholebraingamma %>% dplyr::filter(., epoch == c("fix", "Delay") & Group == 1) %>% t.test(log1p_Trial_Power_Variability ~ epoch, data = .)
+
+
+
+
+  #Bar graphs of averages by epoch 
+  averageEpoch <-  aggregate(. ~ epoch, data = allepochs_wholebraingamma[c(4:12,14)], mean, na.rm = T)
+  
+sderror<-std.error(averageEpoch$Event_Duration)
+
+YMIN <- averageEpoch$Event_Duration-sderror
+
+YMAX <- averageEpoch$Event_Duration+sderror
+
+lunaize(ggplot(averageEpoch, aes(x=epoch, y=Event_Duration, group = Group, fill=Group, ymin= YMIN, ymax=YMAX )) + geom_col(position = 'dodge') + geom_errorbar(position='dodge'))
+
+allepochs_wholebraingamma %>% dplyr::filter(., epoch == c("Rest", "fix")) %>% t.test(Event_Number ~ epoch, data = .)
+
+
+```
+
+#### Gamma 
+##### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TP <- (lunaize(ggplot(data = allepochs[], aes(x = age, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm",formula='y~I(1/x)') + ggtitle("") + xlab("") + ylab("") + theme(legend.position = "none")))
+TPV <- (lunaize(ggplot(data = allepochs[], aes(x = age, y = log1p_Trial_Power_Variability, group = epoch, color = epoch)) + stat_smooth(method = "lm",formula='y~I(1/x)') + ggtitle("") + xlab("") + ylab("")+ theme(legend.title = element_blank())))
+EN <- (lunaize(ggplot(data = allepochs[], aes(x = age, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm",formula='y~I(1/x)') + ggtitle("") + xlab("") + ylab("")+ theme(legend.title = element_blank())))
+ENV <- (lunaize(ggplot(data = allepochs[], aes(x = age, y = Event_Number_Variability, group = epoch, color = epoch)) + stat_smooth(method = "lm",formula='y~I(1/x)') + ggtitle("") + xlab("") + ylab("")+ theme(legend.title = element_blank())))
+ED <- (lunaize(ggplot(data = allepochs[], aes(x = age, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm",formula='y~I(1/x)') + ggtitle("") + xlab("") + ylab("")+ theme(legend.title = element_blank())))
+EDV <- (lunaize(ggplot(data = allepochs[], aes(x = age, y = Event_Duration_Variability, group = epoch, color = epoch)) + stat_smooth(method = "lm",formula='y~I(1/x)')+ ggtitle("") + xlab("") + ylab("")+ theme(legend.title = element_blank()) ))
+
+
+cowplot::plot_grid(TP,EN,ED,TPV,ENV,EDV, labels = c('A','B','C','D','E','F'), label_size = 30, rel_widths = c(1,1,1.1))
+
+```
+
+# Frequency Vs Behavior
+## Best Saccade
+### Delay Period
+#### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+
+delayBehavior <- merge(Behavior, delay_alldata_gamma, by = c('Subject', 'age'))
+
+TP <- (lunaize(ggplot(data = delayBehavior[], aes(x = absBestError, y = log1p_Trial_Power)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = delayBehavior[], log1p_Trial_Power ~ absBestError)
+summary(lm.model)
+ 
+  anova <- anova(lm.model)
+  TPpvalue <- anova$`Pr(>F)`[1]
+  
+TPV <- (lunaize(ggplot(data = delayBehavior[], aes(x = absBestError, y = log1p_Trial_Power_Variability)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = delayBehavior[], log1p_Trial_Power_Variability ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  TPVpvalue <- anova$`Pr(>F)`[1]
+  
+EN <- (lunaize(ggplot(data = delayBehavior[], aes(x = absBestError, y = Event_Number)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = delayBehavior[], Event_Number ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  ENpvalue <- anova$`Pr(>F)`[1]
+  
+ENV <- (lunaize(ggplot(data = delayBehavior[], aes(x = absBestError, y = Event_Number_Variability)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = delayBehavior[], Event_Number_Variability ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  ENVpvalue <- anova$`Pr(>F)`[1]
+  
+ED <- (lunaize(ggplot(data = delayBehavior[], aes(x = absBestError, y = Event_Duration)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = delayBehavior[], Event_Duration ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  EDpvalue <- anova$`Pr(>F)`[1]
+
+
+EDV <- (lunaize(ggplot(data = delayBehavior[], aes(x = absBestError, y = Event_Duration_Variability)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = delayBehavior[], Event_Duration_Variability ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  EDVpvalue <- anova$`Pr(>F)`[1]
+  
+cowplot::plot_grid(TP,EN,ED,TPV,ENV,EDV, labels = c('A','B','C','D','E','F'), label_size = 30, rel_widths = c(1,1,1.1))
+
+EEGPvalues <- data.frame(TPpvalue, TPVpvalue, ENpvalue, ENVpvalue, EDpvalue, EDVpvalue)
+
+p.adjust((EEGPvalues), method = "bonferroni")
+
+# plot by age group
+lunaize(ggplot(data = delayBehavior[], aes(x = Event_Duration_Variability, y = absBestError, group = as.factor(Group), color = as.factor(Group))) + geom_point() + stat_smooth(method = "lm", alpha = 0.06) + ggtitle("") + xlab("Event Duration Var") + ylab("Best Saccade") )
+
+lm(absBestError ~ Event_Duration_Variability, data = delayBehavior %>% filter(Group == 1)) %>% anova(.)
+
+```
+
+### Fixation Period
+#### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+
+fixBehavior <- merge(Behavior, fix_alldata_gamma, by = c('Subject', 'age'))
+
+TP <- (lunaize(ggplot(data = fixBehavior[], aes(x = absBestError, y = log1p_Trial_Power)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = fixBehavior[], log1p_Trial_Power ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  TPpvalue <- anova$`Pr(>F)`[1]
+  
+TPV <- (lunaize(ggplot(data = fixBehavior[], aes(x = absBestError, y = log1p_Trial_Power_Variability)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = fixBehavior[], log1p_Trial_Power_Variability ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  TPVpvalue <- anova$`Pr(>F)`[1]
+  
+EN <- (lunaize(ggplot(data = fixBehavior[], aes(x = absBestError, y = Event_Number)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = fixBehavior[], Event_Number ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  ENpvalue <- anova$`Pr(>F)`[1]
+  
+ENV <- (lunaize(ggplot(data = fixBehavior[], aes(x = absBestError, y = Event_Number_Variability)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = fixBehavior[], Event_Number_Variability ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  ENVpvalue <- anova$`Pr(>F)`[1]
+  
+ED <- (lunaize(ggplot(data = fixBehavior[], aes(x = absBestError, y = Event_Duration)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = fixBehavior[], Event_Duration ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  EDpvalue <- anova$`Pr(>F)`[1]
+
+
+EDV <- (lunaize(ggplot(data = fixBehavior[], aes(x = absBestError, y = Event_Duration_Variability)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = fixBehavior[], Event_Duration_Variability ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  EDVpvalue <- anova$`Pr(>F)`[1]
+  
+cowplot::plot_grid(TP,EN,ED,TPV,ENV,EDV, labels = c('A','B','C','D','E','F'), label_size = 30, rel_widths = c(1,1,1.1))
+
+EEGPvalues <- data.frame(TPpvalue, TPVpvalue, ENpvalue, ENVpvalue, EDpvalue, EDVpvalue)
+
+p.adjust((EEGPvalues), method = "bonferroni")
+
+# plot by age group
+lunaize(ggplot(data = fixBehavior[], aes(x = Event_Duration, y = absBestError, group = as.factor(Group), color = as.factor(Group))) + geom_point() + stat_smooth(method = "lm", alpha = 0.06) + ggtitle("") + xlab("Event Duration") + ylab("Best Saccade") )
+
+lm(absBestError ~ Event_Duration, data = fixBehavior %>% filter(Group == 1)) %>% anova(.)
+
+
+```
+
+### Resting State
+#### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+
+restBehavior <- merge(Behavior, rest_alldata_gamma, by = c('Subject', 'age'))
+
+TP <- (lunaize(ggplot(data = restBehavior[], aes(x = absBestError, y = log1p_Trial_Power)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = restBehavior[], log1p_Trial_Power ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  TPpvalue <- anova$`Pr(>F)`[1]
+  
+TPV <- (lunaize(ggplot(data = restBehavior[], aes(x = absBestError, y = log1p_Trial_Power_Variability)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = restBehavior[], log1p_Trial_Power_Variability ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  TPVpvalue <- anova$`Pr(>F)`[1]
+  
+EN <- (lunaize(ggplot(data = restBehavior[], aes(x = absBestError, y = Event_Number)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = restBehavior[], Event_Number ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  ENpvalue <- anova$`Pr(>F)`[1]
+  
+ENV <- (lunaize(ggplot(data = restBehavior[], aes(x = absBestError, y = Event_Number_Variability)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = restBehavior[], Event_Number_Variability ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  ENVpvalue <- anova$`Pr(>F)`[1]
+  
+ED <- (lunaize(ggplot(data = restBehavior[], aes(x = absBestError, y = Event_Duration)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = restBehavior[], Event_Duration ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  EDpvalue <- anova$`Pr(>F)`[1]
+
+
+EDV <- (lunaize(ggplot(data = restBehavior[], aes(x = absBestError, y = Event_Duration_Variability)) + geom_point() + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") ))
+lm.model <- lm(data = restBehavior[], Event_Duration_Variability ~ absBestError)
+ 
+  anova <- anova(lm.model)
+  EDVpvalue <- anova$`Pr(>F)`[1]
+  
+cowplot::plot_grid(TP,EN,ED,TPV,ENV,EDV, labels = c('A','B','C','D','E','F'), label_size = 30, rel_widths = c(1,1,1.1))
+
+EEGPvalues <- data.frame(TPpvalue, TPVpvalue, ENpvalue, ENVpvalue, EDpvalue, EDVpvalue)
+
+p.adjust((EEGPvalues), method = "bonferroni")
+
+#age groups
+lunaize(ggplot(data = restBehavior[], aes(x = Event_Number, y = absBestError, group = as.factor(Group), color = as.factor(Group))) + geom_point() + stat_smooth(method = "lm", alpha = 0.06) + ggtitle("") + xlab("Event Number") + ylab("Best Saccade") )
+
+lm(absBestError ~ Event_Number, data = restBehavior %>% filter(Group == 1)) %>% anova(.)
+
+
+```
+
+## Delay, Fixation, and Rest
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allepochs <- rbind(delay_alldata_gamma, fix_alldata_gamma )
+
+allepochs <- rbind(allepochs, rest_alldata_gamma)
+allepochs <- merge(allepochs, Behavior, by = c("Subject", "age"))
+```
+### Gamma
+#### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TP <- lunaize(ggplot(data = allepochs[], aes(x = absBestError, y = log1p_Trial_Power, group = epoch, color = epoch))  + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") )
+
+TPV <- lunaize(ggplot(data = allepochs[], aes(x = absBestError, y = log1p_Trial_Power_Variability, group = epoch, color = epoch))  + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") )
+
+EN <- lunaize(ggplot(data = allepochs[], aes(x = absBestError, y = Event_Number, group = epoch, color = epoch))  + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") )
+
+ENV <- lunaize(ggplot(data = allepochs[], aes(x = absBestError, y = Event_Number_Variability, group = epoch, color = epoch))  + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") )
+
+ED <- lunaize(ggplot(data = allepochs[], aes(x = absBestError, y = Event_Duration, group = epoch, color = epoch))  + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") )
+
+EDV <- lunaize(ggplot(data = allepochs[], aes(x = absBestError, y = Event_Duration_Variability, group = epoch, color = epoch))  + stat_smooth(method = "lm") + ggtitle("") + xlab("") + ylab("") )
+
+
+cowplot::plot_grid(TP,EN,ED,TPV,ENV,EDV, labels = c('A','B','C','D','E','F'), label_size = 30, rel_widths = c(1,1,1.1))
+
+
+```

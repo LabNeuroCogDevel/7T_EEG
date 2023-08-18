@@ -1,0 +1,1774 @@
+---
+title: "Spectral Events SVR"
+author: "Shane McKeon"
+date: "11/16/2020"
+geometry: margin = 1in
+output:
+  pdf_document:  
+    toc: true
+    toc_depth: 4    
+    fig_caption: yes
+  latex_engine: xelatex
+
+  html_document:
+    df_print: paged
+    code_folding: hide 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev='png', dpi=150, fig.width = 6, fig.height=6, fig.align = 'left', fig.margin = TRUE)
+```
+
+
+```{r load-libraries, message=FALSE}
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(dplyr, ggplot2,lme4, multcomp, tidyr, tidyverse,wesanderson, reshape2, corrplot, ggExtra, cowplot, ggsci, mgcv, ggpointdensity, devtools, ggpubr, itsadug, useful, rmarkdown, tinytex, gratia, gamm4, car, GGally, CCA)
+
+#devtools::install_github('LabneuroCogDevel/LNCDR')
+#library(devtools)
+#devtools::install_github("strengejacke/sjPlot")
+library(LNCDR)
+library(data.table)
+require(dplyr)
+library(factoextra)
+library(tidyverse)
+require(knitr)
+library(ggplot2)
+library(e1071)
+library(caret)
+
+```
+
+```{r  echo=FALSE, message=FALSE, warning=FALSE, cashe = FALSE, include = TRUE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+
+#all data, delay and fix, at the subject level 
+alldf <- Only_Take_One_Delay_Bin_and_Fix()
+alldata <- alldf$alldata
+
+#only delay variables, trial level
+alldf_trialLevel <- Only_Take_One_Delay_Bin_TrialLevel()
+alldata_trialLevel <- alldf_trialLevel$alldata_TrialLevel
+alldata_trialLevel$Task <- "Delay"
+
+alldata_TrialLevel <- alldf_trialLevel$alldata_TrialLevel_new
+
+#only the delay variables at the subject level 
+alldf <- DelayOnly_Sublevel()
+delayOnly_Sublevel <- alldf$alldata_delayOnly
+
+#resting state at the trial level 
+alldf_RS <- Resting_State_Data_TrialLevel()
+alldata_RS <- alldf_RS$alldata_RS_TrialLevel
+alldata_RS$Task <- "Rest"
+
+#resting state at the subject level
+alldf_SubjectLevel_RS <- Resting_State_Data_SubjectLevel()
+alldata_RS_SubLevel <- alldf_SubjectLevel_RS$rest_SubLevel
+alldata_RS_SubLevel$Task <- "Rest"
+alldata_RS_SubLevel <- subset(alldata_RS_SubLevel, select = -Trial)
+
+#merging delay and rest, at the subject level 
+
+delayRest <- merge(delayOnly, alldata_RS_SubLevel[1:30], by = "Subject", suffixes = c("_Delay", "_Rest"))
+delayRest_long <- rbind(delayOnly, alldata_RS_SubLevel)
+
+#merging delay and rest, at the trial level
+names(alldata_trialLevel) <- sub("_Delay","",names(alldata_trialLevel))
+names(alldata_trialLevel) <- sub("_Delay","",names(alldata_trialLevel))
+
+
+delayRest_long_trialLevel <- rbind(alldata_RS, alldata_trialLevel)
+
+```
+
+
+# SVR Predicting Age (Brenden's Method)
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.Support_Vector_Regressions.R")
+```
+
+## Gamma Frequency Band
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+GammaVars <- grep("Gamma|age|visitno",names(alldata),value=TRUE) 
+GammaVars <- GammaVars[!grepl("Trial.x|Trial.y|Trial_Power", GammaVars)]
+
+allGamma <- alldata[,c("Subject", GammaVars)]
+allGamma <- allGamma[complete.cases(allGamma),]
+allGamma <- allGamma[!duplicated(allGamma),]
+
+Gamma_baselineclean <- allGamma[allGamma$visitno < 2,]
+
+GammaSVRage <- SVRfunctionAge(Gamma_baselineclean)
+
+x <- GammaSVRage$plot_env$SVRage$wrapperout$testyval
+y <- GammaSVRage$plot_env$SVRage$wrapperout$cvpred
+
+plotDF <- data.frame(predictedAge = y, actualAge = x)
+
+ggplot(plotDF) + aes(x = actualAge, y = predictedAge) + geom_point() + geom_smooth(method = lm, color="red") + ggtitle("Correlation between Pred and Age: Gamma")
+
+
+
+``` 
+
+
+## Beta Frequency Band 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+BetaVars <- grep("Beta|age|visitno",names(alldata),value=TRUE) 
+BetaVars <- BetaVars[!grepl("Trial.x|Trial.y", BetaVars)]
+
+allBeta <- alldata[,c("Subject",BetaVars)]
+allBeta <- allBeta[complete.cases(allBeta),]
+allBeta <- allBeta[!duplicated(allBeta),]
+
+Beta_baselineclean <- allBeta[allBeta$visitno < 2,]
+BetaSVRage <- SVRfunctionAge(Beta_baselineclean)
+
+
+x <- BetaSVRage$plot_env$SVRage$wrapperout$testyval
+y <- BetaSVRage$plot_env$SVRage$wrapperout$cvpred
+
+plotDF <- data.frame(predictedAge = y, actualAge = x)
+
+ggplot(plotDF) + aes(x = actualAge, y = predictedAge) + geom_point() + geom_smooth(method = lm, color="red") + ggtitle("Correlation between Pred and Age: Beta")
+
+#combineSVRs
+
+```
+
+## Alpha Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+AlphaVars <- grep("Alpha|age|visitno",names(alldata),value=TRUE)
+AlphaVars <- AlphaVars[!grepl("Trial.x|Trial.y", AlphaVars)]
+
+allAlpha <- alldata[,c("Subject",AlphaVars)]
+allAlpha <- allAlpha[complete.cases(allAlpha),]
+allAlpha <- allAlpha[!duplicated(allAlpha),]
+
+Alpha_baselineclean <- allAlpha[allAlpha$visitno < 2,]
+AlphaSVRage <- SVRfunctionAge(Alpha_baselineclean)
+
+
+x <- AlphaSVRage$plot_env$SVRage$wrapperout$testyval
+y <- AlphaSVRage$plot_env$SVRage$wrapperout$cvpred
+
+plotDF <- data.frame(predictedAge = y, actualAge = x)
+
+ggplot(plotDF) + aes(x = actualAge, y = predictedAge) + geom_point() + geom_smooth(method = lm, color="red") + ggtitle("Correlation between Pred and Age: Alpha")
+
+
+```
+
+## Theta Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+ThetaVars <- grep("Theta|age|visitno",names(alldata),value=TRUE) 
+ThetaVars <- ThetaVars[!grepl("Trial.x|Trial.y", ThetaVars)]
+
+allTheta <- alldata[,c("Subject",ThetaVars)]
+allTheta <- allTheta[complete.cases(allTheta),]
+allTheta <- allTheta[!duplicated(allTheta),]
+
+Theta_baselineclean <- allTheta[allTheta$visitno < 2,]
+ThetaSVRage <- SVRfunctionAge(Theta_baselineclean)
+
+x <- ThetaSVRage$plot_env$SVRage$wrapperout$testyval
+y <- ThetaSVRage$plot_env$SVRage$wrapperout$cvpred
+
+plotDF <- data.frame(predictedAge = y, actualAge = x)
+
+ggplot(plotDF) + aes(x = actualAge, y = predictedAge) + geom_point() + geom_smooth(method = lm, color="red") + ggtitle("Correlation between Pred and Age: Theta")
+
+```
+
+## All Frequency Bands Predicting Age
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+ThetaPredictingAge <- ThetaSVRage$plot_env$foldparse$cvcor
+allBandsPredictingAge <- data.frame(ThetaPredictingAge)
+
+allBandsPredictingAge$AlphaPredictingAge <- AlphaSVRage$plot_env$foldparse$cvcor
+allBandsPredictingAge$BetaPredictingAge <- BetaSVRage$plot_env$foldparse$cvcor
+allBandsPredictingAge$GammaPredictingAge <- GammaSVRage$plot_env$foldparse$cvcor
+
+barplot(t(as.matrix(allBandsPredictingAge)), beside = TRUE, main = "Frequency Bands Ability to Predict Age", ylab = "Predictive Measure", names.arg = c("Theta", "Alpha", "Beta", "Gamma"), ylim = c(0, 0.6), col = "gray")
+
+```
+
+## Fixation Variables  
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+FixVars <- grep("Fix|age|visitno",names(alldata),value=TRUE) 
+FixVars <- FixVars[!grepl("Trial.x|Trial.y", FixVars)]
+
+allFix <- alldata[,c("Subject",FixVars)]
+allFix <- allFix[complete.cases(allFix),]
+allFix <- allFix[!duplicated(allFix),]
+
+Fix_baselineclean <- allFix[allFix$visitno < 2,]
+FixSVRage <- SVRfunctionAge(Fix_baselineclean)
+
+x <- FixSVRage$plot_env$SVRage$wrapperout$testyval
+y <- FixSVRage$plot_env$SVRage$wrapperout$cvpred
+
+plotDF <- data.frame(predictedAge = y, actualAge = x)
+
+ggplot(plotDF) + aes(x = actualAge, y = predictedAge) + geom_point() + geom_smooth(method = lm, color="red") + ggtitle("Correlation between Pred and Age: Fixation")
+
+```
+
+## Delay Variables  
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+DelayVars <- grep("Delay|age|visitno",names(alldata),value=TRUE) 
+DelayVars <- DelayVars[!grepl("Trial.x|Trial.y", DelayVars)]
+
+allDelay <- alldata[,c("Subject",DelayVars)]
+allDelay <- allDelay[complete.cases(allDelay),]
+allDelay <- allDelay[!duplicated(allDelay),]
+
+Delay_baselineclean <- allDelay[allDelay$visitno < 2,]
+DelaySVRage <- SVRfunctionAge(Delay_baselineclean)
+
+
+x <- DelaySVRage$plot_env$SVRage$wrapperout$testyval
+y <- DelaySVRage$plot_env$SVRage$wrapperout$cvpred
+
+plotDF <- data.frame(predictedAge = y, actualAge = x)
+
+ggplot(plotDF) + aes(x = actualAge, y = predictedAge) + geom_point() + geom_smooth(method = lm, color="red") + ggtitle("Correlation between Pred and Age: Delay")
+
+```
+
+## Fixation vs. Delay Period 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+DelayPredictingAge <- DelaySVRage$plot_env$foldparse$cvcor
+epochsPredictingAge <- data.frame(DelayPredictingAge)
+
+epochsPredictingAge$FixPredictingAge <- FixSVRage$plot_env$foldparse$cvcor
+
+barplot(t(as.matrix(epochsPredictingAge)), beside = TRUE, main = "Epochs Ability to Predict Age", ylab = "Predictive Measure", names.arg = c("Delay", "Fix"), ylim = c(0, 0.5), col = "gray")
+
+```
+
+# SVR Predicting Inverse Age (Brenden's Method)
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.Support_Vector_Regressions.R")
+```
+
+## Gamma Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+GammaVars <- grep("Gamma|age|inverse|visitno",names(alldata),value=TRUE) 
+GammaVars <- GammaVars[!grepl("Trial.x|Trial.y", GammaVars)]
+
+allGamma <- alldata[,c("Subject",GammaVars)]
+allGamma <- allGamma[complete.cases(allGamma),]
+allGamma <- allGamma[!duplicated(allGamma),]
+
+Gamma_baselineclean <- allGamma[allGamma$visitno < 2,]
+GammaSVRage <- SVRfunctionInverseAge(Gamma_baselineclean)
+
+index <- which(GammaSVRage$plot_env$SVRage$wrapperout$cvpred > 0 & GammaSVRage$plot_env$SVRage$wrapperout$cvpred < 0.1)
+
+PredictedAge <- GammaSVRage$plot_env$SVRage$wrapperout$cvpred[index]
+ActualAge <- GammaSVRage$plot_env$SVRage$wrapperout$testyval[index] 
+
+                                              
+plot(ActualAge, PredictedAge, main = "Correlation between Predicted 1/Age and Actual 1/Age: Fixation Variables", ylab = "Predicted Age", xlab = "Actual Age", pch = 1) + abline(lm(ActualAge ~ PredictedAge), xlim = c(0.03,0.1) , ylim = c(0.03, 0.1), col = "red")
+ # legend('topright', legend = rp, bty = 'n')
+
+plot(GammaSVRage$plot_env$SVRage$wrapperout$testyval, GammaSVRage$plot_env$SVRage$wrapperout$cvpred, main = "Correlation between Predicted 1/Age and Actual 1/Age: Fixation Variables", ylab = "Predicted Age", xlab = "Actual Age", pch = 1) + abline(lm(GammaSVRage$plot_env$SVRage$wrapperout$testyval ~ GammaSVRage$plot_env$SVRage$wrapperout$cvpred), xlim = c(0.03,0.1) , ylim = c(0.03, 0.1), col = "red")
+ # legend('topright', legend = rp, bty = 'n')
+``` 
+
+## Beta Frequency Band 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+BetaVars <- grep("Beta|age|inverse|visitno",names(alldata),value=TRUE) 
+BetaVars <- BetaVars[!grepl("Trial.x|Trial.y", BetaVars)]
+
+allBeta <- alldata[,c("Subject",BetaVars)]
+allBeta <- allBeta[complete.cases(allBeta),]
+allBeta <- allBeta[!duplicated(allBeta),]
+
+Beta_baselineclean <- allBeta[allBeta$visitno < 2,]
+BetaSVRage <- SVRfunctionInverseAge(Beta_baselineclean)
+
+plot(BetaSVRage$plot_env$SVRage$wrapperout$testyval, BetaSVRage$plot_env$SVRage$wrapperout$cvpred, main = "Correlation between Predicted 1/Age and Actual 1/Age: Beta Band", ylab = "Predicted Age", xlab = "Actual Age", xlim = c(.03, .1), ylim = c(.03, .1), pch = 1) + abline(lm(BetaSVRage$plot_env$SVRage$wrapperout$testyval ~ BetaSVRage$plot_env$SVRage$wrapperout$cvpred), col = "red")
+ # legend('topright', legend = rp, bty = 'n')
+```
+
+## Alpha Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+AlphaVars <- grep("Alpha|age|inverse|visitno",names(alldata),value=TRUE) 
+AlphaVars <- AlphaVars[!grepl("Trial.x|Trial.y", AlphaVars)]
+
+allAlpha <- alldata[,c("Subject",AlphaVars)]
+allAlpha <- allAlpha[complete.cases(allAlpha),]
+allAlpha <- allAlpha[!duplicated(allAlpha),]
+
+Alpha_baselineclean <- allAlpha[allAlpha$visitno < 2,]
+AlphaSVRage <- SVRfunctionInverseAge(Alpha_baselineclean)
+
+plot(AlphaSVRage$plot_env$SVRage$wrapperout$testyval, AlphaSVRage$plot_env$SVRage$wrapperout$cvpred, main = "Correlation between Predicted 1/Age and Actual 1/Age: Alpha Band", ylab = "Predicted Age", xlab = "Actual Age", xlim = c(.03, .1), ylim = c(.03, .1), pch = 1) + abline(lm(AlphaSVRage$plot_env$SVRage$wrapperout$testyval ~ AlphaSVRage$plot_env$SVRage$wrapperout$cvpred), col = "red")
+ # legend('topright', legend = rp, bty = 'n')
+```
+
+## Theta Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+ThetaVars <- grep("Theta|age|inverse|visitno",names(alldata),value=TRUE) 
+ThetaVars <- ThetaVars[!grepl("Trial.x|Trial.y", ThetaVars)]
+
+allTheta <- alldata[,c("Subject",ThetaVars)]
+allTheta <- allTheta[complete.cases(allTheta),]
+allTheta <- allTheta[!duplicated(allTheta),]
+
+Theta_baselineclean <- allTheta[allTheta$visitno < 2,]
+ThetaSVRage <- SVRfunctionInverseAge(Theta_baselineclean)
+
+plot(ThetaSVRage$plot_env$SVRage$wrapperout$testyval, ThetaSVRage$plot_env$SVRage$wrapperout$cvpred, main = "Correlation between Predicted 1/Age and Actual 1/Age: Theta Band", ylab = "Predicted Age", xlab = "Actual Age", xlim = c(.03, .1), ylim = c(.03, .1), pch = 1) + abline(lm(ThetaSVRage$plot_env$SVRage$wrapperout$testyval ~ ThetaSVRage$plot_env$SVRage$wrapperout$cvpred), col = "red")
+ # legend('topright', legend = rp, bty = 'n')
+```
+
+## All Frequency Bands Predicting Inverse Age
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+ThetaPredictingAge <- ThetaSVRage$plot_env$foldparse$cvcor
+allBandsPredictingAge <- data.frame(ThetaPredictingAge)
+
+allBandsPredictingAge$AlphaPredictingAge <- AlphaSVRage$plot_env$foldparse$cvcor
+allBandsPredictingAge$BetaPredictingAge <- BetaSVRage$plot_env$foldparse$cvcor
+allBandsPredictingAge$GammaPredictingAge <- GammaSVRage$plot_env$foldparse$cvcor
+
+barplot(t(as.matrix(allBandsPredictingAge)), beside = TRUE, main = "Frequency Bands Ability to Predict Inverse Age", ylab = "Predictive Measure", names.arg = c("Theta", "Alpha", "Beta", "Gamma"), ylim = c(0, 0.6), col = "gray")
+
+```
+## Fixation Variables  
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+FixVars <- grep("Fix|age|inverse|visitno",names(alldata),value=TRUE) 
+FixVars <- FixVars[!grepl("Trial.x|Trial.y", FixVars)]
+
+allFix <- alldata[,c("Subject",FixVars)]
+allFix <- allFix[complete.cases(allFix),]
+allFix <- allFix[!duplicated(allFix),]
+
+Fix_baselineclean <- allFix[allFix$visitno < 2,]
+FixSVRinverseAge <- SVRfunctionInverseAge(Fix_baselineclean)
+
+plot(FixSVRinverseAge$plot_env$SVRage$wrapperout$testyval, FixSVRinverseAge$plot_env$SVRage$wrapperout$cvpred, main = "Correlation between Predicted 1/Age and Actual 1/Age: Fixation Variables", ylab = "Predicted Age", xlab = "Actual Age", xlim = c(.03, .1), ylim = c(.03, .1), pch = 1) + abline(lm(FixSVRinverseAge$plot_env$SVRage$wrapperout$testyval ~ FixSVRinverseAge$plot_env$SVRage$wrapperout$cvpred), col = "red")
+ # legend('topright', legend = rp, bty = 'n')
+
+```
+
+## Delay Variables  
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+DelayVars <- grep("Delay|age|inverse|visitno",names(alldata),value=TRUE) 
+DelayVars <- DelayVars[!grepl("Trial.x|Trial.y", DelayVars)]
+
+allDelay <- alldata[,c("Subject",DelayVars)]
+allDelay <- allDelay[complete.cases(allDelay),]
+allDelay <- allDelay[!duplicated(allDelay),]
+
+Delay_baselineclean <- allDelay[allDelay$visitno <2,]
+DelaySVRinverseAge <- SVRfunctionInverseAge(Delay_baselineclean)
+
+plot(DelaySVRinverseAge$plot_env$SVRage$wrapperout$testyval, DelaySVRinverseAge$plot_env$SVRage$wrapperout$cvpred, main = "Correlation between Predicted 1/Age and Actual 1/Age: Delay Variables", ylab = "Predicted Age", xlab = "Actual Age", xlim = c(.03, .1), ylim = c(.03, .1), pch = 1) + abline(lm(DelaySVRinverseAge$plot_env$SVRage$wrapperout$testyval ~ DelaySVRinverseAge$plot_env$SVRage$wrapperout$cvpred), col = "red")
+ # legend('topright', legend = rp, bty = 'n')
+```
+
+## Fixation vs. Delay Period 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+DelayPredictingAge <- DelaySVRinverseAge$plot_env$foldparse$cvcor
+epochsPredictingAge <- data.frame(DelayPredictingAge)
+
+epochsPredictingAge$FixPredictingAge <- FixSVRinverseAge$plot_env$foldparse$cvcor
+
+barplot(t(as.matrix(epochsPredictingAge)), beside = TRUE, main = "Epochs Ability to Predict  Inverse Age", ylab = "Predictive Measure", names.arg = c("Delay", "Fix"), ylim = c(0, 0.5), col = "gray")
+
+```
+
+
+
+# SVR Predicting Age (Caret Package Method)
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all', include = FALSE}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/10.MachineLearning.R")
+```
+## Gamma Frequency Band
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+GammaVars <- grep("Gamma|age",names(delayOnly_Sublevel),value=TRUE) 
+GammaVars <- GammaVars[!grepl("a.Trial_Power", GammaVars)]
+
+allGamma <- subset(delayOnly_Sublevel,select = c(GammaVars))
+#allGamma <- allGamma[complete.cases(allGamma),]
+#allGamma <- allGamma[!duplicated(allGamma),]
+
+Gamma_baselineclean <- allGamma[1:7]
+
+svm1 <- linearSVRmodel(Gamma_baselineclean)
+
+bothModels <- list(linear = svm1)
+agePredicted <- extractPrediction(bothModels, testX = Gamma_baselineclean[7])
+
+lmFormula <- lm(pred~obs, data = agePredicted)
+summary(lmFormula)
+
+lm_eqn <- function(agePredicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(agePredicted, lmFormula)
+
+ggplot(data = agePredicted, aes(x = obs, y = pred)) + geom_point() + xlim(10,32) + ylim(10, 32) + geom_smooth(method = "lm") + annotate("text", x = 15, y = 32, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Ages: Gamma Band")
+  
+plot(varImp(svm1, useModel = FALSE, nonpara = FALSE))
+
+gammaR2 <- svm1[["results"]][["Rsquared"]]
+gammaRMSE <- svm1[["results"]][["RMSE"]]
+  
+
+``` 
+
+## Beta Frequency Band 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+BetaVars <- grep("Beta|age|visitno",names(delayOnly_Sublevel),value=TRUE) 
+BetaVars <- BetaVars[!grepl("a.Trial_Power", BetaVars)]
+
+allBeta <- subset(delayOnly_Sublevel,select = c(BetaVars))
+
+
+Beta_baselineclean <- allBeta[1:7]
+
+svm1 <- linearSVRmodel(Beta_baselineclean)
+
+bothModels <- list(linear = svm1)
+agePredicted <- extractPrediction(bothModels, testX = Beta_baselineclean[7])
+  
+lmFormula <- lm(pred~obs, data = agePredicted)
+summary(lmFormula)
+
+lm_eqn <- function(agePredicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(agePredicted, lmFormula)
+
+ggplot(data = agePredicted, aes(x = obs, y = pred)) + geom_point() + xlim(10,32) + ylim(10, 32) + geom_smooth(method = "lm") + annotate("text", x = 15, y = 32, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Ages: Beta Band")
+
+plot(varImp(svm1, useModel = FALSE, nonpara = FALSE))
+
+betaR2 <- svm1[["results"]][["Rsquared"]]
+betaRMSE <- svm1[["results"]][["RMSE"]]
+
+
+```
+
+## Alpha Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+AlphaVars <- grep("Alpha|age|visitno",names(delayOnly_Sublevel),value=TRUE)
+AlphaVars <- AlphaVars[!grepl("a.Trial_Power", AlphaVars)]
+
+allAlpha <- subset(delayOnly_Sublevel,select = c(AlphaVars))
+
+Alpha_baselineclean <- allAlpha[1:7]
+
+svm1 <- linearSVRmodel(Alpha_baselineclean)
+
+bothModels <- list(linear = svm1)
+agePredicted <- extractPrediction(bothModels, testX = Alpha_baselineclean[7])
+  
+lmFormula <- lm(pred~obs, data = agePredicted)
+summary(lmFormula)
+
+lm_eqn <- function(agePredicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(agePredicted, lmFormula)
+
+ggplot(data = agePredicted, aes(x = obs, y = pred)) + geom_point() + xlim(10,32) + ylim(10, 32) + geom_smooth(method = "lm") + annotate("text", x = 15, y = 32, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Ages: Alpha Band")
+
+plot(varImp(svm1, useModel = FALSE, nonpara = FALSE))
+
+
+alphaR2 <- svm1[["results"]][["Rsquared"]]
+alphaRMSE <- svm1[["results"]][["RMSE"]]
+
+
+```
+
+## Theta Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+ThetaVars <- grep("Theta|age|visitno",names(delayOnly_Sublevel),value=TRUE) 
+ThetaVars <- ThetaVars[!grepl("a.Trial_Power", ThetaVars)]
+
+allTheta <- subset(delayOnly_Sublevel,select = c(ThetaVars))
+
+Theta_baselineclean <- allTheta[1:7]
+
+svm1 <- linearSVRmodel(Theta_baselineclean)
+
+bothModels <- list(linear = svm1)
+agePredicted <- extractPrediction(bothModels, testX = Theta_baselineclean[7])
+  
+lmFormula <- lm(pred~obs, data = agePredicted)
+summary(lmFormula)
+
+lm_eqn <- function(agePredicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(agePredicted, lmFormula)
+
+ggplot(data = agePredicted, aes(x = obs, y = pred)) + geom_point() + xlim(10,32) + ylim(10, 32) + geom_smooth(method = "lm") + annotate("text", x = 15, y = 32, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Ages: Theta Band")
+
+plot(varImp(svm1, useModel = FALSE, nonpara = FALSE))
+
+
+thetaR2 <- svm1[["results"]][["Rsquared"]]
+thetaRMSE <- svm1[["results"]][["RMSE"]]
+
+
+```
+
+## All Frequency Bands Predicting Age
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+ThetaPredictingAge <- thetaR2
+allBandsPredictingAge <- data.frame(ThetaPredictingAge)
+
+allBandsPredictingAge$AlphaPredictingAge <- alphaR2
+allBandsPredictingAge$BetaPredictingAge <- betaR2
+allBandsPredictingAge$GammaPredictingAge <- gammaR2
+
+barplot(t(as.matrix(allBandsPredictingAge)), beside = TRUE, main = "Frequency Bands Ability to Predict Age", ylab = "R-Squared", names.arg = c("Theta", "Alpha", "Beta", "Gamma"), ylim = c(0, .3), col = "gray")
+
+ThetaPredictingAgeRMSE <- thetaRMSE
+allBandsPredictingAgeRMSE <- data.frame(ThetaPredictingAgeRMSE)
+
+allBandsPredictingAgeRMSE$AlphaPredictingAgeRMSE <- alphaRMSE
+allBandsPredictingAgeRMSE$BetaPredictingAgeRMSE <- betaRMSE
+allBandsPredictingAgeRMSE$GammaPredictingAgeRMSE <- gammaRMSE
+
+barplot(t(as.matrix(allBandsPredictingAge)), beside = TRUE, main = "Frequency Bands Ability to Predict Age", ylab = "RMSE", names.arg = c("Theta", "Alpha", "Beta", "Gamma"), ylim = c(0, .3), col = "gray")
+
+```
+
+## Fixation Variables  
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+FixVars <- grep("Fix|age|visitno",names(alldata),value=TRUE) 
+FixVars <- FixVars[!grepl("Trial.x|Trial.y|Trial_Power", FixVars)]
+
+allFix <- alldata[,FixVars]
+allFix <- allFix[complete.cases(allFix),]
+allFix <- allFix[!duplicated(allFix),]
+
+Fix_baselineclean <- allFix[allFix$visitno < 2,]
+Fix_baselineclean <- Fix_baselineclean[1:37]
+
+svm1 <- linearSVRmodel(Fix_baselineclean)
+
+bothModels <- list(linear = svm1)
+agePredicted <- extractPrediction(bothModels, testX = Fix_baselineclean[37])
+  
+lmFormula <- lm(pred~obs, data = agePredicted)
+summary(lmFormula)
+
+lm_eqn <- function(agePredicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(agePredicted, lmFormula)
+
+ggplot(data = agePredicted, aes(x = obs, y = pred)) + geom_point() + xlim(10,32) + ylim(10, 32) + geom_smooth(method = "lm") + annotate("text", x = 15, y = 32, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Ages: Fixation")
+
+plot(varImp(svm1, useModel = FALSE, nonpara = FALSE))
+
+
+fixR2 <- svm1[["results"]][["Rsquared"]]
+fixRMSE <- svm1[["results"]][["RMSE"]]
+
+```
+
+## Delay Variables  
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+allDelay <- alldata_TrialLevel[complete.cases(alldata_TrialLevel),]
+allDelay <- allDelay[!duplicated(allDelay),]
+
+Delay_baselineclean <- allDelay[allDelay$visitno < 2,]
+Delay_baselineclean <- Delay_baselineclean[c(3:18)]
+
+
+
+svm1 <- linearSVRmodel(Delay_baselineclean)
+
+xvariable = Delay_baselineclean[18]
+
+bothModels <- list(linear = svm1)
+agePredicted <- extractPrediction(bothModels, testX = xvariable)
+  
+lmFormula <- lm(pred~obs, data = agePredicted)
+summary(lmFormula)
+
+lm_eqn <- function(agePredicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(agePredicted, lmFormula)
+
+ggplot(data = agePredicted, aes(x = obs, y = pred)) + geom_point() + xlim(10,32) + ylim(10, 32) + geom_smooth(method = "lm") + annotate("text", x = 15, y = 32, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Ages: Delay")
+
+plot(varImp(svm1, useModel = T, nonpara = FALSE))
+
+
+delayR2 <- svm1[["results"]][["Rsquared"]]
+delayRMSE <- svm1[["results"]][["RMSE"]]
+
+```
+
+## Fixation vs. Delay Period 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+DelayPredictingAge <- delayR2
+epochsPredictingAge <- data.frame(DelayPredictingAge)
+
+epochsPredictingAge$FixPredictingAge <- fixR2
+
+barplot(t(as.matrix(epochsPredictingAge)), beside = TRUE, main = "Epochs Ability to Predict Age", ylab = "R-Squared", names.arg = c("Delay", "Fix"), ylim = c(0, 0.4), col = "gray")
+
+DelayPredictingAgeRMSE <- delayRMSE
+epochsPredictingAgeRMSE <- data.frame(DelayPredictingAgeRMSE)
+
+epochsPredictingAgeRMSE$FixPredictingAgeRMSE <- fixRMSE
+
+barplot(t(as.matrix(epochsPredictingAgeRMSE)), beside = TRUE, main = "Epochs Ability to Predict Age", ylab = "RMSE", names.arg = c("Delay", "Fix"), ylim = c(0, 50), col = "gray")
+
+
+```
+
+## All Variables 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+allVars <- grep("Delay|age|visitno|Fix",names(alldata),value=TRUE) 
+allVars <- allVars[!grepl("Trial.x|Trial.y|Trial_Power", allVars)]
+
+allVariables <- alldata[,allVars]
+allVariables <- allVariables[complete.cases(allVariables),]
+allVariables <- allVariables[!duplicated(allVariables),]
+
+all_baselineclean <- allVariables[allVariables$visitno < 2,]
+
+
+all_baselineclean <- all_baselineclean[1:77]
+
+svm1 <- linearSVRmodel(all_baselineclean)
+
+bothModels <- list(linear = svm1)
+agePredicted <- extractPrediction(bothModels, testX = all_baselineclean[77])
+  
+lmFormula <- lm(pred~obs, data = agePredicted)
+summary(lmFormula)
+
+lm_eqn <- function(agePredicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(agePredicted, lmFormula)
+
+ggplot(data = agePredicted, aes(x = obs, y = pred)) + geom_point() + xlim(10,32) + ylim(10, 32) + geom_smooth(method = "lm") + annotate("text", x = 15, y = 32, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Ages: all variables")
+
+plot(varImp(svm1, useModel = FALSE, nonpara = FALSE))
+
+
+
+```
+
+
+
+## Resting State 
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+RestVars <- grep("Alpha|Gamma|Theta|Beta|Rest|age|visitno",names(alldata_RS_SubLevel),value=TRUE) 
+#RestVars <- RestVars[!grepl("Trial.x|Trial.y|Trial_Power", RestVars)]
+
+allRest <- alldata_RS_SubLevel[,RestVars]
+allRest <- allRest[complete.cases(allRest),]
+allRest <- allRest[!duplicated(allRest),]
+
+Rest_baselineclean <- allRest[allRest$visitno < 2,]
+Rest_baselineclean <- Rest_baselineclean[1:29]
+
+svm1 <- linearSVRmodel(Rest_baselineclean)
+
+bothModels <- list(linear = svm1)
+agePredicted <- extractPrediction(bothModels, testX = Rest_baselineclean[29])
+  
+lmFormula <- lm(pred~obs, data = agePredicted)
+summary(lmFormula)
+
+lm_eqn <- function(agePredicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(agePredicted, lmFormula)
+
+ggplot(data = agePredicted, aes(x = obs, y = pred)) + geom_point() + xlim(10,32) + ylim(10, 32) + geom_smooth(method = "lm") + annotate("text", x = 15, y = 32, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Ages: Rest")
+
+plot(varImp(svm1, useModel = FALSE, nonpara = FALSE))
+
+
+RestR2 <- svm1[["results"]][["Rsquared"]]
+RestRMSE <- svm1[["results"]][["RMSE"]]
+
+```
+
+
+
+## Resting State and Delay Period 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+delayRestVars <- grep("Number|Duration|log|Rest|age|visitno|Group",names(delayRest),value=TRUE) 
+delayRestVars <- delayRestVars[!grepl("Peak", delayRestVars)]
+
+delayRestVars <- delayRestVars[!grepl("Trial.x|Trial.y|Fix|delayRest|idvalues|a.Trial_Power|Variability_Rest", delayRestVars)]
+
+allDelayRest <- delayRest[,delayRestVars]
+allDelayRest <- allDelayRest[complete.cases(allDelayRest),]
+allDelayRest <- allDelayRest[!duplicated(allDelayRest),]
+
+delayRest_baselineclean <- allDelayRest[allDelayRest$visitno < 2,]
+
+delayRestVars <- delayRestVars[!grepl("visitno", delayRestVars)]
+
+delayRest_baselineclean <- delayRest_baselineclean[, delayRestVars]
+
+res <- cor(delayRest_baselineclean[c(1:24,26:37)])
+ageRemoved <- delayRest_baselineclean[c(1:24,26:37)]
+indx <- findCorrelation(res, cutoff = 0.9, exact = T, names = F)
+newMatrix <- ageRemoved[-c(indx)]
+agefile <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/agefile.csv')
+agefile$Subject <- agefile$idvalues
+
+newMatrix <- cbind(newMatrix, delayRest_baselineclean[25])
+
+svm1 <- linearSVRmodel(newMatrix)
+
+bothModels <- list(linear = svm1)
+agePredicted <- extractPrediction(bothModels, testX = delayRest_baselineclean[25])
+  
+lmFormula <- lm(pred~obs, data = agePredicted)
+summary(lmFormula)
+
+lm_eqn <- function(agePredicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(agePredicted, lmFormula)
+
+ggplot(data = agePredicted, aes(x = obs, y = pred)) + geom_point() + xlim(10,32) + ylim(10, 32) + geom_smooth(method = "lm") + annotate("text", x = 15, y = 32, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Ages: Rest and Delay")
+
+plot(varImp(svm1, useModel = T, nonpara = FALSE, scale = F), main = "Age")
+
+
+RestR2 <- svm1[["results"]][["Rsquared"]]
+RestRMSE <- svm1[["results"]][["RMSE"]]
+
+
+
+# Take the log of all the variables and run the SVR on that 
+log_newMatix <- log(newMatrix)
+log_newMatix <- cbind(log_newMatix, delayRest_baselineclean[25])
+
+svm1 <- linearSVRmodel(log_newMatix)
+
+bothModels <- list(linear = svm1)
+agePredicted <- extractPrediction(bothModels, testX = delayRest_baselineclean[25])
+  
+lmFormula <- lm(pred~obs, data = agePredicted)
+summary(lmFormula)
+
+lm_eqn <- function(agePredicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(agePredicted, lmFormula)
+
+ggplot(data = agePredicted, aes(x = obs, y = pred)) + geom_point() + xlim(10,32) + ylim(10, 32) + geom_smooth(method = "lm") + annotate("text", x = 15, y = 32, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Ages: Rest and Delay")
+
+plot(varImp(svm1, useModel = T, nonpara = FALSE, scale = F), main = "Age")
+
+```
+
+
+## Resting State and Delay Period Age Groups
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+delayRestVars <- grep("Number|Duration|log|Rest|age|visitno|Group",names(delayRest),value=TRUE) 
+delayRestVars <- delayRestVars[!grepl("Peak", delayRestVars)]
+
+delayRestVars <- delayRestVars[!grepl("Trial.x|Trial.y|Fix|delayRest|idvalues|a.Trial_Power|Variability_Rest", delayRestVars)]
+
+allDelayRest <- delayRest[,delayRestVars]
+allDelayRest <- allDelayRest[complete.cases(allDelayRest),]
+allDelayRest <- allDelayRest[!duplicated(allDelayRest),]
+
+delayRest_baselineclean <- allDelayRest[allDelayRest$visitno < 2 & allDelayRest$Group == 4,]
+
+delayRestVars <- delayRestVars[!grepl("visitno|Group", delayRestVars)]
+
+delayRest_baselineclean <- delayRest_baselineclean[, delayRestVars]
+
+res <- cor(delayRest_baselineclean[c(1:24,26:37)])
+ageRemoved <- delayRest_baselineclean[c(1:24,26:37)]
+indx <- findCorrelation(res, cutoff = 0.9, exact = T, names = F)
+newMatrix <- ageRemoved[-c(indx)]
+agefile <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/agefile.csv')
+agefile$Subject <- agefile$idvalues
+
+newMatrix <- cbind(newMatrix, delayRest_baselineclean[25])
+
+svm1 <- linearSVRmodel(newMatrix)
+
+bothModels <- list(linear = svm1)
+agePredicted <- extractPrediction(bothModels, testX = delayRest_baselineclean[25])
+  
+lmFormula <- lm(pred~obs, data = agePredicted)
+summary(lmFormula)
+
+lm_eqn <- function(agePredicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(agePredicted, lmFormula)
+
+ggplot(data = agePredicted, aes(x = obs, y = pred)) + geom_point() + xlim(10,32) + ylim(10, 32) + geom_smooth(method = "lm") + annotate("text", x = 15, y = 32, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Ages: Rest and Delay")
+
+plot(varImp(svm1, useModel = T, nonpara = FALSE, scale = F), main = "Age")
+
+
+RestR2 <- svm1[["results"]][["Rsquared"]]
+RestRMSE <- svm1[["results"]][["RMSE"]]
+
+
+
+# Take the log of all the variables and run the SVR on that 
+log_newMatix <- log(newMatrix)
+log_newMatix <- cbind(log_newMatix, delayRest_baselineclean[25])
+
+svm1 <- linearSVRmodel(log_newMatix)
+
+bothModels <- list(linear = svm1)
+agePredicted <- extractPrediction(bothModels, testX = delayRest_baselineclean[25])
+  
+lmFormula <- lm(pred~obs, data = agePredicted)
+summary(lmFormula)
+
+lm_eqn <- function(agePredicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(agePredicted, lmFormula)
+
+ggplot(data = agePredicted, aes(x = obs, y = pred)) + geom_point() + xlim(10,32) + ylim(10, 32) + geom_smooth(method = "lm") + annotate("text", x = 15, y = 32, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Ages: Rest and Delay")
+
+plot(varImp(svm1, useModel = T, nonpara = FALSE, scale = F), main = "Age")
+
+```
+
+
+
+# SVR Predicting Position Error (Caret Package Method)
+## Delay Variables  
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/10.MachineLearning.R")
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+
+subjectBehavior_new <- Behavior_SubLevel()
+alldf <- DelayOnly_Sublevel()
+delayOnly_Sublevel <- alldf$alldata_delayOnly
+
+alldata_behavior <- merge(delayOnly_Sublevel[c(1,3:35)], subjectBehavior_new, by = "Subject")
+
+DelayVars <- grep("Alpha|Beta|Gamma|Theta|age|visitno|absPositionError|mgsLatency",names(alldata_behavior),value=TRUE) 
+DelayVars <- DelayVars[!grepl("visitno|age|mgsLatency|absPositionError_sd|Peak|a.Trial_Power", DelayVars)]
+
+allDelay <- subset(alldata_behavior, select = c('Subject',DelayVars))
+
+# Remove outlier subjects 
+allDelay_excludeOutliers <- allDelay[complete.cases(allDelay),]
+
+
+res <- cor(allDelay_excludeOutliers[c(2:25)])
+PEremoved <- allDelay_excludeOutliers[c(2:25)]
+indx <- findCorrelation(res, cutoff = 0.9, exact = T, names = T)
+newMatrix <- PEremoved[-c(indx)]
+newMatrix <- cbind(newMatrix, allDelay_excludeOutliers[26])
+
+svm1 <- linearSVRmodel_PE(newMatrix)
+
+bothModels <- list(linear = svm1)
+PE_Predicted <- extractPrediction(bothModels, testX = newMatrix[15])
+  
+lmFormula <- lm(pred~obs, data = PE_Predicted)
+summary(lmFormula)
+
+lm_eqn <- function(PE_Predicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(PE_Predicted, lmFormula)
+
+ggplot(data = PE_Predicted, aes(x = obs, y = pred)) + geom_point() + geom_smooth(method = "lm") + annotate("text", x = 3, y = 6.5, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Position Error: Delay")
+
+plot(varImp(svm1, useModel = T, nonpara = FALSE, scale = F), main = "Accuracy: Delay Only")
+
+
+delayR2 <- svm1[["results"]][["Rsquared"]]
+delayRMSE <- svm1[["results"]][["RMSE"]]
+
+```
+
+
+
+
+## Delay Variables, Only one Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+subjectBehavior_new <- Behavior_SubLevel()
+alldf <- DelayOnly_Sublevel()
+delayOnly_Sublevel <- alldf$alldata_delayOnly
+
+alldata_behavior <- merge(delayOnly_Sublevel[c(1,3:35)], subjectBehavior_new, by = "Subject")
+
+DelayVars <- grep("Theta|age|visitno|absPositionError|mgsLatency",names(alldata_behavior),value=TRUE) 
+DelayVars <- DelayVars[!grepl("visitno|age|mgsLatency|absPositionError_sd|Peak|a.Trial_Power", DelayVars)]
+
+allDelay <- subset(alldata_behavior, select = c('Subject',DelayVars))
+
+allDelay_excludeOutliers <- allDelay[complete.cases(allDelay),]
+
+
+allDelay <- subset(allDelay_excludeOutliers, select = DelayVars)
+
+res <- cor(allDelay[c(1:6)])
+PEremoved <- allDelay[c(1:6)]
+indx <- findCorrelation(res, cutoff = 0.9, exact = T, names = T)
+newMatrix <- PEremoved[-c(indx)]
+newMatrix <- cbind(newMatrix, allDelay[7])
+
+svm1 <- linearSVRmodel_PE(newMatrix)
+
+bothModels <- list(linear = svm1)
+PE_Predicted <- extractPrediction(bothModels, testX = allDelay[7])
+  
+lmFormula <- lm(pred~obs, data = PE_Predicted)
+summary(lmFormula)
+
+lm_eqn <- function(PE_Predicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(PE_Predicted, lmFormula)
+
+ggplot(data = PE_Predicted, aes(x = obs, y = pred)) + geom_point() + geom_smooth(method = "lm") + annotate("text", x = 3, y = 4.3, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Position Error: Delay Theta Only")
+
+plot(varImp(svm1, useModel = T, nonpara = FALSE, scale = F), main = "Accuracy: Delay Theta Only")
+
+
+GammaR2 = summary(lmFormula)$r.squared
+BetaR2 = summary(lmFormula)$r.squared
+ThetaR2 = summary(lmFormula)$r.squared
+AlphaR2 = summary(lmFormula)$r.squared
+
+R2values <- (data.frame(GammaR2,BetaR2,ThetaR2,AlphaR2))
+
+barplot(t(as.matrix(R2values)), beside = TRUE, main = "Frequency Bands Ability to Predict Accuracy", ylab = "r^2 Value", names.arg = c("Gamma", "Beta", "Theta", "Alpha"), ylim = c(0, 0.08), col = "gray")
+
+```
+
+
+
+## Resting State Variables  
+```{r echo=FALSE, fig.keep='all', message=FALSE, warning=FALSE, results='hide'}
+
+Behavior <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Behavior_20200921.csv')
+
+Behavior$Subject <- paste0(Behavior$LunaID, '_', Behavior$ScanDate) #behavioral data contains each trial 
+avgBehavior <- aggregate(.~Subject, data = Behavior, mean)
+sdBehavior <- aggregate(.~Subject, data = Behavior, sd)
+avgBehavior$absPositionError <- abs(avgBehavior$PositionError)
+allBehavior <- merge(avgBehavior, sdBehavior, by = "Subject", suffix = c("", "_sd"))
+allBehavior$absPositionError_sd <- abs(allBehavior$PositionError_sd)
+
+alldata_RS_behavior <- merge(alldata_RS_SubLevel, allBehavior, by = "Subject")
+
+RestVars <- grep("Gamma|Alpha|Beta|Theta|age|visitno|absPositionError|mgsLatency",names(alldata_RS_behavior),value=TRUE) 
+RestVars <- RestVars[!grepl("Trial.x|Trial.y|Trial_Power", RestVars)]
+
+
+allRest <- alldata_RS_behavior[,RestVars]
+allRest <- allRest[complete.cases(allRest),]
+allRest <- allRest[!duplicated(allRest),]
+
+Rest_baselineclean <- allRest[allRest$visitno < 2,]
+
+RestVars <- RestVars[!grepl("visitno|age|mgsLatency|absPositionError_sd|Peak", RestVars)]
+
+Rest_baselineclean <- Rest_baselineclean[, RestVars]
+
+svm1 <- linearSVRmodel_PE(Rest_baselineclean)
+
+bothModels <- list(linear = svm1)
+PE_Predicted <- extractPrediction(bothModels, testX = Rest_baselineclean[17])
+  
+lmFormula <- lm(pred~obs, data = PE_Predicted)
+summary(lmFormula)
+
+lm_eqn <- function(PE_Predicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(PE_Predicted, lmFormula)
+
+ggplot(data = PE_Predicted, aes(x = obs, y = pred)) + geom_point() + geom_smooth(method = "lm") + annotate("text", x = 1.5, y = 2, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Position Error: Delay")
+
+plot(varImp(svm1, useModel = FALSE, nonpara = FALSE))
+
+
+delayR2 <- svm1[["results"]][["Rsquared"]]
+delayRMSE <- svm1[["results"]][["RMSE"]]
+
+```
+
+## Resting State and Delay Period 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+Behavior <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Behavior_20200921.csv')
+
+Behavior$Subject <- paste0(Behavior$LunaID, '_', Behavior$ScanDate) #behavioral data contains each trial 
+avgBehavior <- aggregate(.~Subject, data = Behavior, mean)
+sdBehavior <- aggregate(.~Subject, data = Behavior, sd)
+avgBehavior$absPositionError <- abs(avgBehavior$PositionError)
+allBehavior <- merge(avgBehavior, sdBehavior, by = "Subject", suffix = c("", "_sd"))
+allBehavior$absPositionError_sd <- abs(allBehavior$PositionError_sd)
+
+delayRest_behavior <- merge(delayRest, allBehavior, by = "Subject")
+
+delayRestVars <- grep("Gamma|Alpha|Beta|Theta|age|visitno|absPositionError",names(delayRest_behavior),value=TRUE) 
+delayRestVars <- delayRestVars[!grepl("Peak|a.Trial_Power|absPositionError_sd|Variability_Rest", delayRestVars)]
+
+allDelayRest <- delayRest_behavior[,delayRestVars]
+allDelayRest <- allDelayRest[complete.cases(allDelayRest),]
+allDelayRest <- allDelayRest[!duplicated(allDelayRest),]
+
+delayRest_baselineclean <- allDelayRest[allDelayRest$visitno < 2,]
+
+delayRestVars <- delayRestVars[!grepl("visitno", delayRestVars)]
+
+delayRest_baselineclean <- delayRest_baselineclean[, delayRestVars]
+#delayRest_baselineclean$inverseAge <- 1/delayRest_baselineclean$age
+
+
+res <- cor(delayRest_baselineclean[c(1:37)])
+PEremoved <- delayRest_baselineclean[c(1:37)]
+indx <- findCorrelation(res, cutoff = 0.9, exact = T, names = F)
+newMatrix <- PEremoved[-c(indx)]
+newMatrix <- cbind(newMatrix, delayRest_baselineclean[38])
+
+svm1 <- linearSVRmodel_PE(newMatrix)
+
+bothModels <- list(linear = svm1)
+PE_Predicted <- extractPrediction(bothModels, testX = delayRest_baselineclean[38])
+  
+lmFormula <- lm(pred~obs, data = PE_Predicted)
+summary(lmFormula)
+
+lm_eqn <- function(PE_Predicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(PE_Predicted, lmFormula)
+
+ggplot(data = PE_Predicted, aes(x = obs, y = pred)) + geom_point()  + geom_smooth(method = "lm") + annotate("text", x = 1, y = 4, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Accuracy: Rest and Delay")
+
+plot(varImp(svm1, useModel = F, nonpara = F, scale = F), main = "Accuracy")
+
+
+RestR2 <- svm1[["results"]][["Rsquared"]]
+RestRMSE <- svm1[["results"]][["RMSE"]]
+
+
+
+# Take the log of all the variables and run the SVR on that 
+log_newMatix <- log(newMatrix)
+log_newMatix <- cbind(log_newMatix, delayRest_baselineclean[37])
+
+svm1 <- linearSVRmodel_PE(log_newMatix)
+
+bothModels <- list(linear = svm1)
+PE_Predicted <- extractPrediction(bothModels, testX = delayRest_baselineclean[38])
+  
+lmFormula <- lm(pred~obs, data = PE_Predicted)
+summary(lmFormula)
+
+lm_eqn <- function(PE_Predicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(PE_Predicted, lmFormula)
+
+ggplot(data = PE_Predicted, aes(x = obs, y = pred)) + geom_point()  + geom_smooth(method = "lm") + annotate("text", x = 1, y = 4, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Accuracy: Rest and Delay")
+
+plot(varImp(svm1, useModel = F, nonpara = F, scale = F), main = "Accuracy")
+
+
+RestR2 <- svm1[["results"]][["Rsquared"]]
+RestRMSE <- svm1[["results"]][["RMSE"]]
+
+
+
+```
+
+
+## Resting State and Delay Period Age Groups
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+Behavior <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Behavior_20200921.csv')
+
+Behavior$Subject <- paste0(Behavior$LunaID, '_', Behavior$ScanDate) #behavioral data contains each trial 
+avgBehavior <- aggregate(.~Subject, data = Behavior, mean)
+sdBehavior <- aggregate(.~Subject, data = Behavior, sd)
+avgBehavior$absPositionError <- abs(avgBehavior$PositionError)
+allBehavior <- merge(avgBehavior, sdBehavior, by = "Subject", suffix = c("", "_sd"))
+allBehavior$absPositionError_sd <- abs(allBehavior$PositionError_sd)
+
+delayRest_behavior <- merge(delayRest, allBehavior, by = "Subject")
+
+delayRestVars <- grep("Gamma|Alpha|Beta|Theta|age|visitno|absPositionError|Group",names(delayRest_behavior),value=TRUE) 
+delayRestVars <- delayRestVars[!grepl("Peak|a.Trial_Power|absPositionError_sd|Variability_Rest", delayRestVars)]
+
+allDelayRest <- delayRest_behavior[,delayRestVars]
+allDelayRest <- allDelayRest[complete.cases(allDelayRest),]
+allDelayRest <- allDelayRest[!duplicated(allDelayRest),]
+
+delayRest_baselineclean <- allDelayRest[allDelayRest$visitno < 2 & allDelayRest$Group == 4,]
+
+delayRestVars <- delayRestVars[!grepl("visitno|age|Group", delayRestVars)]
+
+delayRest_baselineclean <- delayRest_baselineclean[, delayRestVars]
+
+res <- cor(delayRest_baselineclean[c(1:36)])
+PEremoved <- delayRest_baselineclean[c(1:36)]
+indx <- findCorrelation(res, cutoff = 0.9, exact = T, names = F)
+newMatrix <- PEremoved[-c(indx)]
+newMatrix <- cbind(newMatrix, delayRest_baselineclean[37])
+
+svm1 <- linearSVRmodel_PE(newMatrix)
+
+bothModels <- list(linear = svm1)
+PE_Predicted <- extractPrediction(bothModels, testX = delayRest_baselineclean[31])
+  
+lmFormula <- lm(pred~obs, data = PE_Predicted)
+summary(lmFormula)
+
+lm_eqn <- function(PE_Predicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(PE_Predicted, lmFormula)
+
+ggplot(data = PE_Predicted, aes(x = obs, y = pred)) + geom_point()  + geom_smooth(method = "lm") + annotate("text", x = 1, y = 4, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Accuracy: Rest and Delay")
+
+plot(varImp(svm1, useModel = F, nonpara = F, scale = F), main = "Accuracy")
+
+
+RestR2 <- svm1[["results"]][["Rsquared"]]
+RestRMSE <- svm1[["results"]][["RMSE"]]
+
+
+
+# Take the log of all the variables and run the SVR on that 
+log_newMatix <- log(newMatrix)
+log_newMatix <- cbind(log_newMatix, delayRest_baselineclean[37])
+
+svm1 <- linearSVRmodel_PE(log_newMatix)
+
+bothModels <- list(linear = svm1)
+PE_Predicted <- extractPrediction(bothModels, testX = delayRest_baselineclean[31])
+  
+lmFormula <- lm(pred~obs, data = PE_Predicted)
+summary(lmFormula)
+
+lm_eqn <- function(PE_Predicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(PE_Predicted, lmFormula)
+
+ggplot(data = PE_Predicted, aes(x = obs, y = pred)) + geom_point()  + geom_smooth(method = "lm") + annotate("text", x = 1, y = 4, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Accuracy: Rest and Delay")
+
+plot(varImp(svm1, useModel = F, nonpara = F, scale = F), main = "Accuracy")
+
+
+RestR2 <- svm1[["results"]][["Rsquared"]]
+RestRMSE <- svm1[["results"]][["RMSE"]]
+
+
+
+```
+
+
+
+# SVR Predicting Latency (Caret Package Method)
+## Delay Variables  
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+subjectBehavior_new <- Behavior_SubLevel()
+alldf <- DelayOnly_Sublevel()
+delayOnly_Sublevel <- alldf$alldata_delayOnly
+
+alldata_behavior <- merge(delayOnly_Sublevel[c(1,3:35)], subjectBehavior_new, by = "Subject")
+
+DelayVars <- grep("Alpha|Beta|Gamma|Theta|age|visitno|absPositionError|mgsLatency",names(alldata_behavior),value=TRUE) 
+DelayVars <- DelayVars[!grepl("visitno|age|mgsLatency_sd|absPositionError|Peak|a.Trial_Power", DelayVars)]
+
+allDelay <- subset(alldata_behavior, select = c('Subject',DelayVars))
+
+# Remove outlier subjects 
+allDelay_excludeOutliers <- allDelay[complete.cases(allDelay),]
+
+
+res <- cor(allDelay_excludeOutliers[c(2:25)])
+PEremoved <- allDelay_excludeOutliers[c(2:25)]
+indx <- findCorrelation(res, cutoff = 0.9, exact = T, names = F)
+newMatrix <- PEremoved[-c(indx)]
+newMatrix <- cbind(newMatrix, allDelay_excludeOutliers[26])
+
+
+svm1 <- linearSVRmodel_Lat(newMatrix)
+
+bothModels <- list(linear = svm1)
+PE_Predicted <- extractPrediction(bothModels, testX = newMatrix[16])
+  
+lmFormula <- lm(pred~obs, data = PE_Predicted)
+summary(lmFormula)
+
+lm_eqn <- function(PE_Predicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(PE_Predicted, lmFormula)
+
+ggplot(data = PE_Predicted, aes(x = obs, y = pred)) + geom_point() + geom_smooth(method = "lm") + annotate("text", x = 0.2, y = 0.37, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Latency: Delay")
+
+plot(varImp(svm1, useModel = T, nonpara = FALSE, scale = F), main = "Latency: Delay Only")
+
+
+delayR2 <- svm1[["results"]][["Rsquared"]]
+delayRMSE <- svm1[["results"]][["RMSE"]]
+
+```
+
+
+
+
+
+
+## Delay Variables, Only one Frequency Band 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+subjectBehavior_new <- Behavior_SubLevel()
+alldf <- DelayOnly_Sublevel()
+delayOnly_Sublevel <- alldf$alldata_delayOnly
+
+alldata_behavior <- merge(delayOnly_Sublevel[c(1,3:35)], subjectBehavior_new, by = "Subject")
+
+DelayVars <- grep("Theta|age|visitno|absPositionError|mgsLatency",names(alldata_behavior),value=TRUE) 
+
+DelayVars <- DelayVars[!grepl("visitno|age|mgsLatency_sd|absPositionError|Peak|a.Trial_Power", DelayVars)]
+
+allDelay <- subset(alldata_behavior, select = c('Subject',DelayVars))
+
+allDelay_excludeOutliers <- allDelay[complete.cases(allDelay),]
+
+
+allDelay <- subset(allDelay_excludeOutliers, select = DelayVars)
+
+res <- cor(allDelay[c(1:6)])
+PEremoved <- allDelay[c(1:6)]
+indx <- findCorrelation(res, cutoff = 0.9, exact = T, names = T)
+newMatrix <- PEremoved[-c(indx)]
+newMatrix <- cbind(newMatrix, allDelay[7])
+
+svm1 <- linearSVRmodel_Lat(newMatrix)
+
+bothModels <- list(linear = svm1)
+PE_Predicted <- extractPrediction(bothModels, testX = allDelay[7])
+  
+lmFormula <- lm(pred~obs, data = PE_Predicted)
+summary(lmFormula)
+
+lm_eqn <- function(PE_Predicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(PE_Predicted, lmFormula)
+
+ggplot(data = PE_Predicted, aes(x = obs, y = pred)) + geom_point() + geom_smooth(method = "lm") + annotate("text", x = 0.2, y = 0.36, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Latency: Delay Theta Only")
+
+plot(varImp(svm1, useModel = T, nonpara = FALSE, scale = F), main = "Latency: Delay Theta Only")
+
+GammaR2 = (summary(lmFormula)$r.squared)
+BetaR2 = (summary(lmFormula)$r.squared)
+ThetaR2 = (summary(lmFormula)$r.squared)
+AlphaR2 = (summary(lmFormula)$r.squared)
+
+R2values <- (data.frame(GammaR2,BetaR2,ThetaR2,AlphaR2))
+
+barplot(t(as.matrix(R2values)), beside = TRUE, main = "Frequency Bands Ability to Predict Latency", ylab = "r^2 Value", names.arg = c("Gamma", "Beta", "Theta", "Alpha"), ylim = c(0, 0.04), col = "gray")
+
+
+```
+
+
+## Resting State and Delay Period 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+Behavior <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Behavior_20200921.csv')
+
+Behavior$Subject <- paste0(Behavior$LunaID, '_', Behavior$ScanDate) #behavioral data contains each trial 
+avgBehavior <- aggregate(.~Subject, data = Behavior, mean)
+sdBehavior <- aggregate(.~Subject, data = Behavior, sd)
+avgBehavior$absPositionError <- abs(avgBehavior$PositionError)
+allBehavior <- merge(avgBehavior, sdBehavior, by = "Subject", suffix = c("", "_sd"))
+allBehavior$absPositionError_sd <- abs(allBehavior$PositionError_sd)
+
+delayRest_behavior <- merge(delayRest, allBehavior, by = "Subject")
+
+delayRestVars <- grep("Gamma|Alpha|Beta|Theta|age|visitno|mgsLatency",names(delayRest_behavior),value=TRUE) 
+delayRestVars <- delayRestVars[!grepl("Peak|a.Trial_Power|mgsLatency_sd|Variability_Rest", delayRestVars)]
+
+allDelayRest <- delayRest_behavior[,delayRestVars]
+allDelayRest <- allDelayRest[complete.cases(allDelayRest),]
+allDelayRest <- allDelayRest[!duplicated(allDelayRest),]
+
+delayRest_baselineclean <- allDelayRest[allDelayRest$visitno < 2,]
+
+delayRestVars <- delayRestVars[!grepl("visitno", delayRestVars)]
+
+delayRest_baselineclean <- delayRest_baselineclean[, delayRestVars]
+delayRest_baselineclean$inverseAge <- 1/delayRest_baselineclean$age
+
+
+res <- cor(delayRest_baselineclean[c(1:24,26:37,39)])
+LatRemoved <- delayRest_baselineclean[c(1:24,26:37,39)]
+indx <- findCorrelation(res, cutoff = 0.9, exact = T, names = F)
+newMatrix <- LatRemoved[-c(indx)]
+newMatrix <- cbind(newMatrix, delayRest_baselineclean[38])
+
+svm1 <- linearSVRmodel_Lat(newMatrix)
+
+bothModels <- list(linear = svm1)
+Lat_Predicted <- extractPrediction(bothModels, testX = delayRest_baselineclean[38])
+  
+lmFormula <- lm(pred~obs, data = Lat_Predicted)
+summary(lmFormula)
+
+lm_eqn <- function(Lat_Predicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(Lat_Predicted, lmFormula)
+
+ggplot(data = Lat_Predicted, aes(x = obs, y = pred)) + geom_point()  + geom_smooth(method = "lm") + annotate("text", x = 0.4, y = 0.8, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Latency: Rest and Delay")
+
+VarImportance <- varImp(svm1, useModel = FALSE, nonpara = FALSE, scale = F)
+
+plot(varImp(svm1, useModel = T, nonpara = F, scale = F), main = "Latency")
+
+RestR2 <- svm1[["results"]][["Rsquared"]]
+RestRMSE <- svm1[["results"]][["RMSE"]]
+
+
+
+
+# Take the log of all the variables and run the SVR on that 
+log_newMatix <- log(newMatrix)
+log_newMatix <- cbind(log_newMatix, delayRest_baselineclean[37])
+
+svm1 <- linearSVRmodel_Lat(log_newMatix)
+
+bothModels <- list(linear = svm1)
+Lat_Predicted <- extractPrediction(bothModels, testX = delayRest_baselineclean[31])
+  
+lmFormula <- lm(pred~obs, data = Lat_Predicted)
+summary(lmFormula)
+
+lm_eqn <- function(PE_Predicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(Lat_Predicted, lmFormula)
+
+ggplot(data = Lat_Predicted, aes(x = obs, y = pred)) + geom_point()  + geom_smooth(method = "lm") + annotate("text", x = 1, y = 2.5, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Latency: Rest and Delay")
+
+plot(varImp(svm1, useModel = F, nonpara = F, scale = F), main = "Latency")
+
+
+RestR2 <- svm1[["results"]][["Rsquared"]]
+RestRMSE <- svm1[["results"]][["RMSE"]]
+
+
+```
+
+## Resting State and Delay Period Age Groups
+```{r, echo= FALSE, message = FALSE, warning = FALSE, results='hide', fig.keep='all'}
+
+Behavior <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Behavior_20200921.csv')
+
+Behavior$Subject <- paste0(Behavior$LunaID, '_', Behavior$ScanDate) #behavioral data contains each trial 
+avgBehavior <- aggregate(.~Subject, data = Behavior, mean)
+sdBehavior <- aggregate(.~Subject, data = Behavior, sd)
+avgBehavior$absPositionError <- abs(avgBehavior$PositionError)
+allBehavior <- merge(avgBehavior, sdBehavior, by = "Subject", suffix = c("", "_sd"))
+allBehavior$absPositionError_sd <- abs(allBehavior$PositionError_sd)
+
+delayRest_behavior <- merge(delayRest, allBehavior, by = "Subject")
+
+delayRestVars <- grep("Gamma|Alpha|Beta|Theta|age|visitno|mgsLatency|Group",names(delayRest_behavior),value=TRUE) 
+delayRestVars <- delayRestVars[!grepl("Peak|a.Trial_Power|mgsLatency_sd|Variability_Rest", delayRestVars)]
+
+allDelayRest <- delayRest_behavior[,delayRestVars]
+allDelayRest <- allDelayRest[complete.cases(allDelayRest),]
+allDelayRest <- allDelayRest[!duplicated(allDelayRest),]
+
+delayRest_baselineclean <- allDelayRest[allDelayRest$visitno < 2 & allDelayRest$Group == 4,]
+
+delayRestVars <- delayRestVars[!grepl("visitno|Group", delayRestVars)]
+
+delayRest_baselineclean <- delayRest_baselineclean[, delayRestVars]
+
+res <- cor(delayRest_baselineclean[c(1:36)])
+LatRemoved <- delayRest_baselineclean[c(1:36)]
+indx <- findCorrelation(res, cutoff = 0.9, exact = T, names = F)
+newMatrix <- LatRemoved[-c(indx)]
+newMatrix <- cbind(newMatrix, delayRest_baselineclean[37])
+
+svm1 <- linearSVRmodel_Lat(newMatrix)
+
+bothModels <- list(linear = svm1)
+Lat_Predicted <- extractPrediction(bothModels, testX = delayRest_baselineclean[37])
+  
+lmFormula <- lm(pred~obs, data = Lat_Predicted)
+summary(lmFormula)
+
+lm_eqn <- function(Lat_Predicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(Lat_Predicted, lmFormula)
+
+ggplot(data = Lat_Predicted, aes(x = obs, y = pred)) + geom_point()  + geom_smooth(method = "lm") + annotate("text", x = 0.4, y = 0.8, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Latency: Rest and Delay")
+
+VarImportance <- varImp(svm1, useModel = FALSE, nonpara = FALSE, scale = F)
+
+plot(varImp(svm1, useModel = T, nonpara = F, scale = F), main = "Latency")
+
+RestR2 <- svm1[["results"]][["Rsquared"]]
+RestRMSE <- svm1[["results"]][["RMSE"]]
+
+
+
+
+# Take the log of all the variables and run the SVR on that 
+log_newMatix <- log(newMatrix)
+log_newMatix <- cbind(log_newMatix, delayRest_baselineclean[37])
+
+svm1 <- linearSVRmodel_Lat(log_newMatix)
+
+bothModels <- list(linear = svm1)
+Lat_Predicted <- extractPrediction(bothModels, testX = delayRest_baselineclean[31])
+  
+lmFormula <- lm(pred~obs, data = Lat_Predicted)
+summary(lmFormula)
+
+lm_eqn <- function(PE_Predicted, lmFormula) {
+  eq <-
+    substitute(
+      italic(y) == a + b %.% italic(x) * "," ~ ~ italic(r) ^ 2 ~ "=" ~ r2,
+      list(
+        a = format(coef(lmFormula)[1], digits = 2),
+        b = format(coef(lmFormula)[2], digits = 2),
+        r2 = format(summary(lmFormula)$r.squared, digits = 3)
+      )
+    )
+  
+  as.character(as.expression(eq))
+}
+
+eqn <- lm_eqn(Lat_Predicted, lmFormula)
+
+ggplot(data = Lat_Predicted, aes(x = obs, y = pred)) + geom_point()  + geom_smooth(method = "lm") + annotate("text", x = 1, y = 2.5, label = eqn, parse = TRUE) + ggtitle("Obs. vs Pred. Latency: Rest and Delay")
+
+plot(varImp(svm1, useModel = F, nonpara = F, scale = F), main = "Latency")
+
+
+RestR2 <- svm1[["results"]][["Rsquared"]]
+RestRMSE <- svm1[["results"]][["RMSE"]]
+
+
+```

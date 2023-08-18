@@ -1,0 +1,17 @@
+ maybe-missing*
+.*
+*mat
+*csv
+*pdf
+*xlsx
+*png
+*fig
+*asv
+*log
+*gif
+resources/
+attic/
+fooof_mat-main*
+maybe-missing_AdditionalFunctionsfromEEGLAB/
+
+

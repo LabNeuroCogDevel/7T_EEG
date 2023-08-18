@@ -1,0 +1,385 @@
+---
+title: "sEEG Spectral Events"
+author: "Shane McKeon"
+date: "5/13/2020"
+geometry: margin = 1in
+output:
+  pdf_document:  
+    toc: true
+    toc_depth: 4    
+    fig_caption: yes
+  latex_engine: xelatex
+
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev='png', dpi=150, fig.width = 6, fig.height=6, fig.align = 'left', fig.margin = TRUE)
+```
+
+
+```{r load-libraries, message=FALSE}
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(dplyr, ggplot2,lme4, multcomp, tidyr, tidyverse,wesanderson, reshape2, corrplot, ggExtra, cowplot, ggsci, mgcv, ggpointdensity, devtools, ggpubr, itsadug, useful, rmarkdown, tinytex, gratia, gamm4, car, GGally, CCA)
+library(devtools)
+
+# devtools::install_github('LabneuroCogDevel/LNCDR')
+# devtools::install_github("strengejacke/sjPlot")
+library(LNCDR)
+library(data.table)
+require(dplyr)
+library(factoextra)
+library(tidyverse)
+require(knitr)
+
+```
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+sEEG_Gamma <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/sEEG/Gamma/oneTrial/sEEG_Gamma.csv')
+sEEG_HighGamma <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/sEEG/HighGamma/oneTrial/sEEG_HighGamma.csv')
+sEEG_Beta <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/sEEG/Beta/oneTrial/sEEG_Beta.csv')
+agefile <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/sEEG/agefile.csv')
+
+sEEG_alldata <- merge(sEEG_Gamma, sEEG_HighGamma, by = "Subject", all.x = TRUE, all.y = TRUE)
+sEEG_alldata <- merge(sEEG_alldata, sEEG_Beta, by = "Subject",  all.x = TRUE, all.y = TRUE)
+sEEG_alldata <- merge(sEEG_alldata, agefile, by = "Subject")
+
+sEEG_alldata$Gamma_Trial_LogPower <- log10(sEEG_alldata$Gamma_Trial_Power)
+sEEG_alldata$HighGamma_Trial_LogPower <- log10(sEEG_alldata$HighGamma_Trial_Power)
+sEEG_alldata$Beta_Trial_LogPower <- log10(sEEG_alldata$Beta_Trial_Power)
+
+sEEG_alldata$Gamma_Trial_LogPeakPower <- log10(sEEG_alldata$Gamma_Peak_Power)
+sEEG_alldata$HighGamma_Trial_LogPeakPower <- log10(sEEG_alldata$HighGamma_Peak_Power)
+sEEG_alldata$Beta_Trial_LogPeakPower <- log10(sEEG_alldata$Beta_Peak_Power)
+```
+# 2 Second Epoch 
+## Gamma Frequency Band
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = Gamma_Trial_LogPower )) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG Gamma Power vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Power")
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = Gamma_Trial_LogPeakPower )) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Peak sEEG Gamma Power vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Power")
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = Gamma_Event_Number )) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG Gamma Event Number vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Event Number")
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = Gamma_Event_Duration )) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG Gamma Event Duration vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Event Duration")
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = Gamma_Peak_Frequency)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Peak sEEG Gamma Frequency vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Frequency")
+```
+
+## High Gamma Frequency Band 
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = HighGamma_Trial_LogPower )) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG High Gamma Power vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Power")
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = HighGamma_Trial_LogPeakPower)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Peak sEEG High Gamma Power vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Power")
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = HighGamma_Event_Number )) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG High Gamma Event Number vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Event Number")
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = HighGamma_Event_Duration )) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG High Gamma Event Duration vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Event Duration")
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = HighGamma_Peak_Frequency)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Peak sEEG High Gamma Frequency vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Frequency")
+
+```
+
+## Beta Frequency Band
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = Beta_Trial_LogPower )) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG Beta Power vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Power")
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = Beta_Trial_LogPeakPower)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Peak sEEG Beta Power vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Power")
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = Beta_Event_Number )) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG Beta Event Number vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Event Number")
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = Beta_Event_Duration )) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG Beta Event Duration vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Event Duration")
+
+ggplot(data = sEEG_alldata[],  aes(x = Age, y = Beta_Peak_Frequency)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Peak sEEG Beta Frequency vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Frequency")
+
+```
+# 1 min epoch with 10 second bins (trials)
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+#load variables 
+sEEG_Gamma <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/sEEG/Gamma/Gamma_alldata_trials.csv')
+sEEG_GammaPeaks <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/sEEG/Gamma/Gamma_all_PeakFreq_PowerFix.csv')
+
+sEEG_HighGamma <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/sEEG/HighGamma/HighGamma_alldata_trials.csv')
+sEEG_HighGammaPeaks <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/sEEG/HighGamma/HighGamma_all_PeakFreq_PowerFix.csv')
+
+sEEG_Beta <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/sEEG/Beta/Beta_alldata_trials.csv')
+sEEG_BetaPeaks <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/sEEG/Beta/Beta_all_PeakFreq_PowerFix.csv')
+
+agefile <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/sEEG/agefile.csv')
+
+#transform power
+sEEG_Gamma$Gamma_Trial_LogPower <- log10(sEEG_Gamma$Gamma_Trial_Power)
+sEEG_GammaPeaks$Gamma_Peak_LogPower <- log10(sEEG_GammaPeaks$Gamma_Peak_Power)
+
+sEEG_HighGamma$HighGamma_Trial_LogPower <- log10(sEEG_HighGamma$HighGamma_Trial_Power)
+sEEG_HighGammaPeaks$HighGamma_Peak_LogPower <- log10(sEEG_HighGammaPeaks$HighGamma_Peak_Power)
+
+sEEG_Beta$Beta_Trial_LogPower <- log10(sEEG_Beta$Beta_Trial_Power)
+sEEG_BetaPeaks$Beta_Peak_LogPower <- log10(sEEG_BetaPeaks$Beta_Peak_Power)
+
+
+# Gamma outlier cutoffs
+avgGammaEvents <- aggregate(Gamma_Event_Number ~ Subject, sEEG_Gamma, mean)
+avgGammaEvents$group <- 1
+avgGammaEvent <- aggregate(Gamma_Event_Number ~ group,avgGammaEvents, mean )
+
+sdGammaEvents <- aggregate(Gamma_Event_Number ~ Subject, sEEG_Gamma, sd)
+sdGammaEvents$group <- 1
+sdGammaEvent <- aggregate(Gamma_Event_Number ~ group,sdGammaEvents, mean )
+
+gammaEventsCutoff <- 2* sdGammaEvent[1,2] + avgGammaEvent[1,2]
+
+
+
+avgGammaPeaks <- aggregate(Gamma_Peak_LogPower ~ Subject, sEEG_GammaPeaks, mean)
+avgGammaPeaks$group <- 1
+avgGammaPeak <- aggregate(Gamma_Peak_LogPower ~ group,avgGammaPeaks, mean )
+
+sdGammaPeaks <- aggregate(Gamma_Peak_LogPower ~ Subject, sEEG_GammaPeaks, sd)
+sdGammaPeaks$group <- 1
+sdGammaPeak <- aggregate(Gamma_Peak_LogPower ~ group,sdGammaPeaks, mean )
+gammaPeakCutoff <- 2* sdGammaPeak[1,2] + avgGammaPeak[1,2]
+
+
+
+#aggregate gamma
+gammaPowerVariability <- aggregate(Gamma_Trial_LogPower ~ Subject, sEEG_Gamma[sEEG_Gamma$Gamma_Event_Number < gammaEventsCutoff ,], sd)
+gammaPowerAverage <- aggregate(Gamma_Trial_LogPower ~ Subject, sEEG_Gamma[sEEG_Gamma$Gamma_Event_Number < gammaEventsCutoff ,], mean)
+
+
+gammaPeakPowerVariability <- aggregate(Gamma_Peak_LogPower ~ Subject, sEEG_GammaPeaks[sEEG_GammaPeaks$Gamma_Peak_LogPower < gammaPeakCutoff,], sd)
+gammaPeakPowerAverage <- aggregate(Gamma_Peak_LogPower ~ Subject, sEEG_GammaPeaks[sEEG_GammaPeaks$Gamma_Peak_LogPower < gammaPeakCutoff,], mean)
+
+
+gammaVariability <- merge(gammaPowerVariability, gammaPeakPowerVariability, by = "Subject")
+gammaVariability <- merge(gammaVariability, agefile, by = "Subject")
+
+gammaAverage <- merge(gammaPowerAverage, gammaPeakPowerAverage, by = "Subject")
+gammaFinal <- merge(gammaAverage, gammaVariability, by = "Subject", suffix = c("_mean", "_sd"))
+
+# aggregate all gamma together
+AvgGamma <- aggregate(.~Subject, sEEG_Gamma, mean)
+sdGamma <- aggregate(.~Subject, sEEG_Gamma, sd)
+
+AllGamma <- merge(AvgGamma, sdGamma, by = "Subject", suffix = c("_mean", "_sd"))
+AllGamma <- merge(AllGamma, agefile, by = "Subject")
+
+#High Gamma outlier cutoffs
+avgHighGammaEvents <- aggregate(HighGamma_Event_Number ~ Subject, sEEG_HighGamma, mean)
+avgHighGammaEvents$group <- 1
+avgHighGammaEvent <- aggregate(HighGamma_Event_Number ~ group,avgHighGammaEvents, mean )
+
+sdHighGammaEvents <- aggregate(HighGamma_Event_Number ~ Subject, sEEG_HighGamma, sd)
+sdHighGammaEvents$group <- 1
+sdHighGammaEvent <- aggregate(HighGamma_Event_Number ~ group,sdHighGammaEvents, mean )
+HighGammaEventsCutoff <- 2* sdHighGammaEvent[1,2] + avgHighGammaEvent[1,2]
+
+
+avgHighGammaPeaks <- aggregate(HighGamma_Peak_LogPower ~ Subject, sEEG_HighGammaPeaks, mean)
+avgHighGammaPeaks$group <- 1
+avgHighGammaPeak <- aggregate(HighGamma_Peak_LogPower ~ group,avgHighGammaPeaks, mean )
+
+sdHighGammaPeaks <- aggregate(HighGamma_Peak_LogPower ~ Subject, sEEG_HighGammaPeaks, sd)
+sdHighGammaPeaks$group <- 1
+sdHighGammaPeak <- aggregate(HighGamma_Peak_LogPower ~ group,sdHighGammaPeaks, mean )
+HighGammaPeakCutoff <- 2* sdHighGammaPeak[1,2] + avgHighGammaPeak[1,2]
+
+
+#aggregate high gamma
+HighGammaPowerVariability <- aggregate(HighGamma_Trial_LogPower ~ Subject, sEEG_HighGamma[sEEG_HighGamma$HighGamma_Event_Number < HighGammaEventsCutoff ,], sd)
+HighGammaPowerAverage <- aggregate(HighGamma_Trial_LogPower ~ Subject, sEEG_HighGamma[sEEG_HighGamma$HighGamma_Event_Number < HighGammaEventsCutoff ,], mean)
+
+
+HighGammaPeakPowerVariability <- aggregate(HighGamma_Peak_LogPower ~ Subject, sEEG_HighGammaPeaks[sEEG_HighGammaPeaks$HighGamma_Peak_LogPower < HighGammaPeakCutoff,], sd)
+HighGammaPeakPowerAverage <- aggregate(HighGamma_Peak_LogPower ~ Subject, sEEG_HighGammaPeaks[sEEG_HighGammaPeaks$HighGamma_Peak_LogPower < HighGammaPeakCutoff,], mean)
+
+HighGammaVariability <- merge(HighGammaPowerVariability, HighGammaPeakPowerVariability, by = "Subject")
+HighGammaVariability <- merge(HighGammaVariability, agefile, by = "Subject")
+
+HighGammaAverage <- merge(HighGammaPowerAverage, HighGammaPeakPowerAverage, by = "Subject")
+HighGammaFinal <- merge(HighGammaAverage, HighGammaVariability, by = "Subject", suffix = c("_mean", "_sd"))
+
+
+
+# Beta outlier cutoffs
+avgBetaEvents <- aggregate(Beta_Event_Number ~ Subject, sEEG_Beta, mean)
+avgBetaEvents$group <- 1
+avgBetaEvent <- aggregate(Beta_Event_Number ~ group,avgBetaEvents, mean )
+
+sdBetaEvents <- aggregate(Beta_Event_Number ~ Subject, sEEG_Beta, sd)
+sdBetaEvents$group <- 1
+sdBetaEvent <- aggregate(Beta_Event_Number ~ group,sdBetaEvents, mean )
+
+BetaEventsCutoff <- 2* sdBetaEvent[1,2] + avgBetaEvent[1,2]
+
+
+
+avgBetaPeaks <- aggregate(Beta_Peak_LogPower ~ Subject, sEEG_BetaPeaks, mean)
+avgBetaPeaks$group <- 1
+avgBetaPeak <- aggregate(Beta_Peak_LogPower ~ group,avgBetaPeaks, mean )
+
+sdBetaPeaks <- aggregate(Beta_Peak_LogPower ~ Subject, sEEG_BetaPeaks, sd)
+sdBetaPeaks$group <- 1
+sdBetaPeak <- aggregate(Beta_Peak_LogPower ~ group,sdBetaPeaks, mean )
+BetaPeakCutoff <- 2* sdBetaPeak[1,2] + avgBetaPeak[1,2]
+
+
+#aggregate high gamma
+BetaPowerVariability <- aggregate(Beta_Trial_LogPower ~ Subject, sEEG_Beta[sEEG_Beta$Beta_Event_Number < BetaEventsCutoff ,], sd)
+BetaPowerAverage <- aggregate(Beta_Trial_LogPower ~ Subject, sEEG_Beta[sEEG_Beta$Beta_Event_Number < BetaEventsCutoff ,], mean)
+
+
+BetaPeakPowerVariability <- aggregate(Beta_Peak_LogPower ~ Subject, sEEG_BetaPeaks[sEEG_BetaPeaks$Beta_Peak_LogPower < BetaPeakCutoff,], sd)
+BetaPeakPowerAverage <- aggregate(Beta_Peak_LogPower ~ Subject, sEEG_BetaPeaks[sEEG_BetaPeaks$Beta_Peak_LogPower < BetaPeakCutoff,], mean)
+
+BetaVariability <- merge(BetaPowerVariability, BetaPeakPowerVariability, by = "Subject")
+BetaVariability <- merge(BetaVariability, agefile, by = "Subject")
+
+BetaAverage <- merge(BetaPowerAverage, BetaPeakPowerAverage, by = "Subject")
+BetaFinal <- merge(BetaAverage, BetaVariability, by = "Subject", suffix = c("_mean", "_sd"))
+
+finalDF <- merge(gammaFinal, HighGammaFinal, by = "Subject",  all.x = TRUE, all.y = TRUE)
+finalDF <- merge(finalDF, BetaFinal, by = "Subject",  all.x = TRUE, all.y = TRUE)
+
+```
+
+## Gamma Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+# ggplot(data = finalDF[finalDF$Age > 3,],  aes(x = Age, y = Gamma_Trial_LogPower_mean)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG Gamma Power vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Power")
+# 
+# ggplot(data = finalDF[finalDF$Age > 3,],  aes(x = Age, y = Gamma_Peak_LogPower_mean)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG Gamma Peak Power vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Power")
+# 
+# 
+# ggplot(data = finalDF[finalDF$Age > 3,],  aes(x = Age, y = Gamma_Trial_LogPower_sd)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("sEEG Gamma Power Variability vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("SD(Power)")
+# 
+# ggplot(data = finalDF[finalDF$Age > 3,],  aes(x = Age, y = Gamma_Peak_LogPower_sd)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("sEEG Gamma Peak Power Variability vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("SD(Power)")
+
+youngDF <- subset(finalDF, Age < 15)
+olderDF <- subset(finalDF, Age >= 15)
+
+youngDF$group <- 1; 
+olderDF$group <- 2; 
+
+finalAgeDF <- rbind(youngDF, olderDF)
+ageGroupDF <- aggregate(. ~ group, finalAgeDF, mean)
+
+
+# barplot(ageGroupDF$Gamma_Trial_LogPower_mean, names.arg=c("Ages 9-14", "Ages 15- 19"), ylab = "Power",  ylim = c(0,1.4), main = "Gamma Average Trial Power")
+# barplot(ageGroupDF$Gamma_Trial_LogPower_sd, names.arg=c("Ages 9-14", "Ages 15- 19"), ylab = "sd(Power)", ylim = c(0,0.3), main = "Gamma Trial Power Variability")
+# barplot(ageGroupDF$Gamma_Peak_LogPower_mean, names.arg=c("Ages 9-14", "Ages 15- 19"), ylab = "Peak Power", ylim = c(0,0.5), main = "Gamma Average Peak power")
+
+errorBars <- aggregate(. ~ group, finalAgeDF, sd)
+
+se = errorBars$Gamma_Trial_LogPower_mean/sqrt(nrow(finalAgeDF))
+lunaize(ggplot(ageGroupDF) + geom_bar(aes(x = group, y = Gamma_Trial_LogPower_mean), stat="identity", fill="gray", alpha=0.5)  +
+  scale_x_discrete("Age Group", breaks = c("1","2"), labels=c("Ages 9- 14","Ages 15- 19"), limits = c("1", "2")) +
+  geom_errorbar( aes(x=group, ymin=Gamma_Trial_LogPower_mean-se, ymax=Gamma_Trial_LogPower_mean+se), colour="black", alpha=0.9, size=1.3, width = 0.15))
+
+  
+se = errorBars$Gamma_Trial_LogPower_sd/ sqrt(nrow(finalAgeDF))
+lunaize(ggplot(ageGroupDF) + geom_bar(aes(x = group, y = Gamma_Trial_LogPower_sd), stat="identity", fill="gray", alpha=0.5) +
+    scale_x_discrete("Age Group", breaks = c("1","2"), labels=c("Ages 9- 14","Ages 15- 19"), limits = c("1", "2")) +
+  geom_errorbar( aes(x=group, ymin=Gamma_Trial_LogPower_sd-se, ymax=Gamma_Trial_LogPower_sd+se), colour="black", alpha=0.9, size=1.3, width = 0.15))
+
+
+se = errorBars$Gamma_Peak_LogPower_mean/ sqrt(nrow(finalAgeDF))
+lunaize(ggplot(ageGroupDF) + geom_bar(aes(x = group, y = Gamma_Peak_LogPower_mean), stat="identity", fill="gray", alpha=0.5) +
+    scale_x_discrete("Age Group", breaks = c("1","2"), labels=c("Ages 9- 14","Ages 15- 19"), limits = c("1", "2")) +
+  geom_errorbar( aes(x=group, ymin=Gamma_Peak_LogPower_mean-se, ymax=Gamma_Peak_LogPower_mean+se), colour="black", alpha=0.9, size=1.3, width = 0.15))
+
+```
+
+
+## High Gamma Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+# 
+# ggplot(data = finalDF[finalDF$Age > 3,],  aes(x = Age, y = HighGamma_Trial_LogPower_mean)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG High Gamma Power vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Power")
+# 
+# ggplot(data = finalDF[finalDF$Age > 3,],  aes(x = Age, y = HighGamma_Peak_LogPower_mean)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG High Gamma Peak Power vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Power")
+# 
+# 
+# ggplot(data = finalDF[finalDF$Age > 3,],  aes(x = Age, y = HighGamma_Trial_LogPower_sd)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("sEEG High Gamma Power Variability vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("SD(Power)")
+# 
+# ggplot(data = finalDF[finalDF$Age > 3,],  aes(x = Age, y = HighGamma_Peak_LogPower_sd)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("sEEG High Gamma Peak Power Subject Variability vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("SD(Power)")
+# 
+# barplot(ageGroupDF$HighGamma_Trial_LogPower_mean, names.arg=c("Ages 9-14", "Ages 15- 19"), ylab = "Power",  ylim = c(0,2), main = "High Gamma Average Trial Power")
+# barplot(ageGroupDF$HighGamma_Trial_LogPower_sd, names.arg=c("Ages 9-14", "Ages 15- 19"), ylab = "sd(Power)", ylim = c(0,0.5), main = "High Gamma Trial Power Variability")
+# barplot(ageGroupDF$HighGamma_Peak_LogPower_mean, names.arg=c("Ages 9-14", "Ages 15- 19"), ylab = "Peak Power", ylim = c(-0.5,0.5), main = "High Gamma Average Peak power")
+
+
+errorBars <- aggregate(. ~ group, finalAgeDF, sd)
+
+se = errorBars$HighGamma_Trial_LogPower_mean/sqrt(nrow(finalAgeDF))
+lunaize(ggplot(ageGroupDF) + geom_bar(aes(x = group, y = HighGamma_Trial_LogPower_mean), stat="identity", fill="gray", alpha=0.5)  +
+    scale_x_discrete("Age Group", breaks = c("1","2"), labels=c("Ages 9- 14","Ages 15- 19"), limits = c("1", "2")) +
+  geom_errorbar( aes(x=group, ymin=HighGamma_Trial_LogPower_mean-se, ymax=HighGamma_Trial_LogPower_mean+se), colour="black", alpha=0.9, size=1.3, width = 0.15))
+
+  
+se = errorBars$HighGamma_Trial_LogPower_sd/ sqrt(nrow(finalAgeDF))
+lunaize(ggplot(ageGroupDF) + geom_bar(aes(x = group, y = HighGamma_Trial_LogPower_sd), stat="identity", fill="gray", alpha=0.5) +
+    scale_x_discrete("Age Group", breaks = c("1","2"), labels=c("Ages 9- 14","Ages 15- 19"), limits = c("1", "2")) +
+  geom_errorbar( aes(x=group, ymin=HighGamma_Trial_LogPower_sd-se, ymax=HighGamma_Trial_LogPower_sd+se), colour="black", alpha=0.9, size=1.3, width = 0.15))
+
+
+se = errorBars$HighGamma_Peak_LogPower_mean/ sqrt(nrow(finalAgeDF))
+lunaize(ggplot(ageGroupDF) + geom_bar(aes(x = group, y = HighGamma_Peak_LogPower_mean), stat="identity", fill="gray", alpha=0.5) +
+    scale_x_discrete("Age Group", breaks = c("1","2"), labels=c("Ages 9- 14","Ages 15- 19"), limits = c("1", "2")) +
+  geom_errorbar( aes(x=group, ymin=HighGamma_Peak_LogPower_mean-se, ymax=HighGamma_Peak_LogPower_mean+se), colour="black", alpha=0.9, size=1.3, width = 0.15))
+
+
+
+```
+
+
+## Beta Frequency Band
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+# 
+# ggplot(data = finalDF[finalDF$Age > 3,],  aes(x = Age, y = Beta_Trial_LogPower_mean)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG Beta Power vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Power")
+# 
+# ggplot(data = finalDF[finalDF$Age > 3,],  aes(x = Age, y = Beta_Peak_LogPower_mean)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("Average sEEG Beta Peak Power vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("Power")
+# 
+# 
+# ggplot(data = finalDF[finalDF$Age > 3,],  aes(x = Age, y = Beta_Trial_LogPower_sd)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("sEEG Beta Power Variability vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("SD(Power)")
+# 
+# ggplot(data = finalDF[finalDF$Age > 3,],  aes(x = Age, y = Beta_Peak_LogPower_sd)) + geom_point() + stat_smooth(method='lm',  formula='y~I(1/x)') + ggtitle("sEEG Beta Peak Power Variability vs Age") + theme(plot.title = element_text(hjust = 0.5)) + xlab("Age") + ylab("SD(Power)")
+
+# barplot(ageGroupDF$Beta_Trial_LogPower_mean, names.arg=c("Ages 9-14", "Ages 15- 19"), ylab = "Power",  ylim = c(0,1.2), main = "Beta Average Trial Power")
+# barplot(ageGroupDF$Beta_Trial_LogPower_sd, names.arg=c("Ages 9-14", "Ages 15- 19"), ylab = "sd(Power)", ylim = c(0,0.2), main = "Beta Average Trial Power Variability")
+# barplot(ageGroupDF$Beta_Peak_LogPower_mean, names.arg=c("Ages 9-14", "Ages 15- 19"), ylab = "Peak Power", ylim = c(0,2), main = "Beta Average Peak Power")
+
+errorBars <- aggregate(. ~ group, finalAgeDF, sd)
+
+se = errorBars$Beta_Trial_LogPower_mean/sqrt(nrow(finalAgeDF))
+lunaize(ggplot(ageGroupDF) + geom_bar(aes(x = group, y = Beta_Trial_LogPower_mean), stat="identity", fill="gray", alpha=0.5)  +
+    scale_x_discrete("Age Group", breaks = c("1","2"), labels=c("Ages 9- 14","Ages 15- 19"), limits = c("1", "2")) +
+  geom_errorbar( aes(x=group, ymin=Beta_Trial_LogPower_mean-se, ymax=Beta_Trial_LogPower_mean+se), colour="black", alpha=0.9, size=1.3, width = 0.15))
+
+  
+se = errorBars$Beta_Trial_LogPower_sd/ sqrt(nrow(finalAgeDF))
+lunaize(ggplot(ageGroupDF) + geom_bar(aes(x = group, y = Beta_Trial_LogPower_sd), stat="identity", fill="gray", alpha=0.5) +
+    scale_x_discrete("Age Group", breaks = c("1","2"), labels=c("Ages 9- 14","Ages 15- 19"), limits = c("1", "2")) +
+  geom_errorbar( aes(x=group, ymin=Beta_Trial_LogPower_sd-se, ymax=Beta_Trial_LogPower_sd+se), colour="black", alpha=0.9, size=1.3, width = 0.15))
+
+
+se = errorBars$Beta_Peak_LogPower_mean/ sqrt(nrow(finalAgeDF))
+lunaize(ggplot(ageGroupDF) + geom_bar(aes(x = group, y = Beta_Peak_LogPower_mean), stat="identity", fill="gray", alpha=0.5) +
+    scale_x_discrete("Age Group", breaks = c("1","2"), labels=c("Ages 9- 14","Ages 15- 19"), limits = c("1", "2")) +
+  geom_errorbar( aes(x=group, ymin=Beta_Peak_LogPower_mean-se, ymax=Beta_Peak_LogPower_mean+se), colour="black", alpha=0.9, size=1.3, width = 0.15))
+
+
+
+```

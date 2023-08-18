@@ -1,0 +1,1936 @@
+---
+title: "Spectral Events"
+author: "Shane McKeon"
+date: "04/01/2022"
+geometry: margin = 1in
+output:
+  pdf_document:  
+    toc: true
+    toc_depth: 4    
+    fig_caption: yes
+  latex_engine: xelatex
+
+  html_document:
+    df_print: paged
+    code_folding: hide 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev='png', dpi=150, fig.width = 20, fig.height= 20, fig.align = 'center', fig.margin = TRUE, comment = NA)
+```
+
+
+```{r load-libraries, message=FALSE}
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+library(LNCDR)
+library(data.table)
+require(dplyr)
+library(factoextra)
+library(tidyverse)
+require(knitr)
+library(ggplot2)
+library(e1071)
+library(caret)
+library(sjPlot)
+library(directlabels)
+attach(mtcars)
+library(grid)
+library(gridExtra)
+library(cowplot)
+library(plotrix)
+library(mgcv)
+library(plotly)
+library(lme4)
+library(mgcViz)
+library(tidymv)
+
+```
+
+# Behavior Across Age 
+## Best Saccade
+### Linear Regression 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/03.BehaviorAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+agefile <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/agefile_20220914.csv')
+Behavior <- Behavior_Sublevel_Maria()
+
+
+
+BS <- bestSaccade(Behavior)
+
+BSV <- bestSaccadeVariability(Behavior)
+
+PE <- absPositionError(Behavior)
+
+PEV <- absPositionErrorVariability(Behavior)
+
+lat <- mgsLatency(Behavior)
+
+latV <- mgsLatencyVariability(Behavior)
+
+# combine all the p values so that we can correct them for multiple comparisons 
+behaviorPvalues <- data.frame(BS$Pvalue[1], BSV$Pvalue[1], PE$Pvalue[1], PEV$Pvalue[1], lat$Pvalue[1], latV$Pvalue[1])
+
+p.adjust((behaviorPvalues), method = "bonferroni")
+
+cowplot::plot_grid(BS$BSgraph, lat$latgraph,BSV$BSVgraph,latV$latvgraph, labels = c('A','B','C','D'), label_size = 30, rel_widths = c(1,1.1))
+```
+
+### GAM models
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+ gam.model <- gam(absBestError_sd ~ s(age, k = 4),
+  data = Behavior)
+summary(gam.model)
+
+p.adjust(1.47e-07, method = "bonferroni", n = 6)
+
+(lunaize(ggplot(Behavior, aes(x=age, y=absBestError)) + geom_point() + stat_smooth(method = 'gam')))
+
+
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+behaviorAge <- merge(Behavior, agefile, by = c("Subject", "age"))
+groupBehaviorAge <- aggregate(.~ Group, behaviorAge[2:15], mean)
+
+# BEST SACCADE
+sderror<-std.error(groupBehaviorAge$absBestError)
+
+YMIN <- groupBehaviorAge$absBestError-sderror
+
+YMAX <- groupBehaviorAge$absBestError+sderror
+
+(lunaize(ggplot(groupBehaviorAge, aes(x=Group, y=absBestError, ymin= YMIN, ymax=YMAX , group = Group, fill = Group)) + geom_col(position = 'dodge') + geom_errorbar(position='dodge') ))
+
+#behaviorAge %>% dplyr::filter(., Group == c(1,2)) %>% t.test(absBestError ~ Group, data = .)
+
+print("Groups 1 and 3 and 1 and 2 are significnaly different")
+
+# BEST SACCADE VARIABILITY
+sderror<-std.error(groupBehaviorAge$absBestError_sd)
+
+YMIN <- groupBehaviorAge$absBestError_sd-sderror
+
+YMAX <- groupBehaviorAge$absBestError_sd+sderror
+
+(lunaize(ggplot(groupBehaviorAge, aes(x=Group, y=absBestError_sd, ymin= YMIN, ymax=YMAX , group = Group, fill = Group)) + geom_col(position = 'dodge') + geom_errorbar(position='dodge') ))
+
+#behaviorAge %>% dplyr::filter(., Group == c(1,2)) %>% t.test(absBestError_sd ~ Group, data = .)
+
+print("Groups 1 and 3 are significnaly different")
+
+# MGS LATENCY
+sderror<-std.error(groupBehaviorAge$mgsLatency)
+
+YMIN <- groupBehaviorAge$mgsLatency-sderror
+
+YMAX <- groupBehaviorAge$mgsLatency+sderror
+
+(lunaize(ggplot(groupBehaviorAge, aes(x=Group, y=mgsLatency, ymin= YMIN, ymax=YMAX , group = Group, fill = Group)) + geom_col(position = 'dodge') + geom_errorbar(position='dodge') ))
+
+#behaviorAge %>% dplyr::filter(., Group == c(1,2)) %>% t.test(mgsLatency ~ Group, data = .)
+
+print("Groups 1 and 3 and 1 and 2 are significnaly different.")
+
+
+# MGS LATENCY VARIABILITY
+sderror<-std.error(groupBehaviorAge$mgsLatency_sd)
+
+YMIN <- groupBehaviorAge$mgsLatency_sd-sderror
+
+YMAX <- groupBehaviorAge$mgsLatency_sd+sderror
+
+(lunaize(ggplot(groupBehaviorAge, aes(x=Group, y=mgsLatency_sd, ymin= YMIN, ymax=YMAX , group = Group, fill = Group)) + geom_col(position = 'dodge') + geom_errorbar(position='dodge') ))
+
+#behaviorAge %>% dplyr::filter(., Group == c(1,2)) %>% t.test(mgsLatency_sd ~ Group, data = .)
+
+print("Groups 1 and 3, 2 and 3, and 1 and 2 are significnaly different.")
+```
+
+### Significant Periods of Growth 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+# BEST SACCADE
+  gam.model <- gam(absBestError ~ s(age), data = behaviorAge)
+  gam.growthrate <- gam_growthrate(gam.model, agevar = 'age')
+  lunaize(gam_growthrate_plot(behaviorAge, gam.model, gam.growthrate, agevar = 'age', yvar = 'absBestError', draw_points = T, xplotname = "Age", yplotname = "Mean MGS Accuracy (degs)"))
+
+  # BEST SACCADE VARIABILITY
+  gam.model <- gam(absBestError_sd ~ s(age), data = behaviorAge)
+  gam.growthrate <- gam_growthrate(gam.model, agevar = 'age')
+  lunaize(gam_growthrate_plot(behaviorAge, gam.model, gam.growthrate, agevar = 'age', yvar = 'absBestError_sd', draw_points = F))
+
+  # MGS LATENCY
+  gam.model <- gam(mgsLatency ~ s(age), data = behaviorAge)
+  gam.growthrate <- gam_growthrate(gam.model, agevar = 'age')
+  lunaize(gam_growthrate_plot(behaviorAge, gam.model, gam.growthrate, agevar = 'age', yvar = 'mgsLatency', draw_points = F))
+
+  # MGS LATENCY VARIABILITY
+  gam.model <- gam(mgsLatency_sd ~ s(age), data = behaviorAge)
+  gam.growthrate <- gam_growthrate(gam.model, agevar = 'age')
+  lunaize(gam_growthrate_plot(behaviorAge, gam.model, gam.growthrate, agevar = 'age', yvar = 'mgsLatency_sd', draw_points = F))
+
+```
+## VGS
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+ (lunaize(ggplot(data = subjectBehavior_new[], aes(x = age, 
+    y = vgsLatency)) + geom_point() + stat_smooth(method = "gam" )))
+
+ # VGS LATENCY
+  gam.model <- gam(vgsLatency ~ s(age), data = behaviorAge)
+  gam.growthrate <- gam_growthrate(gam.model, agevar = 'age')
+  lunaize(gam_growthrate_plot(behaviorAge, gam.model, gam.growthrate, agevar = 'age', yvar = 'vgsLatency', draw_points = F))
+
+  # VGS LATENCY VARIABILITY
+  gam.model <- gam(vgsLatency_sd ~ s(age), data = behaviorAge)
+  gam.growthrate <- gam_growthrate(gam.model, agevar = 'age')
+  lunaize(gam_growthrate_plot(behaviorAge, gam.model, gam.growthrate, agevar = 'age', yvar = 'vgsLatency_sd', draw_points = F))
+
+```
+
+# Frequency Bands Across Age
+## Delay Period
+### Whole Brain 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+delayOnly <- DelayOnly_Sublevel_3_4()
+delayOnly_TrialLevel <- Only_Take_One_Delay_Bin_TrialLevel()
+delayOnly_TrialLevel_gamma <- delayOnly_TrialLevel$allGamma
+delayOnly_SubLevel <- delayOnly$alldata_delayOnly
+
+alphavars <- grep("Alpha",names(delayOnly_SubLevel),value=TRUE)
+allAlpha <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",alphavars)]
+colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+allAlpha$Band <- "Alpha"
+
+
+thetavars <- grep("Theta",names(delayOnly_SubLevel),value=TRUE)
+allTheta <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",thetavars)]
+colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+allTheta$Band <- "Theta"
+
+betavars <- grep("Beta",names(delayOnly_SubLevel),value=TRUE)
+allBeta <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",betavars)]
+colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+allBeta$Band <- "Beta"
+
+
+gammavars <- grep("Gamma",names(delayOnly_SubLevel),value=TRUE)
+allGamma <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+delay_alldata <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+delay_alldata$epoch <- "Delay"
+delay_alldata$Region <- "Whole Brain"
+
+# Trial Level 
+delayOnly_TrialLevel <- Only_Take_One_Delay_Bin_TrialLevel()
+
+gammavars <- grep("Gamma",names(delayOnly_TrialLevel$alldata_TrialLevel_new),value=TRUE)
+delaygamma_trialLevel <- delayOnly_TrialLevel$alldata_TrialLevel_new[,c("Subject", "inverseAge", "age","Group", "Trial",gammavars)]
+colnames(delaygamma_trialLevel) <-  sub("Gamma.", "", colnames(delaygamma_trialLevel))
+
+delaygamma_trialLevel$epoch <- "Delay"
+
+
+write.csv(delaygamma_trialLevel, "H:/Projects/7TBrainMech/scripts/eeg/Shane/gammaTrialLevel.csv")
+```
+
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+delay_alldata_gamma <- delay_alldata %>% filter(delay_alldata$Band == "Gamma")
+TP <- TrialPower(delay_alldata_gamma[])
+
+print(TP$TPgraph)
+print(TP$model)
+print(TP$bargraph)
+
+#delay_alldata_gamma %>% dplyr::filter(., Group == c(1,2)) %>% t.test(Event_Duration_Variability ~ Group, data = .)
+
+#lunaize(ggplot(data = delay_alldata_gamma[], aes(x = age, y = log1p_Trial_Power)) + geom_point() + stat_smooth(method = "lm",formula = 'y ~ x + I(x^2)') + ggtitle("Trial Power") + xlab("Age") + ylab("Trial Power (log)")) +theme(plot.title = element_text(hjust = 0.5))
+
+```
+##### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TPV <- TrialPowerVar(delay_alldata_gamma)
+
+print(TPV$TPVgraph)
+print(TPV$model)
+print(TPV$bargraph)
+```
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EN <- EventNumber(delay_alldata_gamma)
+
+print(EN$ENgraph)
+print(summary(EN$model))
+print(EN$bargraph)
+
+#lunaize(ggplot(data = delay_alldata_gamma[], aes(x = age, y = Event_Number)) + geom_point() + stat_smooth(method = "lm",formula = 'y ~  poly(x,2)') + ggtitle("Event Number") + xlab("Age") + ylab("Event Number")) +theme(plot.title = element_text(hjust = 0.5))
+```
+##### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+ENV <- EventNumberVar(delay_alldata_gamma)
+
+print(ENV$ENVgraph)
+print(ENV$model)
+print(ENV$bargraph)
+```
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+ED <- EventDuration(delay_alldata_gamma)
+print(ED$EDgraph)
+print(ED$model)
+print(ED$bargraph)
+```
+##### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EDV <- EventDurationVar(delay_alldata_gamma)
+
+print(EDV$EDVgraph)
+print(EDV$model)
+print(EDV$bargraph)
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(Event_Number ~ s(age, k = 4),
+  data = delay_alldata_gamma)
+summary(gam.model)
+
+p.adjust(0.000108, method = "bonferroni", n = 6)
+
+# combine all the p values so that we can correct them for multiple comparisons 
+# EEGPvalues <- data.frame(TP$pvalue[1], TPV$pvalue[1], EN$pvalue[1], ENV$pvalue[1], ED$pvalue[1], EDV$pvalue[1])
+# 
+# p.adjust((EEGPvalues), method = "bonferroni")
+# 
+cowplot::plot_grid(TP$TPgraph, EN$ENgraph,TPV$TPVgraph,ENV$ENVgraph, labels = c('A','B','C','D'), label_size = 30, rel_widths = c(1,1,1.1))
+# 
+# cowplot::plot_grid(TP$bargraph, EN$bargraph,ED$bargraph,TPV$bargraph,ENV$bargraph, EDV$bargraph, labels = c('A','B','C','D','E','F'), label_size = 30, rel_widths = c(1,1,1.1))
+```
+### Regional Data 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+delayRegions3_4 <- RegionstoSpectralEventData_SubjectLevel()
+
+gammavars <- grep("Gamma",names(delayRegions3_4),value=TRUE)
+allGamma <- delayRegions3_4[,c("Subject", "inverseAge","age", "Group",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+WBgammavars <- grep("Gamma",names(delayOnly_SubLevel),value=TRUE)
+WBallGamma <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",WBgammavars)]
+colnames(WBallGamma) <-  sub("Gamma.", "", colnames(WBallGamma))
+colnames(WBallGamma) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(WBallGamma))
+colnames(WBallGamma) <-  sub("_sd", "_Variability", colnames(WBallGamma))
+WBallGamma$Region <- "Whole Brain"
+WBallGamma$epoch <- "Delay"
+WBallGamma$Band <- "Gamma"
+
+selectiveFrontalVars <-  grep("selectiveFrontal",names(allGamma),value=TRUE)
+allselectiveFrontal3_4 <- allGamma[,c("Subject", "inverseAge","age", "Band", "Group",selectiveFrontalVars)]
+colnames(allselectiveFrontal3_4) <-  sub("_selectiveFrontal", "", colnames(allselectiveFrontal3_4))
+colnames(allselectiveFrontal3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allselectiveFrontal3_4))
+colnames(allselectiveFrontal3_4) <-  sub("_sd", "_Variability", colnames(allselectiveFrontal3_4))
+allselectiveFrontal3_4$Region <- "SelectiveFrontal"
+allselectiveFrontal3_4$epoch <- "Delay"
+
+# Frontal
+FrontalVars <-  grep("_Frontal",names(allGamma),value=TRUE)
+allFrontal3_4 <- allGamma[,c("Subject", "inverseAge","age", "Band", "Group",FrontalVars)]
+colnames(allFrontal3_4) <-  sub("_Frontal", "", colnames(allFrontal3_4))
+colnames(allFrontal3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allFrontal3_4))
+colnames(allFrontal3_4) <-  sub("_sd", "_Variability", colnames(allFrontal3_4))
+allFrontal3_4$Region <- "Frontal"
+allFrontal3_4$epoch <- "Delay"
+
+# occipital
+Occipitalvars <-  grep("Occipital",names(allGamma),value=TRUE)
+allOccipital3_4 <- allGamma[,c("Subject", "inverseAge","age", "Band", "Group",Occipitalvars)]
+colnames(allOccipital3_4) <-  sub("_Occipital", "", colnames(allOccipital3_4))
+colnames(allOccipital3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allOccipital3_4))
+colnames(allOccipital3_4) <-  sub("_sd", "_Variability", colnames(allOccipital3_4))
+allOccipital3_4$Region <- "Occipital"
+allOccipital3_4$epoch <- "Delay"
+
+
+# parietal 
+Parietalvars <-  grep("Parietal",names(allGamma),value=TRUE)
+allParietal3_4 <- allGamma[,c("Subject", "inverseAge","age", "Band", "Group",Parietalvars)]
+colnames(allParietal3_4) <-  sub("_Parietal", "", colnames(allParietal3_4))
+colnames(allParietal3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allParietal3_4))
+colnames(allParietal3_4) <-  sub("_sd", "_Variability", colnames(allParietal3_4))
+allParietal3_4$Region <- "Parietal"
+allParietal3_4$epoch <- "Delay"
+
+
+# dlpfc 
+dlpfcvars <-  grep("dlpfc",names(allGamma),value=TRUE)
+alldlpfc3_4 <- allGamma[,c("Subject", "inverseAge","age", "Band", "Group",dlpfcvars)]
+colnames(alldlpfc3_4) <-  sub("_dlpfc", "", colnames(alldlpfc3_4))
+colnames(alldlpfc3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(alldlpfc3_4))
+colnames(alldlpfc3_4) <-  sub("_sd", "_Variability", colnames(alldlpfc3_4))
+alldlpfc3_4$Region <- "DLPFC"
+alldlpfc3_4$epoch <- "Delay"
+
+# combine all regions 
+allRegions3_4 <- rbind(allselectiveFrontal3_4, allOccipital3_4) %>% rbind(., allParietal3_4)%>% rbind(.,alldlpfc3_4)%>% rbind(.,allFrontal3_4) %>% rbind(., WBallGamma)
+
+
+```
+
+## Fixation Period 
+### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+
+FixOnly <- FixOnly_Sublevel()
+FixOnly_SubLevel <- FixOnly$alldata_FixOnly
+
+alphavars <- grep("Alpha",names(FixOnly_SubLevel),value=TRUE)
+allAlpha <- FixOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",alphavars)]
+colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+allAlpha$Band <- "Alpha"
+
+
+thetavars <- grep("Theta",names(FixOnly_SubLevel),value=TRUE)
+allTheta <- FixOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",thetavars)]
+colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+allTheta$Band <- "Theta"
+
+betavars <- grep("Beta",names(FixOnly_SubLevel),value=TRUE)
+allBeta <- FixOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",betavars)]
+colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+allBeta$Band <- "Beta"
+
+
+gammavars <- grep("Gamma",names(FixOnly_SubLevel),value=TRUE)
+allGamma <- FixOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+fix_alldata <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+fix_alldata$epoch <- "Fix"
+fix_alldata$Region <- "Whole Brain"
+
+# Trial Level 
+fixOnly_TrialLevel_list <- Only_Take_Fix_TrialLevel()
+
+gammavars <- grep("Gamma",names(fixOnly_TrialLevel_list$alldata_Fix_TrialLevel),value=TRUE)
+fixgamma_trialLevel <- fixOnly_TrialLevel_list$alldata_Fix_TrialLevel[,c("Subject", "inverseAge", "age","Group", "Trial",gammavars)]
+colnames(fixgamma_trialLevel) <-  sub("Gamma.", "", colnames(fixgamma_trialLevel))
+fixgamma_trialLevel$log1p_Trial_Power <- log1p(fixgamma_trialLevel$Trial_Power)
+fixgamma_trialLevel$epoch <- "Fix"
+
+
+```
+
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+fix_alldata_gamma <- fix_alldata %>% filter(fix_alldata$Band == "Gamma")
+TP <- TrialPower(fix_alldata_gamma[])
+
+print(TP$TPgraph)
+print(TP$model)
+print(TP$bargraph)
+
+
+#significant period of growth
+  gam.model <- gam(log1p_Trial_Power_Variability ~ s(age), data = fix_alldata_gamma)
+  gam.growthrate <- gam_growthrate(gam.model, agevar = 'age')
+  gam_growthrate_plot(fix_alldata_gamma, gam.model, gam.growthrate, agevar = 'age', yvar = 'log1p_Trial_Power_Variability', draw_points = F)
+
+#fix_alldata_gamma %>% dplyr::filter(., Group == c(1,2)) %>% t.test(Event_Duration_Variability ~ Group, data = .)
+
+```
+##### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TPV <- TrialPowerVar(fix_alldata_gamma)
+
+print(TPV$TPVgraph)
+print(TPV$model)
+print(TPV$bargraph)
+```
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EN <- EventNumber(fix_alldata_gamma)
+
+print(EN$ENgraph)
+print(EN$model)
+print(EN$bargraph)
+```
+##### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+ENV <- EventNumberVar(fix_alldata_gamma)
+
+print(ENV$ENVgraph)
+print(ENV$model)
+print(ENV$bargraph)
+```
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+ED <- EventDuration(fix_alldata_gamma)
+
+print(ED$EDgraph)
+print(ED$model)
+print(ED$bargraph)
+```
+##### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EDV <- EventDurationVar(fix_alldata_gamma)
+
+print(EDV$EDVgraph)
+print(EDV$model)
+print(EDV$bargraph)
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(Event_Number_Variability ~ s(age, k =4),
+  data = fix_alldata_gamma)
+summary(gam.model)
+
+p.adjust(0.000791, method = "bonferroni", n = 6)
+
+# combine all the p values so that we can correct them for multiple comparisons 
+# EEGPvalues <- data.frame(TP$pvalue[1], TPV$pvalue[1], EN$pvalue[1], ENV$pvalue[1], ED$pvalue[1], EDV$pvalue[1])
+# 
+# p.adjust((EEGPvalues), method = "bonferroni")
+# 
+cowplot::plot_grid(TP$TPgraph, EN$ENgraph,TPV$TPVgraph,ENV$ENVgraph, labels = c('A','B','C','D'), label_size = 30, rel_widths = c(1,1,1.1))
+# 
+# cowplot::plot_grid(TP$bargraph, EN$bargraph,ED$bargraph,TPV$bargraph,ENV$bargraph, EDV$bargraph, labels = c('A','B','C','D','E','F'), label_size = 30, rel_widths = c(1,1,1.1))
+```
+
+
+### Regional Data
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+fixRegions_fix <- RegionstoSpectralEventData_SubjectLevel_fix()
+
+
+gammavars <- grep("Gamma",names(fixRegions_fix),value=TRUE)
+allGamma <- fixRegions_fix[,c("Subject", "inverseAge", "age", "Group",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+WBgammavars <- grep("Gamma",names(FixOnly_SubLevel),value=TRUE)
+WBallGamma <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",WBgammavars)]
+colnames(WBallGamma) <-  sub("Gamma.", "", colnames(WBallGamma))
+colnames(WBallGamma) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(WBallGamma))
+colnames(WBallGamma) <-  sub("_sd", "_Variability", colnames(WBallGamma))
+WBallGamma$Region <- "Whole Brain"
+WBallGamma$epoch <- "Fix"
+WBallGamma$Band <- "Gamma"
+
+# selective frontal
+selectiveFrontalVars <-  grep("selectiveFrontal",names(allGamma),value=TRUE)
+allselectiveFrontal_fix <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",selectiveFrontalVars)]
+colnames(allselectiveFrontal_fix) <-  sub("_selectiveFrontal", "", colnames(allselectiveFrontal_fix))
+colnames(allselectiveFrontal_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allselectiveFrontal_fix))
+colnames(allselectiveFrontal_fix) <-  sub("_sd", "_Variability", colnames(allselectiveFrontal_fix))
+allselectiveFrontal_fix$Region <- "SelectiveFrontal"
+allselectiveFrontal_fix$epoch <- "Fix"
+
+# frontal
+FrontalVars <-  grep("_Frontal",names(allGamma),value=TRUE)
+allFrontal_fix <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",FrontalVars)]
+colnames(allFrontal_fix) <-  sub("_Frontal", "", colnames(allFrontal_fix))
+colnames(allFrontal_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allFrontal_fix))
+colnames(allFrontal_fix) <-  sub("_sd", "_Variability", colnames(allFrontal_fix))
+allFrontal_fix$Region <- "Frontal"
+allFrontal_fix$epoch <- "Fix"
+
+# occipital
+Occipitalvars <-  grep("Occipital",names(allGamma),value=TRUE)
+allOccipital_fix <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",Occipitalvars)]
+colnames(allOccipital_fix) <-  sub("_Occipital", "", colnames(allOccipital_fix))
+colnames(allOccipital_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allOccipital_fix))
+colnames(allOccipital_fix) <-  sub("_sd", "_Variability", colnames(allOccipital_fix))
+allOccipital_fix$Region <- "Occipital"
+allOccipital_fix$epoch <- "Fix"
+
+
+# parietal 
+Parietalvars <-  grep("Parietal",names(allGamma),value=TRUE)
+allParietal_fix <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",Parietalvars)]
+colnames(allParietal_fix) <-  sub("_Parietal", "", colnames(allParietal_fix))
+colnames(allParietal_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allParietal_fix))
+colnames(allParietal_fix) <-  sub("_sd", "_Variability", colnames(allParietal_fix))
+allParietal_fix$Region <- "Parietal"
+allParietal_fix$epoch <- "Fix"
+
+# dlpfc 
+dlpfcvars <-  grep("dlpfc",names(allGamma),value=TRUE)
+alldlpfc_fix <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",dlpfcvars)]
+colnames(alldlpfc_fix) <-  sub("_dlpfc", "", colnames(alldlpfc_fix))
+colnames(alldlpfc_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(alldlpfc_fix))
+colnames(alldlpfc_fix) <-  sub("_sd", "_Variability", colnames(alldlpfc_fix))
+alldlpfc_fix$Region <- "DLPFC"
+alldlpfc_fix$epoch <- "Fix"
+
+# combine all regions 
+allRegions_fix <- rbind(allselectiveFrontal_fix, allOccipital_fix) %>% rbind(., allParietal_fix) %>% rbind(.,alldlpfc_fix) %>% rbind(., allFrontal_fix) %>% rbind(., WBallGamma)
+
+```
+## Resting State
+### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+Restdf <- Resting_State_Data_SubjectLevel()
+Restalldata <- Restdf$alldata_RestOnly
+
+alphavars <- grep("Alpha",names(Restalldata),value=TRUE)
+allAlpha <- Restalldata[,c("Subject", "inverseAge", "age","Group",alphavars)]
+colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+allAlpha$Band <- "Alpha"
+
+
+thetavars <- grep("Theta",names(Restalldata),value=TRUE)
+allTheta <- Restalldata[,c("Subject", "inverseAge", "age","Group",thetavars)]
+colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+allTheta$Band <- "Theta"
+
+betavars <- grep("Beta",names(Restalldata),value=TRUE)
+allBeta <- Restalldata[,c("Subject", "inverseAge", "age","Group",betavars)]
+colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+allBeta$Band <- "Beta"
+
+
+gammavars <- grep("Gamma",names(Restalldata),value=TRUE)
+allGamma <- Restalldata[,c("Subject", "inverseAge", "age","Group",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+rest_alldata <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+rest_alldata$epoch <- "Rest"
+rest_alldata$Region <- "Whole Brain"
+```
+
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+rest_alldata_gamma <- rest_alldata %>% filter(rest_alldata$Band == "Gamma")
+TP <- TrialPower(rest_alldata_gamma[])
+
+print(TP$TPgraph)
+print(TP$model)
+print(TP$bargraph)
+
+#rest_alldata %>% dplyr::filter(., Group == c(2,3)) %>% t.test(Event_Duration ~ Group, data = .)
+
+
+```
+
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EN <- EventNumber(rest_alldata_gamma)
+
+print(EN$ENgraph)
+print(EN$model)
+print(EN$bargraph)
+```
+
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+ED <- EventDuration(rest_alldata_gamma)
+
+print(ED$EDgraph)
+print(ED$model)
+print(ED$bargraph)
+```
+### Regional Data
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+restRegions <- RegionstoSpectralEventData_SubjectLevelRS()
+
+gammavars <- grep("Gamma",names(restRegions),value=TRUE)
+allGamma <- restRegions[,c("Subject", "inverseAge", "age","Group",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+WBgammavars <- grep("Gamma",names(Restalldata),value=TRUE)
+WBallGamma <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age","Group",WBgammavars)]
+colnames(WBallGamma) <-  sub("Gamma.", "", colnames(WBallGamma))
+colnames(WBallGamma) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(WBallGamma))
+colnames(WBallGamma) <-  sub("_sd", "_Variability", colnames(WBallGamma))
+WBallGamma$Region <- "Whole Brain"
+WBallGamma$epoch <- "Rest"
+WBallGamma$Band <- "Gamma"
+
+# selective frontal
+selectiveFrontalVars <-  grep("selectiveFrontal",names(allGamma),value=TRUE)
+allselectiveFrontal_RS <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",selectiveFrontalVars)]
+colnames(allselectiveFrontal_RS) <-  sub("_selectiveFrontal", "", colnames(allselectiveFrontal_RS))
+colnames(allselectiveFrontal_RS) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allselectiveFrontal_RS))
+colnames(allselectiveFrontal_RS) <-  sub("_sd", "_Variability", colnames(allselectiveFrontal_RS))
+allselectiveFrontal_RS$Region <- "SelectiveFrontal"
+allselectiveFrontal_RS$epoch <- "Rest"
+
+#  frontal
+FrontalVars <-  grep("_Frontal",names(allGamma),value=TRUE)
+allFrontal_RS <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",FrontalVars)]
+colnames(allFrontal_RS) <-  sub("_Frontal", "", colnames(allFrontal_RS))
+colnames(allFrontal_RS) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allFrontal_RS))
+colnames(allFrontal_RS) <-  sub("_sd", "_Variability", colnames(allFrontal_RS))
+allFrontal_RS$Region <- "Frontal"
+allFrontal_RS$epoch <- "Rest"
+
+# occipital
+Occipitalvars <-  grep("Occipital",names(allGamma),value=TRUE)
+allOccipital_RS <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",Occipitalvars)]
+colnames(allOccipital_RS) <-  sub("_Occipital", "", colnames(allOccipital_RS))
+colnames(allOccipital_RS) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allOccipital_RS))
+colnames(allOccipital_RS) <-  sub("_sd", "_Variability", colnames(allOccipital_RS))
+allOccipital_RS$Region <- "Occipital"
+allOccipital_RS$epoch <- "Rest"
+
+
+# parietal 
+Parietalvars <-  grep("Parietal",names(allGamma),value=TRUE)
+allParietal_RS <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",Parietalvars)]
+colnames(allParietal_RS) <-  sub("_Parietal", "", colnames(allParietal_RS))
+colnames(allParietal_RS) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allParietal_RS))
+colnames(allParietal_RS) <-  sub("_sd", "_Variability", colnames(allParietal_RS))
+allParietal_RS$Region <- "Parietal"
+allParietal_RS$epoch <- "Rest"
+
+# dlpfc 
+dlpfcvars <-  grep("dlpfc",names(allGamma),value=TRUE)
+alldlpfc_RS <- allGamma[,c("Subject", "inverseAge", "age", "Band","Group",dlpfcvars)]
+colnames(alldlpfc_RS) <-  sub("_dlpfc", "", colnames(alldlpfc_RS))
+colnames(alldlpfc_RS) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(alldlpfc_RS))
+colnames(alldlpfc_RS) <-  sub("_sd", "_Variability", colnames(alldlpfc_RS))
+alldlpfc_RS$Region <- "DLPFC"
+alldlpfc_RS$epoch <- "Rest"
+
+# combine all regions 
+allRegions_RS <- rbind(allselectiveFrontal_RS, allOccipital_RS) %>% rbind(., allParietal_RS) %>% rbind(.,alldlpfc_RS)%>% rbind(.,allFrontal_RS)
+
+
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+# combine all the p values so that we can correct them for multiple comparisons 
+# EEGPvalues <- data.frame(TP$pvalue[1], EN$pvalue[1], ED$pvalue[1])
+# 
+# p.adjust((EEGPvalues), method = "bonferroni")
+# 
+# cowplot::plot_grid(TP$TPgraph, EN$ENgraph,ED$EDgraph, labels = c('A','B','C'), label_size = 30, rel_widths = c(1,1,1.1))
+# 
+# cowplot::plot_grid(TP$bargraph, EN$bargraph, ED$bargraph, labels = c('A','B','C'), label_size = 30, rel_widths = c(1,1,1), ncol = 3)
+
+```
+
+
+## Compare Epochs
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allepochs <- rbind(delay_alldata_gamma, fix_alldata_gamma )
+
+allepochs <- rbind(allepochs, rest_alldata_gamma)
+allepochs <- merge(allepochs, Behavior, by = c("Subject", "age", "inverseAge"))
+
+  lm.model1 <- lm(data = allepochs[], Event_Duration ~ age + epoch) #if significant, regardless of epoch, theres an age effect
+
+#TEST for a main effect of age on event duration (your main effect model)
+  lm.model <- lm(data = allepochs[], Event_Duration ~ inverseAge + epoch) #if significant, regardless of epoch, theres an age effect
+
+  AIC(lm.model,lm.model1) #check to see if age vs inverse age, which is the better model
+#TEST for an interaction between age and epoch on event duration, which will tell you whether there are age effects that are most prominent in one condition vs the other
+  lm.model <- lm(data = allepochs[], Event_Number ~ inverseAge*epoch) #if significant, means age effects are different across epochs 
+  anova(lm.model)
+lm.model <- lm(data = allepochs[allepochs$epoch=="Delay" | allepochs$epoch=="Rest",], Event_Number ~ inverseAge*epoch) #if significant, means age effects are different across epochs 
+anova(lm.model)
+
+#IF above model is significant, find out where the age effects are. ?are these called simple effects?    
+  lm.model <- lm(data = allepochs[allepochs$epoch=="Delay",], Event_Duration ~ inverseAge) #only trend-level effect of age 
+  lm.model <- lm(data = allepochs[allepochs$epoch=="Fix",], Event_Duration ~ inverseAge) #NS effect of age
+  lm.model <- lm(data = allepochs[allepochs$epoch=="Rest",], Event_Duration ~ inverseAge) #most sig age effects in rest 
+  
+  allepochs_wholebraingamma <- allepochs[allepochs$Band == "Gamma" & allepochs$Region == "Whole Brain",]
+  
+  #Bar graph of averages for spectral measures in all three epochs 
+  averageEpochsbyGroup <- aggregate(. ~ Group + epoch, data = allepochs_wholebraingamma[c(4:12,14)], mean, na.rm = T)
+  SDEpochsbyGroup <- aggregate(. ~ Group + epoch, data = allepochs_wholebraingamma[c(4:12,14)], sd, na.rm = T)
+  
+library(plotrix)
+```
+
+### Delay vs Fix
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+# POWER VARIABILITY
+
+sderror<-std.error(averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",]$log1p_Trial_Power_Variability)
+
+YMIN <- averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",]$log1p_Trial_Power_Variability-sderror
+
+YMAX <- averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",]$log1p_Trial_Power_Variability+sderror
+
+lunaize(ggplot(averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",], aes(x=epoch, y=log1p_Trial_Power_Variability, group = Group, fill=Group, ymin= YMIN, ymax=YMAX )) + geom_col(position = 'dodge') + geom_errorbar(position='dodge'))
+
+
+# EVENT NUMBER VARIABILITY
+
+sderror<-std.error(averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",]$Event_Number_Variability)
+
+YMIN <- averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",]$Event_Number_Variability-sderror
+
+YMAX <- averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",]$Event_Number_Variability+sderror
+
+lunaize(ggplot(averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",], aes(x=epoch, y=Event_Number_Variability, group = Group, fill=Group, ymin= YMIN, ymax=YMAX )) + geom_col(position = 'dodge') + geom_errorbar(position='dodge'))
+
+
+# EVENT DURATION VARIABILITY
+
+sderror<-std.error(averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",]$Event_Duration_Variability)
+
+YMIN <- averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",]$Event_Duration_Variability-sderror
+
+YMAX <- averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",]$Event_Duration_Variability+sderror
+
+lunaize(ggplot(averageEpochsbyGroup[averageEpochsbyGroup$epoch == "Delay" | averageEpochsbyGroup$epoch == "fix",], aes(x=epoch, y=Event_Duration_Variability, group = Group, fill=Group, ymin= YMIN, ymax=YMAX )) + geom_col(position = 'dodge') + geom_errorbar(position='dodge'))
+```
+### Delay, Fix, and Rest 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+#all 3 epochs
+# TRIAL POWER
+sderror<-std.error(averageEpochsbyGroup$log1p_Trial_Power)
+
+YMIN <- averageEpochsbyGroup$log1p_Trial_Power-sderror
+
+YMAX <- averageEpochsbyGroup$log1p_Trial_Power+sderror
+
+lunaize(ggplot(averageEpochsbyGroup, aes(x=epoch, y=log1p_Trial_Power, group = Group, fill=Group, ymin= YMIN, ymax=YMAX )) + geom_col(position = 'dodge') + geom_errorbar(position='dodge'))
+
+# EVENT NUMBER
+sderror<-std.error(averageEpochsbyGroup$Event_Number)
+
+YMIN <- averageEpochsbyGroup$Event_Number-sderror
+
+YMAX <- averageEpochsbyGroup$Event_Number+sderror
+
+lunaize(ggplot(averageEpochsbyGroup, aes(x=epoch, y=Event_Number, group = Group, fill=Group, ymin= YMIN, ymax=YMAX )) + geom_col(position = 'dodge') + geom_errorbar(position='dodge'))
+
+# EVENT DURATION
+sderror<-std.error(averageEpochsbyGroup$Event_Duration)
+
+YMIN <- averageEpochsbyGroup$Event_Duration-sderror
+
+YMAX <- averageEpochsbyGroup$Event_Duration+sderror
+
+lunaize(ggplot(averageEpochsbyGroup, aes(x=epoch, y=Event_Duration, group = Group, fill=Group, ymin= YMIN, ymax=YMAX )) + geom_col(position = 'dodge') + geom_errorbar(position='dodge'))
+```
+### Average all subjects per epoch
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+  #Bar graphs of averages by epoch 
+  averageEpoch <-  aggregate(. ~ epoch, data = allepochs_wholebraingamma[c(4:12,14)], mean, na.rm = T)
+
+# TRIAL POWER
+sderror<-std.error(averageEpoch$Trial_Power)
+
+YMIN <- averageEpoch$Trial_Power-sderror
+
+YMAX <- averageEpoch$Trial_Power+sderror
+
+lunaize(ggplot(averageEpoch, aes(x=epoch, y=Trial_Power, group = Group, fill=Group, ymin= YMIN, ymax=YMAX )) + geom_col(position = 'dodge') + geom_errorbar(position='dodge'))
+  
+
+#EVENT NUMBER
+sderror<-std.error(averageEpoch$Event_Number)
+
+YMIN <- averageEpoch$Event_Number-sderror
+
+YMAX <- averageEpoch$Event_Number+sderror
+
+lunaize(ggplot(averageEpoch, aes(x=epoch, y=Event_Number, group = Group, fill=Group, ymin= YMIN, ymax=YMAX )) + geom_col(position = 'dodge') + geom_errorbar(position='dodge'))
+
+
+#EVENT DURATION
+sderror<-std.error(averageEpoch$Event_Duration)
+
+YMIN <- averageEpoch$Event_Duration-sderror
+
+YMAX <- averageEpoch$Event_Duration+sderror
+
+lunaize(ggplot(averageEpoch, aes(x=epoch, y=Event_Duration, group = Group, fill=Group, ymin= YMIN, ymax=YMAX )) + geom_col(position = 'dodge') + geom_errorbar(position='dodge'))
+
+
+
+```
+
+### Gamma Band across age - all epochs 
+#### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.width= 15}
+TP <- (lunaize(ggplot(data = allepochs[], aes(x = age, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm",formula='y~I(1/x)') + ggtitle("") + xlab("") + ylab("") + theme(legend.position = "none")))
+EN <- (lunaize(ggplot(data = allepochs[], aes(x = age, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm",formula='y~I(1/x)') + ggtitle("") + xlab("") + ylab("")+ theme(legend.title = element_blank())))
+ED <- (lunaize(ggplot(data = allepochs[], aes(x = age, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm",formula='y~I(1/x)') + ggtitle("") + xlab("") + ylab("")+ theme(legend.title = element_blank())))
+
+lm.model <-lm(Event_Number ~ inverseAge*epoch, data = allepochs)
+anova(lm.model)
+summary(lm.model)
+
+
+cowplot::plot_grid(TP,EN,ED, labels = c('A','B','C'), label_size = 30, rel_widths = c(1,1,1))
+
+```
+#### Regional Data
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.width= 15}
+allregions <- rbind(allRegions3_4, allRegions_fix )
+
+allregions <- rbind(allregions, allRegions_RS)
+allregions <- merge(allregions, Behavior, by = c("Subject", "inverseAge", "age"))
+```
+
+
+<!-- ## Traditional EEG Analysis -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.width= 15} -->
+<!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE) -->
+
+<!--  sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE) -->
+
+<!--   traditionalGammaPower_allChannels <- traditionalEEG_IndividualChannels() -->
+<!--   traditionalGammaPower_allChannels <- merge(traditionalGammaPower_allChannels, Behavior, by = c("Subject", "age", "inverseAge")) -->
+<!--   traditionalGammaPower_allChannels$Epoch <- as.factor(traditionalGammaPower_allChannels$Epoch) -->
+
+
+<!--   wholeBrain <- aggregate(.~Subject + Epoch, data = traditionalGammaPower_allChannels, mean) -->
+
+<!--   (lunaize(ggplot(data = wholeBrain, aes(x = age, y = (Power), color = Epoch)) + geom_point() + stat_smooth(method = "lm",formula='y~I(1/x)') + ggtitle("Mean Channel Power vs Age") + xlab("Age") + ylab("Gamma Power")) +theme(plot.title = element_text(hjust = 0.5))) -->
+
+<!--   lm.model <- lm(data = wholeBrain[], ((Power)) ~ (inverseAge)) -->
+<!--   anova(lm.model)  -->
+<!--   summary(lm.model) -->
+
+
+<!--   Gamma_Frontal <- aggregate(.~Subject + Epoch, data = filter(traditionalGammaPower_allChannels, str_detect(traditionalGammaPower_allChannels$Channel, "F")), mean) -->
+
+<!--   (lunaize(ggplot(data = Gamma_Frontal, aes(x = age, y = (Power))) + geom_point() + stat_smooth(method = "lm",formula='y~I(1/x)') + ggtitle("Frontal Gamma Power vs Age") + xlab("Age") + ylab("Gamma Power")) +theme(plot.title = element_text(hjust = 0.5))) -->
+
+<!--   lm.model <- lm(data = Gamma_Frontal[], ((Power)) ~ (inverseAge)) -->
+<!--   anova(lm.model)  -->
+<!--   summary(lm.model) -->
+
+
+<!--   Gamma_Parietal <- aggregate(.~Subject + Epoch, data = filter(traditionalGammaPower_allChannels, str_detect(traditionalGammaPower_allChannels$Channel, "P")), mean) -->
+
+<!--   (lunaize(ggplot(data = Gamma_Parietal, aes(x = age, y = (Power))) + geom_point() + stat_smooth(method = "lm",formula='y~I(1/x)') + ggtitle("Parietal Gamma Power vs Age") + xlab("Age") + ylab("Gamma Power")) +theme(plot.title = element_text(hjust = 0.5))) -->
+
+<!--   lm.model <- lm(data = Gamma_Parietal[], ((Power)) ~ (inverseAge)) -->
+<!--   anova(lm.model)  -->
+<!--   summary(lm.model) -->
+
+
+<!--   Gamma_Occipital <- aggregate(.~Subject + Epoch, data = filter(traditionalGammaPower_allChannels, str_detect(traditionalGammaPower_allChannels$Channel, "O")), mean) -->
+
+<!--   (lunaize(ggplot(data = Gamma_Occipital, aes(x = age, y = (Power))) + geom_point() + stat_smooth(method = "lm",formula='y~I(1/x)') + ggtitle("Occipital Gamma Power vs Age") + xlab("Age") + ylab("Gamma Power")) +theme(plot.title = element_text(hjust = 0.5))) -->
+
+<!--   lm.model <- lm(data = Gamma_Occipital[], ((Power)) ~ (inverseAge)) -->
+<!--   anova(lm.model)  -->
+<!--   summary(lm.model) -->
+
+
+
+<!--   gamma_long <- rbind( -->
+<!--     wholeBrain %>% dplyr::select(Subject, inverseAge, age, Epoch, Power,mgsLatency, mgsLatency_sd, vgsLatency, vgsLatency_sd, absBestError, absBestError_sd) %>% mutate(Region='Whole Brain') %>% mutate(Method = "Traditional"), -->
+<!--     Gamma_Frontal %>% dplyr::select(Subject, inverseAge, age, Epoch,  Power,  vgsLatency, vgsLatency_sd, mgsLatency, mgsLatency_sd,  absBestError, absBestError_sd) %>% mutate(Region='Frontal') %>% mutate(Method = "Traditional") -->
+<!--   ) %>% rbind(., Gamma_Parietal %>% dplyr::select(Subject, inverseAge, age, Epoch,  Power,   vgsLatency, vgsLatency_sd, mgsLatency, mgsLatency_sd,  absBestError, absBestError_sd) %>% mutate(Region='Parietal') %>% mutate(Method = "Traditional")) %>%  rbind(., Gamma_Occipital %>% dplyr::select(Subject, inverseAge, age, Epoch,  Power,  vgsLatency, vgsLatency_sd, mgsLatency, mgsLatency_sd,  absBestError, absBestError_sd) %>% mutate(Region='Occipital') %>% mutate(Method = "Traditional")) -->
+
+<!--   gamma_long$logPower <- 20*log10(gamma_long$Power) -->
+
+
+<!--   lunaize(ggplot(data = gamma_long,  -->
+<!--                  aes(x = age, y = Power, color = Epoch)) +  -->
+<!--             stat_smooth(method='lm', alpha=0.15, formula = 'y~I(1/x)')) + facet_wrap( . ~ type)  + xlab("Age") + ylab("Gamma Power") -->
+
+<!--   lm.model <- lm(data = filter(gamma_long, str_detect(gamma_long$type, "Whole Brain")), ((logPower)) ~ (inverseAge*Epoch)) -->
+<!--   anova(lm.model)  -->
+
+
+<!--   # Vs Behavior -->
+
+<!--   lunaize(ggplot(data = gamma_long,  -->
+<!--                  aes(x = logPower, y = vgsLatency_sd, color = Epoch)) +  -->
+<!--             geom_point() + stat_smooth(method='lm', alpha=0.15)) + facet_wrap( . ~ type)  + xlab("Gamma Power") + ylab("vgs Latency var (s)") -->
+
+
+<!--   lm.model <- lm(data = filter(gamma_long, str_detect(gamma_long$type, "Parietal")), ((vgsLatency_sd)) ~ (logPower)) -->
+<!--   anova(lm.model)  -->
+<!--   summary(lm.model) -->
+
+<!--   lm.model <- lm(data = filter(gamma_long, str_detect(gamma_long$type, "Parietal")), ((vgsLatency_sd)) ~ (logPower*age)) -->
+<!--   anova(lm.model)  -->
+<!--   summary(lm.model) -->
+
+
+<!--   lunaize(ggplot(data = gamma_long %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))),  -->
+<!--                  aes(x = logPower, y = vgsLatency_sd, color = ageGroup)) +  -->
+<!--             geom_point() + stat_smooth(method='lm') + xlab("Power") + ylab("vgs Latency var (s)")+ facet_wrap( . ~ type))  -->
+
+
+<!--   gam.model <- gam(vgsLatency_sd ~ s(logPower, k=4, by=ageGroup) + s(age, k=4), -->
+<!--                     data = filter(gamma_long, str_detect(gamma_long$type, "Parietal")) %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')))) -->
+<!--   summary(gam.model)   -->
+
+<!-- ``` -->
+
+<!-- ## Compare Spectral and Traditional -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- spectralTraditionalCombined <- rbind(allregions %>% dplyr::select(Subject, inverseAge, age, Epoch = epoch, Power= Trial_Power, logPower = log1p_Trial_Power, mgsLatency, mgsLatency_sd, vgsLatency, vgsLatency_sd, absBestError, absBestError_sd, Region) %>% mutate(Method = "Spectral Events"), gamma_long) -->
+
+
+<!-- lunaize(ggplot(data = spectralTraditionalCombined[spectralTraditionalCombined$Method == "Spectral Events",],  -->
+<!--                  aes(x = age, y = logPower, color = Epoch)) +  -->
+<!--             stat_smooth(method='lm', alpha=0.15, formula = 'y~I(1/x)')) + facet_wrap( . ~ Region)  + xlab("Age") + ylab("Gamma Power") -->
+
+
+<!-- oneMethodDF <- spectralTraditionalCombined[spectralTraditionalCombined$Method == "Spectral Events",] -->
+
+<!-- gam.model <- gam(logPower ~ s(inverseAge, k=4, by=as.factor(Region)) + s(inverseAge, k=4), data = filter(oneMethodDF, str_detect(oneMethodDF$Epoch, "Fix"))) -->
+<!--   summary(gam.model)   -->
+
+
+<!-- ``` -->
+
+
+# Frequency Vs Behavior
+## Subject Level
+### Best Saccade
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+
+#pull in trial level for stats
+Behav_trial <- Behavior_TrialLevel_Maria()
+gamma_trialLevel<- rbind(delaygamma_trialLevel, fixgamma_trialLevel)
+
+triallevel_behavGamma <- merge(gamma_trialLevel, Behav_trial, by = c("Subject","Trial", "age"))
+write.csv(triallevel_behavGamma, "H:/Projects/7TBrainMech/scripts/eeg/Shane/trialLevel_behavGamma.csv")
+
+# subject level 
+#use allepochs
+allepochs$powerbyevent <- allepochs$log1p_Trial_Power * allepochs$Event_Number
+```
+
+#### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(absBestError ~ s(log1p_Trial_Power, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power, y = absBestError, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(absBestError ~ log1p_Trial_Power*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(absBestError ~ s(log1p_Trial_Power_Variability, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power_Variability, y = absBestError, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(absBestError ~ log1p_Trial_Power_Variability*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(absBestError ~ s(Event_Number, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number, y = absBestError, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(absBestError ~ Event_Number*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(absBestError ~ s(Event_Number_Variability, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number_Variability, y = absBestError, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(absBestError ~ Event_Number_Variability*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+
+### Best Saccade Variability
+
+#### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(absBestError_sd ~ s(log1p_Trial_Power, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power, y = absBestError_sd, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(absBestError_sd ~ log1p_Trial_Power*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(absBestError_sd ~ s(log1p_Trial_Power_Variability, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power_Variability, y = absBestError_sd, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(absBestError_sd ~ log1p_Trial_Power_Variability*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(absBestError_sd ~ s(Event_Number, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number, y = absBestError_sd, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(absBestError_sd ~ Event_Number*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(absBestError_sd ~ s(Event_Number_Variability, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number_Variability, y = absBestError_sd, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(absBestError_sd ~ Event_Number_Variability*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+### VGS Latency
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+
+#pull in trial level for stats
+Behav_trial <- Behavior_TrialLevel_Maria()
+gamma_trialLevel<- rbind(delaygamma_trialLevel, fixgamma_trialLevel)
+
+triallevel_behavGamma <- merge(gamma_trialLevel, Behav_trial, by = c("Subject","Trial", "age"))
+write.csv(triallevel_behavGamma, "H:/Projects/7TBrainMech/scripts/eeg/Shane/trialLevel_behavGamma.csv")
+
+# subject level 
+#use allepochs
+allepochs$powerbyevent <- allepochs$log1p_Trial_Power * allepochs$Event_Number
+```
+
+#### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(vgsLatency ~ s(log1p_Trial_Power, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power, y = vgsLatency, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(vgsLatency ~ log1p_Trial_Power*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(vgsLatency ~ s(log1p_Trial_Power_Variability, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power_Variability, y = vgsLatency, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(vgsLatency ~ log1p_Trial_Power_Variability*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(vgsLatency ~ s(Event_Number, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Fix'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+p.adjust(.00307, method = 'bonferroni', n = 16)
+
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number, y = vgsLatency, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch) + xlab("Number of Gamma Events") + ylab("VGS Latency (sec)")
+
+
+
+lm.model <- lm(vgsLatency ~ Event_Number*ageGroup,
+               data = allepochs %>% filter(epoch == 'Fix') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(vgsLatency ~ s(Event_Number_Variability, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number_Variability, y = vgsLatency, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(vgsLatency ~ Event_Number_Variability*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+### VGS Latency Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+
+#pull in trial level for stats
+Behav_trial <- Behavior_TrialLevel_Maria()
+gamma_trialLevel<- rbind(delaygamma_trialLevel, fixgamma_trialLevel)
+
+triallevel_behavGamma <- merge(gamma_trialLevel, Behav_trial, by = c("Subject","Trial", "age"))
+write.csv(triallevel_behavGamma, "H:/Projects/7TBrainMech/scripts/eeg/Shane/trialLevel_behavGamma.csv")
+
+# subject level 
+#use allepochs
+allepochs$powerbyevent <- allepochs$log1p_Trial_Power * allepochs$Event_Number
+```
+
+#### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(vgsLatency_sd ~ s(log1p_Trial_Power, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power, y = vgsLatency_sd, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(vgsLatency_sd ~ log1p_Trial_Power*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(vgsLatency_sd ~ s(log1p_Trial_Power_Variability, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power_Variability, y = vgsLatency_sd, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(vgsLatency_sd ~ log1p_Trial_Power_Variability*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(vgsLatency_sd ~ s(Event_Number, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number, y = vgsLatency_sd, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(vgsLatency_sd ~ Event_Number*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(vgsLatency_sd ~ s(Event_Number_Variability, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Fix'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number_Variability, y = vgsLatency_sd, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch) + xlab("Variability (SD) in Gamma Events") + ylab("Variability in VGS Latency (sec)")
+
+
+
+lm.model <- lm(vgsLatency_sd ~ Event_Number_Variability*ageGroup,
+               data = allepochs %>% filter(epoch == 'Rest') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+### MGS Latency
+
+#### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(mgsLatency ~ s(log1p_Trial_Power, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power, y = mgsLatency, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(mgsLatency ~ log1p_Trial_Power*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(mgsLatency ~ s(log1p_Trial_Power_Variability, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power_Variability, y = mgsLatency, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(mgsLatency ~ log1p_Trial_Power_Variability*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(mgsLatency ~ s(Event_Number, k=4, by=ageGroup)+s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+p.adjust(0.01245, method = 'bonferroni', n = 16)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number, y = mgsLatency, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch) + xlab("Number of Gamma Events") + ylab("MGS Latency (sec)")
+
+
+
+lm.model <- lm(mgsLatency ~ Event_Number*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(mgsLatency ~ s(Event_Number_Variability, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number_Variability, y = mgsLatency, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(mgsLatency ~ Event_Number_Variability*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+### MGS Latency Variability
+
+#### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(mgsLatency_sd ~ s(log1p_Trial_Power, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power, y = mgsLatency_sd, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(mgsLatency_sd ~ log1p_Trial_Power*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(mgsLatency_sd ~ s(log1p_Trial_Power_Variability, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power_Variability, y = mgsLatency_sd, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(mgsLatency_sd ~ log1p_Trial_Power_Variability*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(mgsLatency_sd ~ s(Event_Number, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number, y = mgsLatency_sd, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(mgsLatency_sd ~ Event_Number*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+#### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(mgsLatency_sd ~ s(Event_Number_Variability, k=4, by=ageGroup) + s(age, k=4),
+  data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Rest'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+p.adjust(.00307, method = 'bonferroni', n = 16)
+
+
+lunaize(ggplot(data = allepochs %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number_Variability, y = mgsLatency_sd, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm')) + facet_wrap( . ~ epoch) + xlab("Variability (SD) in Gamma Events") + ylab("Variability in MGS Latency (sec)")
+
+
+
+lm.model <- lm(mgsLatency_sd ~ Event_Number_Variability*ageGroup,
+               data = allepochs %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+### MGS vs VGS
+
+#### Age 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+gamma_long <- rbind(
+  allepochs %>% dplyr::select(Subject, inverseAge, age, epoch , Trial_Power:Band, Latency=vgsLatency, LatencySD=vgsLatency_sd, absBestError) %>% mutate(type='VGS') %>% subset(., epoch == 'Fix'),
+  allepochs %>% dplyr::select(Subject, inverseAge, age, epoch, Trial_Power:Band, Latency=mgsLatency, LatencySD=mgsLatency_sd,absBestError) %>% mutate(type='MGS')%>% subset(., epoch == 'Delay')
+  )
+
+
+lunaize(ggplot(data = gamma_long, 
+               aes(x = age, y = log1p_Trial_Power, color = type)) + 
+           stat_smooth(method='gam', alpha=0.15, size = 2))  + xlab("Age") + ylab("Trial Power") + geom_point()+ theme(text = element_text(size = 50))
+
+gam.modelMGS <- gam(Event_Duration_Variability ~ s(age, k=4),
+  data = gamma_long %>% filter(type == "MGS"))
+summary(gam.modelMGS)
+
+p.adjust(3.41e-06, method = "bonferroni", n = 6)
+
+
+lunaize(ggplot(data = gamma_long, 
+               aes(x = age, y = LatencySD)) + 
+          geom_point(size = 3) + stat_smooth(method='gam', alpha=0.15, size = 2)) + facet_wrap( . ~ type)  + xlab("Age") + ylab("Latency Var (sec)") + theme(text = element_text(size = 50))
+
+
+gam.modelMGS <- gam(Event_Duration ~ s(age, k=4),
+  data = gamma_long %>% filter(type == "VGS"))
+summary(gam.modelMGS)
+
+
+b <- getViz(gam.modelMGS)
+
+plotDiff(s1 = sm(b,2), s2 = sm(b,1))+  l_ciPoly() + l_fitLine() + geom_hline(yintercept = 0, linetype = 2)
+
+
+p.adjust(0.0266, method = "bonferroni", n = 6)
+
+gam.modelVGS <- gam(Trial_Power ~s(age, k=4),
+  data = gamma_long %>% filter(type == 'VGS'))
+summary(gam.modelVGS)
+
+
+anova(gam.modelMGS, gam.modelVGS)
+
+
+```
+
+#### Latency vs Event Number 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+gamma_long <- rbind(
+  allepochs %>% dplyr::select(Subject, inverseAge, age, epoch , Trial_Power:Band, Latency=vgsLatency, LatencySD=vgsLatency_sd, absBestError, absBestError_sd) %>% mutate(type='VGS') %>% subset(., epoch == 'Fix'),
+  allepochs %>% dplyr::select(Subject, inverseAge, age, epoch, Trial_Power:Band, Latency=mgsLatency, LatencySD=mgsLatency_sd, absBestError, absBestError_sd) %>% mutate(type='MGS')%>% subset(., epoch == 'Delay')
+)
+
+lunaize(ggplot(data = gamma_long %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power_Variability, y = LatencySD)) + 
+          geom_point(aes(color = ageGroup)) + stat_smooth(method='lm', alpha=0.15)) + facet_wrap( . ~ type) 
+
+
+
+gam.model <- gam(LatencySD ~ s(log1p_Trial_Power, k=4) + s(age, k=4),
+  data = gamma_long %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Fix'), 
+  random = ~(1|subj))
+
+summary(gam.model)
+
+
+lm.model <- lm(LatencySD ~ (log1p_Trial_Power_Variability)*(age), data = gamma_long  %>% filter(epoch == 'Delay'))
+anova(lm.model)
+
+
+p.adjust(3.359e-06 , method = "bonferroni", n = 6)
+
+
+```
+#### Latency Var vs Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+gamma_long <- rbind(
+  allepochs %>% dplyr::select(Subject, inverseAge, age, epoch, Trial_Power:Band, Latency=vgsLatency, LatencySD=vgsLatency_sd) %>% mutate(type='VGS')  %>% subset(., epoch == 'Fix'),
+  allepochs %>% dplyr::select(Subject, inverseAge, age, epoch, Trial_Power:Band, Latency=mgsLatency, LatencySD=mgsLatency_sd) %>% mutate(type='MGS')%>% subset(., epoch == 'Delay')
+)
+lunaize(ggplot(data = gamma_long %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number_Variability, y = LatencySD, color = ageGroup)) + 
+          geom_point() + stat_smooth(method='lm', alpha=0.15)) + facet_wrap( . ~ type) + coord_cartesian(ylim=c(0,.2)) + xlab("Variability (SD) in Gamma Events") + ylab("Variability in Latency (sec)")
+
+gam.model <- gam(LatencySD ~ s(Event_Number_Variability, k=4, by=ageGroup) + s(age, k=4),
+  data = gamma_long %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Fix'), 
+  random = ~(1|subj))
+summary(gam.model)
+
+p.adjust(0.00014, method = "bonferroni", n = 6)
+
+```
+
+#### Significant Periods of Growth 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+lunaize(ggplot(data = gamma_long, 
+               aes(x = age, y = log1p_Trial_Power_Variability, color = type)) + 
+           stat_smooth(method='lm', alpha=0.15, size = 2))  + xlab("Age") + ylab("Trial Power") + theme(text = element_text(size = 50))
+
+#
+  gam.model <- gam(log1p_Trial_Power ~ s(age), data = gamma_long %>% filter(., type == 'MGS'))
+  gam.growthrate <- gam_growthrate(gam.model, agevar = 'age')
+
+plist <- gam_growthrate_plot(gamma_long, gam.model, gam.growthrate, agevar = 'age', yvar = 'log1p_Trial_Power', draw_points = T, xplotname = "Age", yplotname = "Trial Power", show_all_fill = F)
+plist$tile <- plist$tile +  scale_fill_gradient2(low = "red", mid = "white", high = "red")
+
+
+gam.model <- gam(log1p_Trial_Power ~ s(age, by = type), data = gamma_long)
+  gam.growthrate <- gam_growthrate(gam.model, agevar = 'age')
+
+plist <- gam_growthrate_plot(gamma_long, gam.model, gam.growthrate, agevar = 'age', yvar = 'log1p_Trial_Power', draw_points = T, xplotname = "Age", yplotname = "Trial Power", show_all_fill = F)
+
+plist$tile <- plist$tile +  scale_fill_gradient2(low = "blue", mid = "white", high = "blue")
+
+gam_growthrate_plot_combine(plist$ageplot, plist$tile)
+
+
+
+
+
+  gam.model <- gam(log1p_Trial_Power ~ s(age, by = as.factor(type)), data = gamma_long)
+  gam.growthrate <- gam_growthrate(gam.model, agevar = 'age')
+  lunaize(gam_growthrate_plot(gamma_long, gam.model, gam.growthrate, agevar = 'age', yvar = 'log1p_Trial_Power', draw_points = F))
+
+
+```
+
+## Trial Level
+### Best Saccade
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+
+#pull in trial level for stats
+Behav_trial <- Behavior_TrialLevel_Maria()
+
+trialLevel_DelayFix <- rbind(delaygamma_trialLevel,fixgamma_trialLevel)
+
+triallevel_behavGamma <- merge(trialLevel_DelayFix, Behav_trial, by = c("Subject","Trial", "age"))
+
+write.csv(triallevel_behavGamma, "H:/Projects/7TBrainMech/scripts/eeg/Shane/trialLevel_behavGamma.csv")
+
+# subject level 
+#use allepochs
+allepochs$powerbyevent <- allepochs$log1p_Trial_Power * allepochs$Event_Number
+```
+
+#### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(absBestError ~ s(log1p_Trial_Power, k=4, by=ageGroup) + s(age, k=4),
+  data = triallevel_behavGamma %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = triallevel_behavGamma %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power, y = absBestError, color = ageGroup)) + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(absBestError ~ log1p_Trial_Power*ageGroup,
+               data = triallevel_behavGamma %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+
+#### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(absBestError ~ s(Event_Number, k=4, by=ageGroup) + s(age, k=4),
+  data = triallevel_behavGamma %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = triallevel_behavGamma %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number, y = absBestError, color = ageGroup)) + 
+          stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(absBestError ~ Event_Number*ageGroup,
+               data = triallevel_behavGamma %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+
+
+
+
+### MGS Latency
+
+#### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(mgsLatency ~ s(log1p_Trial_Power, k=4, by=ageGroup) + s(age, k=4),
+  data = triallevel_behavGamma %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = triallevel_behavGamma %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = log1p_Trial_Power, y = mgsLatency, color = ageGroup)) + 
+           stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(mgsLatency ~ log1p_Trial_Power*ageGroup,
+               data = triallevel_behavGamma %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+
+#### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ gam.model <- gam(mgsLatency ~ s(Event_Number, k=4, by=ageGroup) + s(age, k=4),
+  data = triallevel_behavGamma %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))) %>% filter(epoch == 'Delay'), 
+  random = ~(1|subj))
+summary(gam.model)
+plot(gam.model, pages=1)
+
+lunaize(ggplot(data = triallevel_behavGamma %>% mutate(ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult'))), 
+               aes(x = Event_Number, y = mgsLatency, color = ageGroup)) 
+          + stat_smooth(method='lm')) + facet_wrap( . ~ epoch)
+
+
+
+lm.model <- lm(mgsLatency ~ Event_Number*ageGroup,
+               data = triallevel_behavGamma %>% filter(epoch == 'Delay') %>% mutate(
+                 ageGroup = as.factor(ifelse(age <= 18, 'Adol', 'Adult')),
+                 invAge = 1/age
+               )
+)
+summary(lm.model)
+
+```
+
+

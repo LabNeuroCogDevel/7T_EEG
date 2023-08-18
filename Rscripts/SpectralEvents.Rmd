@@ -1,0 +1,2515 @@
+---
+title: "Spectral Events"
+author: "Shane McKeon"
+date: "11/02/2021"
+geometry: margin = 1in
+output:
+  pdf_document:  
+    toc: true
+    toc_depth: 4    
+    fig_caption: yes
+  latex_engine: xelatex
+
+  html_document:
+    df_print: paged
+    code_folding: hide 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev='png', dpi=150, fig.width = 6, fig.height= 6, fig.align = 'center', fig.margin = TRUE, comment = NA)
+```
+
+
+```{r load-libraries, message=FALSE}
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+  library(LNCDR)
+  library(data.table)
+  require(dplyr)
+  library(factoextra)
+  library(tidyverse)
+  require(knitr)
+  library(ggplot2)
+  library(e1071)
+  library(caret)
+  library(sjPlot)
+  library(directlabels)
+  attach(mtcars)
+  library(grid)
+  library(gridExtra)
+
+```
+# Behavior Across Age 
+## Best Saccade
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/03.BehaviorAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+Behavior <- Behavior_Sublevel_Maria()
+
+BS <- bestSaccade(Behavior)
+
+BSV <- bestSaccadeVariability(Behavior)
+
+PE <- absPositionError(Behavior)
+
+PEV <- absPositionErrorVariability(Behavior)
+
+lat <- mgsLatency(Behavior)
+
+latV <- mgsLatencyVariability(Behavior)
+
+# combine all the p values so that we can correct them for multiple comparisons 
+behaviorPvalues <- data.frame(BS$Pvalue[1], BSV$Pvalue[1], PE$Pvalue[1], PEV$Pvalue[1], lat$Pvalue[1], latV$Pvalue[1])
+
+p.adjust((behaviorPvalues), method = "bonferroni")
+
+grid.arrange(BS$BSgraph,BSV$BSVgraph, lat$latgraph,latV$latvgraph, ncol = 2)
+
+
+```
+
+# Frequency Bands Across Age
+## Delay Period (3-4 Seconds)
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+delayOnly <- DelayOnly_Sublevel_3_4()
+delayOnly_SubLevel <- delayOnly$alldata_delayOnly
+
+alphavars <- grep("Alpha",names(delayOnly_SubLevel),value=TRUE)
+allAlpha <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age",alphavars)]
+colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+allAlpha$Band <- "Alpha"
+
+
+thetavars <- grep("Theta",names(delayOnly_SubLevel),value=TRUE)
+allTheta <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age",thetavars)]
+colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+allTheta$Band <- "Theta"
+
+betavars <- grep("Beta",names(delayOnly_SubLevel),value=TRUE)
+allBeta <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age",betavars)]
+colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+allBeta$Band <- "Beta"
+
+
+gammavars <- grep("Gamma",names(delayOnly_SubLevel),value=TRUE)
+allGamma <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+delay_alldata <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+delay_alldata$epoch <- "Delay"
+delay_alldata$Region <- "Whole Brain"
+
+```
+<!-- ### Whole Brain -->
+<!-- #### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- delay_alldata -->
+<!-- TrialPower(delay_alldata[]) -->
+<!-- ``` -->
+<!-- #### Trial power Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVar(delay_alldata) -->
+<!-- ``` -->
+<!-- #### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumber(delay_alldata) -->
+<!-- ``` -->
+<!-- #### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVar(delay_alldata) -->
+<!-- ``` -->
+<!-- #### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDuration(delay_alldata) -->
+<!-- ``` -->
+<!-- #### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVar(delay_alldata) -->
+<!-- ``` -->
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+delayRegions3_4 <- RegionstoSpectralEventData_SubjectLevel()
+
+alphavars <- grep("Alpha",names(delayRegions3_4),value=TRUE)
+allAlpha <- delayRegions3_4[,c("Subject", "inverseAge", "age",alphavars)]
+colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+allAlpha$Band <- "Alpha"
+
+
+thetavars <- grep("Theta",names(delayRegions3_4),value=TRUE)
+allTheta <- delayRegions3_4[,c("Subject", "inverseAge","age",thetavars)]
+colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+allTheta$Band <- "Theta"
+
+betavars <- grep("Beta",names(delayRegions3_4),value=TRUE)
+allBeta <- delayRegions3_4[,c("Subject", "inverseAge","age",betavars)]
+colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+allBeta$Band <- "Beta"
+
+
+gammavars <- grep("Gamma",names(delayRegions3_4),value=TRUE)
+allGamma <- delayRegions3_4[,c("Subject", "inverseAge","age",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+delay_alldata_regions <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+
+# selective frontal
+selectiveFrontalVars <-  grep("selectiveFrontal",names(delay_alldata_regions),value=TRUE)
+allselectiveFrontal3_4 <- delay_alldata_regions[,c("Subject", "inverseAge","age", "Band",selectiveFrontalVars)]
+colnames(allselectiveFrontal3_4) <-  sub("_selectiveFrontal", "", colnames(allselectiveFrontal3_4))
+colnames(allselectiveFrontal3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allselectiveFrontal3_4))
+colnames(allselectiveFrontal3_4) <-  sub("_sd", "_Variability", colnames(allselectiveFrontal3_4))
+allselectiveFrontal3_4$Region <- "SelectiveFrontal"
+allselectiveFrontal3_4$epoch <- "Delay"
+
+# Frontal
+FrontalVars <-  grep("_Frontal",names(delay_alldata_regions),value=TRUE)
+allFrontal3_4 <- delay_alldata_regions[,c("Subject", "inverseAge","age", "Band",FrontalVars)]
+colnames(allFrontal3_4) <-  sub("_Frontal", "", colnames(allFrontal3_4))
+colnames(allFrontal3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allFrontal3_4))
+colnames(allFrontal3_4) <-  sub("_sd", "_Variability", colnames(allFrontal3_4))
+allFrontal3_4$Region <- "Frontal"
+allFrontal3_4$epoch <- "Delay"
+
+# occipital
+Occipitalvars <-  grep("Occipital",names(delay_alldata_regions),value=TRUE)
+allOccipital3_4 <- delay_alldata_regions[,c("Subject", "inverseAge","age", "Band",Occipitalvars)]
+colnames(allOccipital3_4) <-  sub("_Occipital", "", colnames(allOccipital3_4))
+colnames(allOccipital3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allOccipital3_4))
+colnames(allOccipital3_4) <-  sub("_sd", "_Variability", colnames(allOccipital3_4))
+allOccipital3_4$Region <- "Occipital"
+allOccipital3_4$epoch <- "Delay"
+
+
+# parietal 
+Parietalvars <-  grep("Parietal",names(delay_alldata_regions),value=TRUE)
+allParietal3_4 <- delay_alldata_regions[,c("Subject", "inverseAge","age", "Band",Parietalvars)]
+colnames(allParietal3_4) <-  sub("_Parietal", "", colnames(allParietal3_4))
+colnames(allParietal3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allParietal3_4))
+colnames(allParietal3_4) <-  sub("_sd", "_Variability", colnames(allParietal3_4))
+allParietal3_4$Region <- "Parietal"
+allParietal3_4$epoch <- "Delay"
+
+
+# dlpfc 
+dlpfcvars <-  grep("dlpfc",names(delay_alldata_regions),value=TRUE)
+alldlpfc3_4 <- delay_alldata_regions[,c("Subject", "inverseAge","age", "Band",dlpfcvars)]
+colnames(alldlpfc3_4) <-  sub("_dlpfc", "", colnames(alldlpfc3_4))
+colnames(alldlpfc3_4) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(alldlpfc3_4))
+colnames(alldlpfc3_4) <-  sub("_sd", "_Variability", colnames(alldlpfc3_4))
+alldlpfc3_4$Region <- "DLPFC"
+alldlpfc3_4$epoch <- "Delay"
+# combine all regions 
+allRegions3_4 <- rbind(allselectiveFrontal3_4, allOccipital3_4) %>% rbind(., allParietal3_4) %>% rbind(.,delay_alldata)%>% rbind(.,alldlpfc3_4)%>% rbind(.,allFrontal3_4)
+
+
+```
+<!-- ### Frontal Lobe
+
+#### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPower(allselectiveFrontal3_4) -->
+<!-- ``` -->
+<!-- #### Trial power Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVar(allselectiveFrontal3_4) -->
+<!-- ``` -->
+<!-- #### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumber(allselectiveFrontal3_4) -->
+<!-- ``` -->
+<!-- #### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVar(allselectiveFrontal3_4) -->
+<!-- ``` -->
+<!-- #### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDuration(allselectiveFrontal3_4) -->
+<!-- ``` -->
+<!-- #### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVar(allselectiveFrontal3_4) -->
+<!-- ``` -->
+
+### Combine all Regions
+#### Gamma 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions3_4_gamma <- allRegions3_4 %>% filter(allRegions3_4$Band == "Gamma")
+TrialPowerAllRegions(allRegions3_4_gamma)
+```
+##### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarAllRegions(allRegions3_4_gamma)
+```
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberAllRegions(allRegions3_4_gamma)
+```
+##### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarAllRegions(allRegions3_4_gamma)
+```
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationAllRegions(allRegions3_4_gamma)
+```
+##### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarAllRegions(allRegions3_4_gamma)
+```
+
+#### Beta 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions3_4_gamma <- allRegions3_4 %>% filter(allRegions3_4$Band == "Beta")
+TrialPowerAllRegions(allRegions3_4_gamma)
+```
+##### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarAllRegions(allRegions3_4_gamma)
+```
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberAllRegions(allRegions3_4_gamma)
+```
+##### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarAllRegions(allRegions3_4_gamma)
+```
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationAllRegions(allRegions3_4_gamma)
+```
+##### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarAllRegions(allRegions3_4_gamma)
+```
+
+#### Alpha 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions3_4_gamma <- allRegions3_4 %>% filter(allRegions3_4$Band == "Alpha")
+TrialPowerAllRegions(allRegions3_4_gamma)
+```
+##### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarAllRegions(allRegions3_4_gamma)
+```
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberAllRegions(allRegions3_4_gamma)
+```
+##### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarAllRegions(allRegions3_4_gamma)
+```
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationAllRegions(allRegions3_4_gamma)
+```
+##### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarAllRegions(allRegions3_4_gamma)
+```
+
+#### Theta 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions3_4_gamma <- allRegions3_4 %>% filter(allRegions3_4$Band == "Theta")
+TrialPowerAllRegions(allRegions3_4_gamma)
+```
+##### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarAllRegions(allRegions3_4_gamma)
+```
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberAllRegions(allRegions3_4_gamma)
+```
+##### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarAllRegions(allRegions3_4_gamma)
+```
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationAllRegions(allRegions3_4_gamma)
+```
+##### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarAllRegions(allRegions3_4_gamma)
+```
+<!-- ## Delay Period (5-6 Seconds) -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE) -->
+<!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE) -->
+
+<!-- delayOnly <- DelayOnly_Sublevel_5_6() -->
+<!-- delayOnly_SubLevel <- delayOnly$alldata_delayOnly -->
+
+<!-- alphavars <- grep("Alpha",names(delayOnly_SubLevel),value=TRUE) -->
+<!-- allAlpha <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age",alphavars)] -->
+<!-- colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha)) -->
+<!-- allAlpha$Band <- "Alpha" -->
+
+
+<!-- thetavars <- grep("Theta",names(delayOnly_SubLevel),value=TRUE) -->
+<!-- allTheta <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age",thetavars)] -->
+<!-- colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta)) -->
+<!-- allTheta$Band <- "Theta" -->
+
+<!-- betavars <- grep("Beta",names(delayOnly_SubLevel),value=TRUE) -->
+<!-- allBeta <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age",betavars)] -->
+<!-- colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta)) -->
+<!-- allBeta$Band <- "Beta" -->
+
+
+<!-- gammavars <- grep("Gamma",names(delayOnly_SubLevel),value=TRUE) -->
+<!-- allGamma <- delayOnly_SubLevel[,c("Subject", "inverseAge", "age",gammavars)] -->
+<!-- colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma)) -->
+<!-- allGamma$Band <- "Gamma" -->
+
+<!-- delay_alldata_5_6 <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma) -->
+<!-- delay_alldata_5_6$epoch <- "Delay" -->
+<!-- delay_alldata_5_6$Region <- "Whole Brain" -->
+
+<!-- ``` -->
+<!--### Whole Brain
+ 
+#### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPower(delay_alldata_5_6) -->
+<!-- ``` -->
+<!-- #### Trial power Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVar(delay_alldata_5_6) -->
+<!-- ``` -->
+<!-- #### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumber(delay_alldata_5_6) -->
+<!-- ``` -->
+<!-- #### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVar(delay_alldata_5_6) -->
+<!-- ``` -->
+<!-- #### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDuration(delay_alldata_5_6) -->
+<!-- ``` -->
+<!-- #### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVar(delay_alldata_5_6) -->
+<!-- ``` -->
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+# sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+# sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+# 
+# delayRegions5_6 <- RegionstoSpectralEventData_SubjectLevel5_6()
+# 
+# alphavars <- grep("Alpha",names(delayRegions5_6),value=TRUE)
+# allAlpha <- delayRegions5_6[,c("Subject", "inverseAge",alphavars)]
+# colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+# allAlpha$Band <- "Alpha"
+# 
+# 
+# thetavars <- grep("Theta",names(delayRegions5_6),value=TRUE)
+# allTheta <- delayRegions5_6[,c("Subject", "inverseAge",thetavars)]
+# colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+# allTheta$Band <- "Theta"
+# 
+# betavars <- grep("Beta",names(delayRegions5_6),value=TRUE)
+# allBeta <- delayRegions5_6[,c("Subject", "inverseAge",betavars)]
+# colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+# allBeta$Band <- "Beta"
+# 
+# 
+# gammavars <- grep("Gamma",names(delayRegions5_6),value=TRUE)
+# allGamma <- delayRegions5_6[,c("Subject", "inverseAge",gammavars)]
+# colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+# allGamma$Band <- "Gamma"
+# 
+# delay_alldata_regions <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+# 
+# # selective frontal
+# selectiveFrontalVars <-  grep("selectiveFrontal",names(delay_alldata_regions),value=TRUE)
+# allselectiveFrontal5_6 <- delay_alldata_regions[,c("Subject", "inverseAge","age", "Band",selectiveFrontalVars)]
+# colnames(allselectiveFrontal5_6) <-  sub("_selectiveFrontal", "", colnames(allselectiveFrontal5_6))
+# colnames(allselectiveFrontal5_6) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allselectiveFrontal5_6))
+# colnames(allselectiveFrontal5_6) <-  sub("_sd", "_Variability", colnames(allselectiveFrontal5_6))
+# allselectiveFrontal5_6$Region <- "SelectiveFrontal"
+# allselectiveFrontal5_6$epoch <- "Delay"
+# 
+# # occipital
+# Occipitalvars <-  grep("Occipital",names(delay_alldata_regions),value=TRUE)
+# allOccipital5_6 <- delay_alldata_regions[,c("Subject", "inverseAge","age", "Band",Occipitalvars)]
+# colnames(allOccipital5_6) <-  sub("_Occipital", "", colnames(allOccipital5_6))
+# colnames(allOccipital5_6) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allOccipital5_6))
+# colnames(allOccipital5_6) <-  sub("_sd", "_Variability", colnames(allOccipital5_6))
+# allOccipital5_6$Region <- "Occipital"
+# allOccipital5_6$epoch <- "Delay"
+# 
+# 
+# # parietal 
+# Parietalvars <-  grep("Parietal",names(delay_alldata_regions),value=TRUE)
+# allParietal5_6 <- delay_alldata_regions[,c("Subject", "inverseAge","age", "Band",Parietalvars)]
+# colnames(allParietal5_6) <-  sub("_Parietal", "", colnames(allParietal5_6))
+# colnames(allParietal5_6) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allParietal5_6))
+# colnames(allParietal5_6) <-  sub("_sd", "_Variability", colnames(allParietal5_6))
+# allParietal5_6$Region <- "Parietal"
+# allParietal5_6$epoch <- "Delay"
+# 
+# 
+# # dlpfc 
+# dlpfcvars <-  grep("dlpfc",names(delay_alldata_regions),value=TRUE)
+# alldlpfc5_6 <- delay_alldata_regions[,c("Subject", "inverseAge","age", "Band",dlpfcvars)]
+# colnames(alldlpfc5_6) <-  sub("_dlpfc", "", colnames(alldlpfc5_6))
+# colnames(alldlpfc5_6) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(alldlpfc5_6))
+# colnames(alldlpfc5_6) <-  sub("_sd", "_Variability", colnames(alldlpfc5_6))
+# alldlpfc5_6$Region <- "DLPFC"
+# alldlpfc5_6$epoch <- "Delay"
+# 
+# 
+# # combine all regions 
+# allRegions5_6 <- rbind(allselectiveFrontal5_6, allOccipital5_6) %>% rbind(., allParietal5_6) %>% rbind(.,delay_alldata_5_6) %>% rbind(.,alldlpfc5_6)
+
+```
+<!--
+### Frontal Lobe
+
+#### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPower(allselectiveFrontal5_6) -->
+<!-- ``` -->
+<!-- #### Trial power Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVar(allselectiveFrontal5_6) -->
+<!-- ``` -->
+<!-- #### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumber(allselectiveFrontal5_6) -->
+<!-- ``` -->
+<!-- #### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVar(allselectiveFrontal5_6) -->
+<!-- ``` -->
+<!-- #### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDuration(allselectiveFrontal5_6) -->
+<!-- ``` -->
+<!-- #### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVar(allselectiveFrontal5_6) -->
+<!-- ``` -->
+
+<!-- ### Occipital Lobe -->
+<!-- #### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPower(allOccipital5_6) -->
+<!-- ``` -->
+<!-- #### Trial power Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVar(allOccipital5_6) -->
+<!-- ``` -->
+<!-- #### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumber(allOccipital5_6) -->
+<!-- ``` -->
+<!-- #### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVar(allOccipital5_6) -->
+<!-- ``` -->
+<!-- #### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDuration(allOccipital5_6) -->
+<!-- ``` -->
+<!-- #### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVar(allOccipital5_6) -->
+<!-- ``` -->
+
+<!-- ### Parietal Lobe -->
+<!-- #### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPower(allParietal5_6) -->
+<!-- ``` -->
+<!-- #### Trial power Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVar(allParietal5_6) -->
+<!-- ``` -->
+<!-- #### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumber(allParietal5_6) -->
+<!-- ``` -->
+<!-- #### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVar(allParietal5_6) -->
+<!-- ``` -->
+<!-- #### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDuration(allParietal5_6) -->
+<!-- ``` -->
+<!-- #### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVar(allParietal5_6) -->
+<!-- ``` -->
+
+<!-- ### Combine all Regions -->
+<!-- #### Gamma  -->
+<!-- ##### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- allRegions5_6_gamma <- allRegions5_6 %>% filter(allRegions5_6$Band == "Gamma") -->
+<!-- TrialPowerAllRegions(allRegions5_6_gamma) -->
+<!-- ``` -->
+<!-- ##### Trial power Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVarAllRegions(allRegions5_6_gamma) -->
+<!-- ``` -->
+<!-- ##### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberAllRegions(allRegions5_6_gamma) -->
+<!-- ``` -->
+<!-- ##### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVarAllRegions(allRegions5_6_gamma) -->
+<!-- ``` -->
+<!-- ##### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationAllRegions(allRegions5_6_gamma) -->
+<!-- ``` -->
+<!-- ##### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVarAllRegions(allRegions5_6_gamma) -->
+<!-- ``` -->
+
+<!-- #### Beta  -->
+<!-- ##### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- allRegions5_6_beta <- allRegions5_6 %>% filter(allRegions5_6$Band == "Beta") -->
+<!-- TrialPowerAllRegions(allRegions5_6_beta) -->
+<!-- ``` -->
+<!-- ##### Trial power Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVarAllRegions(allRegions5_6_beta) -->
+<!-- ``` -->
+<!-- ##### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberAllRegions(allRegions5_6_beta) -->
+<!-- ``` -->
+<!-- ##### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVarAllRegions(allRegions5_6_beta) -->
+<!-- ``` -->
+<!-- ##### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationAllRegions(allRegions5_6_beta) -->
+<!-- ``` -->
+<!-- ##### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVarAllRegions(allRegions5_6_beta) -->
+<!-- ``` -->
+<!-- #### Alpha  -->
+<!-- ##### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- allRegions5_6_alpha <- allRegions5_6 %>% filter(allRegions5_6$Band == "Alpha") -->
+<!-- TrialPowerAllRegions(allRegions5_6_alpha) -->
+<!-- ``` -->
+<!-- ##### Trial power Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVarAllRegions(allRegions5_6_alpha) -->
+<!-- ``` -->
+<!-- ##### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberAllRegions(allRegions5_6_alpha) -->
+<!-- ``` -->
+<!-- ##### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVarAllRegions(allRegions5_6_alpha) -->
+<!-- ``` -->
+<!-- ##### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationAllRegions(allRegions5_6_alpha) -->
+<!-- ``` -->
+<!-- ##### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVarAllRegions(allRegions5_6_alpha) -->
+<!-- ``` -->
+
+
+<!-- #### Theta  -->
+<!-- ##### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- allRegions5_6_theta <- allRegions5_6 %>% filter(allRegions5_6$Band == "Theta") -->
+<!-- TrialPowerAllRegions(allRegions5_6_theta) -->
+<!-- ``` -->
+<!-- ##### Trial power Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVarAllRegions(allRegions5_6_theta) -->
+<!-- ``` -->
+<!-- ##### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberAllRegions(allRegions5_6_theta) -->
+<!-- ``` -->
+<!-- ##### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVarAllRegions(allRegions5_6_theta) -->
+<!-- ``` -->
+<!-- ##### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationAllRegions(allRegions5_6_theta) -->
+<!-- ``` -->
+<!-- ##### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVarAllRegions(allRegions5_6_theta) -->
+<!-- ``` -->
+## Fixation Period 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+FixOnly <- FixOnly_Sublevel()
+FixOnly_SubLevel <- FixOnly$alldata_FixOnly
+
+alphavars <- grep("Alpha",names(FixOnly_SubLevel),value=TRUE)
+allAlpha <- FixOnly_SubLevel[,c("Subject", "inverseAge", "age",alphavars)]
+colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+allAlpha$Band <- "Alpha"
+
+
+thetavars <- grep("Theta",names(FixOnly_SubLevel),value=TRUE)
+allTheta <- FixOnly_SubLevel[,c("Subject", "inverseAge", "age",thetavars)]
+colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+allTheta$Band <- "Theta"
+
+betavars <- grep("Beta",names(FixOnly_SubLevel),value=TRUE)
+allBeta <- FixOnly_SubLevel[,c("Subject", "inverseAge", "age",betavars)]
+colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+allBeta$Band <- "Beta"
+
+
+gammavars <- grep("Gamma",names(FixOnly_SubLevel),value=TRUE)
+allGamma <- FixOnly_SubLevel[,c("Subject", "inverseAge", "age",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+fix_alldata <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+fix_alldata$epoch <- "Fix"
+fix_alldata$Region <- "Whole Brain"
+
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+fixRegions_fix <- RegionstoSpectralEventData_SubjectLevel_fix()
+
+alphavars <- grep("Alpha",names(fixRegions_fix),value=TRUE)
+allAlpha <- fixRegions_fix[,c("Subject", "inverseAge", "age",alphavars)]
+colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+allAlpha$Band <- "Alpha"
+
+
+thetavars <- grep("Theta",names(fixRegions_fix),value=TRUE)
+allTheta <- fixRegions_fix[,c("Subject", "inverseAge", "age",thetavars)]
+colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+allTheta$Band <- "Theta"
+
+betavars <- grep("Beta",names(fixRegions_fix),value=TRUE)
+allBeta <- fixRegions_fix[,c("Subject", "inverseAge", "age",betavars)]
+colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+allBeta$Band <- "Beta"
+
+
+gammavars <- grep("Gamma",names(fixRegions_fix),value=TRUE)
+allGamma <- fixRegions_fix[,c("Subject", "inverseAge", "age",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+fix_alldata_regions <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+
+# selective frontal
+selectiveFrontalVars <-  grep("selectiveFrontal",names(fix_alldata_regions),value=TRUE)
+allselectiveFrontal_fix <- fix_alldata_regions[,c("Subject", "inverseAge", "age", "Band",selectiveFrontalVars)]
+colnames(allselectiveFrontal_fix) <-  sub("_selectiveFrontal", "", colnames(allselectiveFrontal_fix))
+colnames(allselectiveFrontal_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allselectiveFrontal_fix))
+colnames(allselectiveFrontal_fix) <-  sub("_sd", "_Variability", colnames(allselectiveFrontal_fix))
+allselectiveFrontal_fix$Region <- "SelectiveFrontal"
+allselectiveFrontal_fix$epoch <- "Fix"
+
+# frontal
+FrontalVars <-  grep("_Frontal",names(fix_alldata_regions),value=TRUE)
+allFrontal_fix <- fix_alldata_regions[,c("Subject", "inverseAge", "age", "Band",FrontalVars)]
+colnames(allFrontal_fix) <-  sub("_Frontal", "", colnames(allFrontal_fix))
+colnames(allFrontal_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allFrontal_fix))
+colnames(allFrontal_fix) <-  sub("_sd", "_Variability", colnames(allFrontal_fix))
+allFrontal_fix$Region <- "Frontal"
+allFrontal_fix$epoch <- "Fix"
+
+# occipital
+Occipitalvars <-  grep("Occipital",names(fix_alldata_regions),value=TRUE)
+allOccipital_fix <- fix_alldata_regions[,c("Subject", "inverseAge", "age", "Band",Occipitalvars)]
+colnames(allOccipital_fix) <-  sub("_Occipital", "", colnames(allOccipital_fix))
+colnames(allOccipital_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allOccipital_fix))
+colnames(allOccipital_fix) <-  sub("_sd", "_Variability", colnames(allOccipital_fix))
+allOccipital_fix$Region <- "Occipital"
+allOccipital_fix$epoch <- "Fix"
+
+
+# parietal 
+Parietalvars <-  grep("Parietal",names(fix_alldata_regions),value=TRUE)
+allParietal_fix <- fix_alldata_regions[,c("Subject", "inverseAge", "age", "Band",Parietalvars)]
+colnames(allParietal_fix) <-  sub("_Parietal", "", colnames(allParietal_fix))
+colnames(allParietal_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allParietal_fix))
+colnames(allParietal_fix) <-  sub("_sd", "_Variability", colnames(allParietal_fix))
+allParietal_fix$Region <- "Parietal"
+allParietal_fix$epoch <- "Fix"
+
+# dlpfc 
+dlpfcvars <-  grep("dlpfc",names(fix_alldata_regions),value=TRUE)
+alldlpfc_fix <- fix_alldata_regions[,c("Subject", "inverseAge", "age", "Band",dlpfcvars)]
+colnames(alldlpfc_fix) <-  sub("_dlpfc", "", colnames(alldlpfc_fix))
+colnames(alldlpfc_fix) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(alldlpfc_fix))
+colnames(alldlpfc_fix) <-  sub("_sd", "_Variability", colnames(alldlpfc_fix))
+alldlpfc_fix$Region <- "DLPFC"
+alldlpfc_fix$epoch <- "Fix"
+
+# combine all regions 
+allRegions_fix <- rbind(allselectiveFrontal_fix, allOccipital_fix) %>% rbind(., allParietal_fix) %>% rbind(.,fix_alldata)%>% rbind(.,alldlpfc_fix) %>% rbind(., allFrontal_fix)
+
+```
+
+### Combine all Regions
+#### Gamma 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_fix_gamma <- allRegions_fix %>% filter(allRegions_fix$Band == "Gamma")
+
+TrialPowerAllRegions(allRegions_fix_gamma)
+```
+##### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarAllRegions(allRegions_fix_gamma)
+```
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberAllRegions(allRegions_fix_gamma)
+```
+##### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarAllRegions(allRegions_fix_gamma)
+```
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationAllRegions(allRegions_fix_gamma)
+```
+##### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarAllRegions(allRegions_fix_gamma)
+```
+
+
+#### Beta 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_fix_beta <- allRegions_fix %>% filter(allRegions_fix$Band == "Beta")
+TrialPowerAllRegions(allRegions_fix_beta)
+```
+##### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarAllRegions(allRegions_fix_beta)
+```
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberAllRegions(allRegions_fix_beta)
+```
+##### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarAllRegions(allRegions_fix_beta)
+```
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationAllRegions(allRegions_fix_beta)
+```
+##### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarAllRegions(allRegions_fix_beta)
+```
+
+#### Alpha 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_fix_alpha <- allRegions_fix %>% filter(allRegions_fix$Band == "Alpha")
+TrialPowerAllRegions(allRegions_fix_alpha)
+```
+##### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarAllRegions(allRegions_fix_alpha)
+```
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberAllRegions(allRegions_fix_alpha)
+```
+##### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarAllRegions(allRegions_fix_alpha)
+```
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationAllRegions(allRegions_fix_alpha)
+```
+##### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarAllRegions(allRegions_fix_alpha)
+```
+
+
+#### Theta 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_fix_theta <- allRegions_fix %>% filter(allRegions_fix$Band == "Theta")
+TrialPowerAllRegions(allRegions_fix_theta)
+```
+##### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarAllRegions(allRegions_fix_theta)
+```
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberAllRegions(allRegions_fix_theta)
+```
+##### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarAllRegions(allRegions_fix_theta)
+```
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationAllRegions(allRegions_fix_theta)
+```
+##### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarAllRegions(allRegions_fix_theta)
+```
+
+
+## Resting State
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+Restdf <- Resting_State_Data_SubjectLevel()
+Restalldata <- Restdf$alldata_RestOnly
+
+alphavars <- grep("Alpha",names(Restalldata),value=TRUE)
+allAlpha <- Restalldata[,c("Subject", "inverseAge", "age",alphavars)]
+colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+allAlpha$Band <- "Alpha"
+
+
+thetavars <- grep("Theta",names(Restalldata),value=TRUE)
+allTheta <- Restalldata[,c("Subject", "inverseAge", "age",thetavars)]
+colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+allTheta$Band <- "Theta"
+
+betavars <- grep("Beta",names(Restalldata),value=TRUE)
+allBeta <- Restalldata[,c("Subject", "inverseAge", "age",betavars)]
+colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+allBeta$Band <- "Beta"
+
+
+gammavars <- grep("Gamma",names(Restalldata),value=TRUE)
+allGamma <- Restalldata[,c("Subject", "inverseAge", "age",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+rest_alldata <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+rest_alldata$epoch <- "Rest"
+rest_alldata$Region <- "Whole Brain"
+
+
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/02.FrequencyAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+
+restRegions <- RegionstoSpectralEventData_SubjectLevelRS()
+
+alphavars <- grep("Alpha",names(restRegions),value=TRUE)
+allAlpha <- restRegions[,c("Subject", "inverseAge", "age",alphavars)]
+colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+allAlpha$Band <- "Alpha"
+
+
+thetavars <- grep("Theta",names(restRegions),value=TRUE)
+allTheta <- restRegions[,c("Subject", "inverseAge", "age",thetavars)]
+colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+allTheta$Band <- "Theta"
+
+betavars <- grep("Beta",names(restRegions),value=TRUE)
+allBeta <- restRegions[,c("Subject", "inverseAge", "age",betavars)]
+colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+allBeta$Band <- "Beta"
+
+
+gammavars <- grep("Gamma",names(restRegions),value=TRUE)
+allGamma <- restRegions[,c("Subject", "inverseAge", "age",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+rest_alldata_regions <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+
+# selective frontal
+selectiveFrontalVars <-  grep("selectiveFrontal",names(rest_alldata_regions),value=TRUE)
+allselectiveFrontal_RS <- rest_alldata_regions[,c("Subject", "inverseAge", "age", "Band",selectiveFrontalVars)]
+colnames(allselectiveFrontal_RS) <-  sub("_selectiveFrontal", "", colnames(allselectiveFrontal_RS))
+colnames(allselectiveFrontal_RS) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allselectiveFrontal_RS))
+colnames(allselectiveFrontal_RS) <-  sub("_sd", "_Variability", colnames(allselectiveFrontal_RS))
+allselectiveFrontal_RS$Region <- "SelectiveFrontal"
+allselectiveFrontal_RS$epoch <- "Rest"
+
+#  frontal
+FrontalVars <-  grep("_Frontal",names(rest_alldata_regions),value=TRUE)
+allFrontal_RS <- rest_alldata_regions[,c("Subject", "inverseAge", "age", "Band",FrontalVars)]
+colnames(allFrontal_RS) <-  sub("_Frontal", "", colnames(allFrontal_RS))
+colnames(allFrontal_RS) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allFrontal_RS))
+colnames(allFrontal_RS) <-  sub("_sd", "_Variability", colnames(allFrontal_RS))
+allFrontal_RS$Region <- "Frontal"
+allFrontal_RS$epoch <- "Rest"
+
+# occipital
+Occipitalvars <-  grep("Occipital",names(rest_alldata_regions),value=TRUE)
+allOccipital_RS <- rest_alldata_regions[,c("Subject", "inverseAge", "age", "Band",Occipitalvars)]
+colnames(allOccipital_RS) <-  sub("_Occipital", "", colnames(allOccipital_RS))
+colnames(allOccipital_RS) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allOccipital_RS))
+colnames(allOccipital_RS) <-  sub("_sd", "_Variability", colnames(allOccipital_RS))
+allOccipital_RS$Region <- "Occipital"
+allOccipital_RS$epoch <- "Rest"
+
+
+# parietal 
+Parietalvars <-  grep("Parietal",names(rest_alldata_regions),value=TRUE)
+allParietal_RS <- rest_alldata_regions[,c("Subject", "inverseAge", "age", "Band",Parietalvars)]
+colnames(allParietal_RS) <-  sub("_Parietal", "", colnames(allParietal_RS))
+colnames(allParietal_RS) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allParietal_RS))
+colnames(allParietal_RS) <-  sub("_sd", "_Variability", colnames(allParietal_RS))
+allParietal_RS$Region <- "Parietal"
+allParietal_RS$epoch <- "Rest"
+
+# dlpfc 
+dlpfcvars <-  grep("dlpfc",names(rest_alldata_regions),value=TRUE)
+alldlpfc_RS <- rest_alldata_regions[,c("Subject", "inverseAge", "age", "Band",dlpfcvars)]
+colnames(alldlpfc_RS) <-  sub("_dlpfc", "", colnames(alldlpfc_RS))
+colnames(alldlpfc_RS) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(alldlpfc_RS))
+colnames(alldlpfc_RS) <-  sub("_sd", "_Variability", colnames(alldlpfc_RS))
+alldlpfc_RS$Region <- "DLPFC"
+alldlpfc_RS$epoch <- "Rest"
+
+# combine all regions 
+allRegions_RS <- rbind(allselectiveFrontal_RS, allOccipital_RS) %>% rbind(., allParietal_RS) %>% rbind(.,rest_alldata) %>% rbind(.,alldlpfc_RS)%>% rbind(.,allFrontal_RS)
+
+
+
+```
+### Combine all Regions
+#### Gamma 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_RS_gamma <- allRegions_RS %>% filter(allRegions_RS$Band == "Gamma")
+TrialPowerAllRegions(allRegions_RS_gamma)
+```
+
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberAllRegions(allRegions_RS_gamma)
+```
+
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationAllRegions(allRegions_RS_gamma)
+```
+
+
+#### Beta 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_RS_beta <- allRegions_RS %>% filter(allRegions_RS$Band == "Beta")
+TrialPowerAllRegions(allRegions_RS_beta)
+```
+
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberAllRegions(allRegions_RS_beta)
+```
+
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationAllRegions(allRegions_RS_beta)
+```
+`
+#### Alpha 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_RS_alpha <- allRegions_RS %>% filter(allRegions_RS$Band == "Alpha")
+TrialPowerAllRegions(allRegions_RS_alpha)
+```
+
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberAllRegions(allRegions_RS_alpha)
+```
+
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationAllRegions(allRegions_RS_alpha)
+```
+
+
+
+#### Theta 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_RS_theta <- allRegions_RS %>% filter(allRegions_RS$Band == "Theta")
+TrialPowerAllRegions(allRegions_RS_theta)
+```
+
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberAllRegions(allRegions_RS_theta)
+```
+
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationAllRegions(allRegions_RS_theta)
+```
+
+
+## Delay, Fixation, and Rest
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allregions <- rbind(allRegions3_4, allRegions_fix )
+
+allregions <- rbind(allregions, allRegions_RS)
+allregions <- merge(allregions, Behavior, by = c("Subject", "inverseAge", "age"))
+```
+### Combine all Regions
+#### Gamma 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+allregions_gamma <- allregions %>% dplyr::select(Subject, inverseAge, age, Epoch = epoch, Band, Region, Power = Trial_Power, logPower = log1p_Trial_Power, Event_Number, Event_Duration, mgsLatency, mgsLatency_sd, vgsLatency, vgsLatency_sd, absBestError, absBestError_sd) %>% filter(.$Band == "Gamma") %>% mutate(Method = "Spectral Events")
+
+lunaize(ggplot(data = allregions_gamma, 
+                 aes(x = age, y = logPower , color = Epoch)) + 
+            stat_smooth(method='lm', alpha=0.15, formula = 'y~I(1/x)')) + facet_wrap( . ~ Region)  + xlab("Age") + ylab("Gamma Power")
+  
+```
+
+
+##### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+lunaize(ggplot(data = allregions_gamma, 
+                 aes(x = age, y = Event_Number , color = Epoch)) + 
+            stat_smooth(method='lm', alpha=0.15, formula = 'y~I(1/x)')) + facet_wrap( . ~ Region)  + xlab("Age") + ylab("Number of Gamma Events")
+```
+
+##### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+lunaize(ggplot(data = allregions_gamma, 
+                 aes(x = age, y = Event_Duration , color = Epoch)) + 
+            stat_smooth(method='lm', alpha=0.15, formula = 'y~I(1/x)')) + facet_wrap( . ~ Region)  + xlab("Age") + ylab("Gamma Power")
+```
+
+#### Beta 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_beta_WB <- allregions %>% filter(allregions$Band == "Beta") %>% filter(.$Region == "Whole Brain")
+allRegions_beta_O <- allregions %>% filter(allregions$Band == "Beta") %>% filter(.$Region == "Occipital")
+allRegions_beta_P <- allregions %>% filter(allregions$Band == "Beta") %>% filter(.$Region == "Parietal")
+allRegions_beta_DLPFC <- allregions %>% filter(allregions$Band == "Beta") %>% filter(.$Region == "DLPFC")
+allRegions_beta_frontal <- allregions %>% filter(allregions$Band == "Beta") %>% filter(.$Region == "Frontal")
+allRegions_beta_selectiveFrontal <- allregions %>% filter(allregions$Band == "Beta") %>% filter(.$Region == "selectiveFrontal")
+
+```
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_WB[], aes(x =inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_frontal[], aes(x = inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_selectiveFrontal[], aes(x = inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_O[], aes(x =inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_P[], aes(x =inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_DLPFC[], aes(x =inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+##### Event Number
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_WB[], aes(x =inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_frontal[], aes(x = inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_selectiveFrontal[], aes(x = inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_O[], aes(x =inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_P[], aes(x =inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_DLPFC[], aes(x =inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+##### Event Duration
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_WB[], aes(x =inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_frontal[], aes(x = inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_selectiveFrontal[], aes(x = inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_O[], aes(x =inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_P[], aes(x =inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_DLPFC[], aes(x =inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+#### Alpha  
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_alpha_WB <- allregions %>% filter(allregions$Band == "Alpha") %>% filter(.$Region == "Whole Brain")
+allRegions_alpha_O <- allregions %>% filter(allregions$Band == "Alpha") %>% filter(.$Region == "Occipital")
+allRegions_alpha_P <- allregions %>% filter(allregions$Band == "Alpha") %>% filter(.$Region == "Parietal")
+allRegions_alpha_DLPFC <- allregions %>% filter(allregions$Band == "Alpha") %>% filter(.$Region == "DLPFC")
+allRegions_alpha_frontal <- allregions %>% filter(allregions$Band == "Alpha") %>% filter(.$Region == "Frontal")
+allRegions_alpha_selectiveFrontal <- allregions %>% filter(allregions$Band == "Alpha") %>% filter(.$Region == "selectiveFrontal")
+
+```
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_WB[], aes(x =inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_frontal[], aes(x = inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_selectiveFrontal[], aes(x = inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_O[], aes(x =inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_P[], aes(x =inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_DLPFC[], aes(x =inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+##### Event Number
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_WB[], aes(x =inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_frontal[], aes(x = inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_selectiveFrontal[], aes(x = inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_O[], aes(x =inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_P[], aes(x =inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_DLPFC[], aes(x =inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+##### Event Duration
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_WB[], aes(x =inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_frontal[], aes(x = inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_selectiveFrontal[], aes(x = inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_O[], aes(x =inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_P[], aes(x =inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_DLPFC[], aes(x =inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+
+
+#### Theta  
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_theta_WB <- allregions %>% filter(allregions$Band == "Theta") %>% filter(.$Region == "Whole Brain")
+allRegions_theta_O <- allregions %>% filter(allregions$Band == "Theta") %>% filter(.$Region == "Occipital")
+allRegions_theta_P <- allregions %>% filter(allregions$Band == "Theta") %>% filter(.$Region == "Parietal")
+allRegions_theta_DLPFC <- allregions %>% filter(allregions$Band == "Theta") %>% filter(.$Region == "DLPFC")
+allRegions_theta_frontal <- allregions %>% filter(allregions$Band == "Theta") %>% filter(.$Region == "Frontal")
+allRegions_theta_selectiveFrontal <- allregions %>% filter(allregions$Band == "Theta") %>% filter(.$Region == "selectiveFrontal")
+
+```
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_WB[], aes(x =inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_frontal[], aes(x = inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_selectiveFrontal[], aes(x = inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_O[], aes(x =inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_P[], aes(x =inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_DLPFC[], aes(x =inverseAge, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+##### Event Number
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_WB[], aes(x =inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_frontal[], aes(x = inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_selectiveFrontal[], aes(x = inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_O[], aes(x =inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_P[], aes(x =inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_DLPFC[], aes(x =inverseAge, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+##### Event Duration
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_WB[], aes(x =inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_frontal[], aes(x = inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_selectiveFrontal[], aes(x = inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_O[], aes(x =inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_P[], aes(x =inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_DLPFC[], aes(x =inverseAge, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+# Frequency across Trials
+## Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+
+delayOnlyTrialOnly <- DelayOnly_Triallevel_3_4()
+
+print(lunaize(ggplot(data = delayOnlyTrialOnly[], aes(x =Trial, y = Gamma.log1p_Trial_Power, group = Group, color = Group))+ stat_smooth(method = "lm") + theme_classic()))
+
+```
+
+
+# Frequency Vs Behavior
+## Best Saccade
+### Delay Period (3-4 Seconds)
+<!-- #### Whole Brain -->
+<!-- ##### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE) -->
+
+<!-- TrialPowerBehav(Behavior, delay_alldata) -->
+
+<!-- ``` -->
+<!-- ##### Trial Power Variability  -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVarBehav(Behavior, delay_alldata) -->
+<!-- ``` -->
+
+<!-- ##### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberBehav(Behavior, delay_alldata) -->
+<!-- ``` -->
+
+<!-- ##### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVarBehav(Behavior, delay_alldata) -->
+<!-- ``` -->
+
+<!-- ##### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationBehav(Behavior, delay_alldata) -->
+<!-- ``` -->
+
+<!-- ##### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVarBehav(Behavior, delay_alldata) -->
+<!-- ``` -->
+
+<!-- #### Frontal Lobe -->
+<!-- ##### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE) -->
+
+<!-- TrialPowerBehav(Behavior, allselectiveFrontal3_4) -->
+
+<!-- ``` -->
+<!-- ##### Trial Power Variability  -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVarBehav(Behavior, allselectiveFrontal3_4) -->
+<!-- ``` -->
+
+<!-- ##### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberBehav(Behavior, allselectiveFrontal3_4) -->
+<!-- ``` -->
+
+<!-- ##### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVarBehav(Behavior, allselectiveFrontal3_4) -->
+<!-- ``` -->
+
+<!-- ##### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationBehav(Behavior, allselectiveFrontal3_4) -->
+<!-- ``` -->
+
+<!-- ##### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVarBehav(Behavior, allselectiveFrontal3_4) -->
+<!-- ``` -->
+#### Combine all Regions
+##### Gamma 
+###### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions3_4_gamma <- allRegions3_4 %>% filter(allRegions3_4$Band == "Gamma")
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+TrialPowerBehavAllRegions(Behavior, allRegions3_4_gamma)
+```
+###### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarBehavAllRegions(Behavior, allRegions3_4_gamma)
+```
+###### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberBehavAllRegions(Behavior, allRegions3_4_gamma)
+```
+###### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarBehavAllRegions(Behavior, allRegions3_4_gamma)
+```
+###### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationBehavAllRegions(Behavior, allRegions3_4_gamma)
+```
+###### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarBehavAllRegions(Behavior, allRegions3_4_gamma)
+```
+##### Beta 
+###### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions3_4_Beta <- allRegions3_4 %>% filter(allRegions3_4$Band == "Beta")
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+TrialPowerBehavAllRegions(Behavior, allRegions3_4_Beta)
+```
+###### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarBehavAllRegions(Behavior, allRegions3_4_Beta)
+```
+###### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberBehavAllRegions(Behavior, allRegions3_4_Beta)
+```
+###### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarBehavAllRegions(Behavior, allRegions3_4_Beta)
+```
+###### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationBehavAllRegions(Behavior, allRegions3_4_Beta)
+```
+###### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarBehavAllRegions(Behavior, allRegions3_4_Beta)
+```
+
+##### Alpha 
+###### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions3_4_Alpha <- allRegions3_4 %>% filter(allRegions3_4$Band == "Alpha")
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+TrialPowerBehavAllRegions(Behavior, allRegions3_4_Alpha)
+```
+###### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarBehavAllRegions(Behavior, allRegions3_4_Alpha)
+```
+###### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberBehavAllRegions(Behavior, allRegions3_4_Alpha)
+```
+###### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarBehavAllRegions(Behavior, allRegions3_4_Alpha)
+```
+###### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationBehavAllRegions(Behavior, allRegions3_4_Alpha)
+```
+###### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarBehavAllRegions(Behavior, allRegions3_4_Alpha)
+```
+
+##### Theta 
+###### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions3_4_Theta <- allRegions3_4 %>% filter(allRegions3_4$Band == "Theta")
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+TrialPowerBehavAllRegions(Behavior, allRegions3_4_Theta)
+```
+###### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarBehavAllRegions(Behavior, allRegions3_4_Theta)
+```
+###### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberBehavAllRegions(Behavior, allRegions3_4_Theta)
+```
+###### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarBehavAllRegions(Behavior, allRegions3_4_Theta)
+```
+###### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationBehavAllRegions(Behavior, allRegions3_4_Theta)
+```
+###### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarBehavAllRegions(Behavior, allRegions3_4_Theta)
+```
+
+<!-- ### Delay Period (5-6 Seconds) -->
+<!-- <!-- #### Whole Brain --> -->
+<!-- <!-- ##### Trial Power --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE) --> -->
+
+<!-- <!-- TrialPowerBehav(Behavior, delay_alldata_5_6) --> -->
+
+<!-- <!-- ``` --> -->
+<!-- <!-- ##### Trial Power Variability  --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- TrialPowerVarBehav(Behavior, delay_alldata_5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Number --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventNumberBehav(Behavior, delay_alldata_5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Number Variability --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventNumberVarBehav(Behavior, delay_alldata_5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Duration --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventDurationBehav(Behavior, delay_alldata_5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Duration Variability --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventDurationVarBehav(Behavior, delay_alldata_5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- #### Frontal Lobe --> -->
+<!-- <!-- ##### Trial Power --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE) --> -->
+
+<!-- <!-- TrialPowerBehav(Behavior, allselectiveFrontal5_6) --> -->
+
+<!-- <!-- ``` --> -->
+<!-- <!-- ##### Trial Power Variability  --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- TrialPowerVarBehav(Behavior, allselectiveFrontal5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Number --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventNumberBehav(Behavior, allselectiveFrontal5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Number Variability --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventNumberVarBehav(Behavior, allselectiveFrontal5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Duration --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventDurationBehav(Behavior, allselectiveFrontal5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Duration Variability --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventDurationVarBehav(Behavior, allselectiveFrontal5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- #### Occipital Lobe --> -->
+<!-- <!-- ##### Trial Power --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE) --> -->
+
+<!-- <!-- TrialPowerBehav(Behavior, allOccipital5_6) --> -->
+
+<!-- <!-- ``` --> -->
+<!-- <!-- ##### Trial Power Variability  --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- TrialPowerVarBehav(Behavior, allOccipital5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Number --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventNumberBehav(Behavior, allOccipital5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Number Variability --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventNumberVarBehav(Behavior, allOccipital5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Duration --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventDurationBehav(Behavior, allOccipital5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Duration Variability --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventDurationVarBehav(Behavior, allOccipital5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- #### Parietal Lobe --> -->
+<!-- <!-- ##### Trial Power --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE) --> -->
+
+<!-- <!-- TrialPowerBehav(Behavior, allParietal5_6) --> -->
+
+<!-- <!-- ``` --> -->
+<!-- <!-- ##### Trial Power Variability  --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- TrialPowerVarBehav(Behavior, allParietal5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Number --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventNumberBehav(Behavior, allParietal5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Number Variability --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventNumberVarBehav(Behavior, allParietal5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Duration --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventDurationBehav(Behavior, allParietal5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ##### Event Duration Variability --> -->
+<!-- <!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} --> -->
+<!-- <!-- EventDurationVarBehav(Behavior, allParietal5_6) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- #### Combine all Regions -->
+<!-- ##### Gamma  -->
+<!-- ###### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- allRegions5_6_gamma <- allRegions5_6 %>% filter(allRegions5_6$Band == "Gamma") -->
+<!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE) -->
+<!-- TrialPowerBehavAllRegions(Behavior, allRegions5_6_gamma) -->
+<!-- ``` -->
+<!-- ###### Trial power Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVarBehavAllRegions(Behavior, allRegions5_6_gamma) -->
+<!-- ``` -->
+<!-- ###### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberBehavAllRegions(Behavior, allRegions5_6_gamma) -->
+<!-- ``` -->
+<!-- ###### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVarBehavAllRegions(Behavior, allRegions5_6_gamma) -->
+<!-- ``` -->
+<!-- ###### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationBehavAllRegions(Behavior, allRegions5_6_gamma) -->
+<!-- ``` -->
+<!-- ###### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVarBehavAllRegions(Behavior, allRegions5_6_gamma) -->
+<!-- ``` -->
+
+<!-- ##### Beta  -->
+<!-- ###### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- allRegions5_6_beta <- allRegions5_6 %>% filter(allRegions5_6$Band == "Beta") -->
+<!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE) -->
+<!-- TrialPowerBehavAllRegions(Behavior, allRegions5_6_beta) -->
+<!-- ``` -->
+<!-- ###### Trial power Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVarBehavAllRegions(Behavior, allRegions5_6_beta) -->
+<!-- ``` -->
+<!-- ###### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberBehavAllRegions(Behavior, allRegions5_6_beta) -->
+<!-- ``` -->
+<!-- ###### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVarBehavAllRegions(Behavior, allRegions5_6_beta) -->
+<!-- ``` -->
+<!-- ###### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationBehavAllRegions(Behavior, allRegions5_6_beta) -->
+<!-- ``` -->
+<!-- ###### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVarBehavAllRegions(Behavior, allRegions5_6_beta) -->
+<!-- ``` -->
+
+
+<!-- ##### Alpha  -->
+<!-- ###### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- allRegions5_6_alpha <- allRegions5_6 %>% filter(allRegions5_6$Band == "Alpha") -->
+<!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE) -->
+<!-- TrialPowerBehavAllRegions(Behavior, allRegions5_6_alpha) -->
+<!-- ``` -->
+<!-- ###### Trial power Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVarBehavAllRegions(Behavior, allRegions5_6_alpha) -->
+<!-- ``` -->
+<!-- ###### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberBehavAllRegions(Behavior, allRegions5_6_alpha) -->
+<!-- ``` -->
+<!-- ###### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVarBehavAllRegions(Behavior, allRegions5_6_alpha) -->
+<!-- ``` -->
+<!-- ###### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationBehavAllRegions(Behavior, allRegions5_6_alpha) -->
+<!-- ``` -->
+<!-- ###### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVarBehavAllRegions(Behavior, allRegions5_6_alpha) -->
+<!-- ``` -->
+
+
+<!-- ##### Theta  -->
+<!-- ###### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- allRegions5_6_theta <- allRegions5_6 %>% filter(allRegions5_6$Band == "Theta") -->
+<!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE) -->
+<!-- TrialPowerBehavAllRegions(Behavior, allRegions5_6_theta) -->
+<!-- ``` -->
+<!-- ###### Trial power Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVarBehavAllRegions(Behavior, allRegions5_6_theta) -->
+<!-- ``` -->
+<!-- ###### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberBehavAllRegions(Behavior, allRegions5_6_theta) -->
+<!-- ``` -->
+<!-- ###### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVarBehavAllRegions(Behavior, allRegions5_6_theta) -->
+<!-- ``` -->
+<!-- ###### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationBehavAllRegions(Behavior, allRegions5_6_theta) -->
+<!-- ``` -->
+<!-- ###### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVarBehavAllRegions(Behavior, allRegions5_6_theta) -->
+<!-- ``` -->
+
+### Fix Period 
+<!-- #### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE) -->
+
+<!-- TrialPowerBehav(Behavior, fix_alldata) -->
+
+<!-- ``` -->
+<!-- #### Trial Power Variability  -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- TrialPowerVarBehav(Behavior, fix_alldata) -->
+<!-- ``` -->
+
+<!-- #### Event Number -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberBehav(Behavior, fix_alldata) -->
+<!-- ``` -->
+
+<!-- #### Event Number Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventNumberVarBehav(Behavior, fix_alldata) -->
+<!-- ``` -->
+
+<!-- #### Event Duration -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationBehav(Behavior, fix_alldata) -->
+<!-- ``` -->
+
+<!-- #### Event Duration Variability -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- EventDurationVarBehav(Behavior, fix_alldata) -->
+<!-- ``` -->
+
+
+#### Combine all Regions
+##### Gamma 
+###### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_fix_gamma <- allRegions_fix %>% filter(allRegions_fix$Band == "Gamma")
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+TrialPowerBehavAllRegions(Behavior, allRegions_fix_gamma)
+```
+###### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarBehavAllRegions(Behavior, allRegions_fix_gamma)
+```
+###### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberBehavAllRegions(Behavior, allRegions_fix_gamma)
+```
+###### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarBehavAllRegions(Behavior, allRegions_fix_gamma)
+```
+###### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationBehavAllRegions(Behavior, allRegions_fix_gamma)
+```
+###### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarBehavAllRegions(Behavior, allRegions_fix_gamma)
+```
+
+##### Beta 
+###### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_fix_beta <- allRegions_fix %>% filter(allRegions_fix$Band == "Beta")
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+TrialPowerBehavAllRegions(Behavior, allRegions_fix_beta)
+```
+###### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarBehavAllRegions(Behavior, allRegions_fix_beta)
+```
+###### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberBehavAllRegions(Behavior, allRegions_fix_beta)
+```
+###### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarBehavAllRegions(Behavior, allRegions_fix_beta)
+```
+###### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationBehavAllRegions(Behavior, allRegions_fix_beta)
+```
+###### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarBehavAllRegions(Behavior, allRegions_fix_beta)
+```
+
+
+##### Alpha 
+###### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_fix_alpha <- allRegions_fix %>% filter(allRegions_fix$Band == "Alpha")
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+TrialPowerBehavAllRegions(Behavior, allRegions_fix_alpha)
+```
+###### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarBehavAllRegions(Behavior, allRegions_fix_alpha)
+```
+###### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberBehavAllRegions(Behavior, allRegions_fix_alpha)
+```
+###### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarBehavAllRegions(Behavior, allRegions_fix_alpha)
+```
+###### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationBehavAllRegions(Behavior, allRegions_fix_alpha)
+```
+###### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarBehavAllRegions(Behavior, allRegions_fix_alpha)
+```
+
+
+##### Theta 
+###### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_fix_theta <- allRegions_fix %>% filter(allRegions_fix$Band == "Theta")
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+TrialPowerBehavAllRegions(Behavior, allRegions_fix_theta)
+```
+###### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarBehavAllRegions(Behavior, allRegions_fix_theta)
+```
+###### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberBehavAllRegions(Behavior, allRegions_fix_theta)
+```
+###### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarBehavAllRegions(Behavior, allRegions_fix_theta)
+```
+###### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationBehavAllRegions(Behavior, allRegions_fix_theta)
+```
+###### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarBehavAllRegions(Behavior, allRegions_fix_theta)
+```
+### Resting State
+#### Combine all Regions
+##### Gamma 
+###### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_RS_gamma <- allRegions_RS %>% filter(allRegions_RS$Band == "Gamma")
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+TrialPowerBehavAllRegions(Behavior, allRegions_RS_gamma)
+```
+###### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarBehavAllRegions(Behavior, allRegions_RS_gamma)
+```
+###### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberBehavAllRegions(Behavior, allRegions_RS_gamma)
+```
+###### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarBehavAllRegions(Behavior, allRegions_RS_gamma)
+```
+###### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationBehavAllRegions(Behavior, allRegions_RS_gamma)
+```
+###### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarBehavAllRegions(Behavior, allRegions_RS_gamma)
+```
+
+##### Beta 
+###### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_RS_beta <- allRegions_RS %>% filter(allRegions_RS$Band == "Beta")
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+TrialPowerBehavAllRegions(Behavior, allRegions_RS_beta)
+```
+###### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarBehavAllRegions(Behavior, allRegions_RS_beta)
+```
+###### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberBehavAllRegions(Behavior, allRegions_RS_beta)
+```
+###### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarBehavAllRegions(Behavior, allRegions_RS_beta)
+```
+###### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationBehavAllRegions(Behavior, allRegions_RS_beta)
+```
+###### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarBehavAllRegions(Behavior, allRegions_RS_beta)
+```
+
+
+##### Alpha 
+###### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_RS_alpha <- allRegions_RS %>% filter(allRegions_RS$Band == "Alpha")
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+TrialPowerBehavAllRegions(Behavior, allRegions_RS_alpha)
+```
+###### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarBehavAllRegions(Behavior, allRegions_RS_alpha)
+```
+###### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberBehavAllRegions(Behavior, allRegions_RS_alpha)
+```
+###### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarBehavAllRegions(Behavior, allRegions_RS_alpha)
+```
+###### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationBehavAllRegions(Behavior, allRegions_RS_alpha)
+```
+###### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarBehavAllRegions(Behavior, allRegions_RS_alpha)
+```
+
+
+##### Theta 
+###### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_RS_theta <- allRegions_RS %>% filter(allRegions_RS$Band == "Theta")
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/04.BehaviorVsEEG.R", envir = knitr::knit_global(), chdir = TRUE)
+TrialPowerBehavAllRegions(Behavior, allRegions_RS_theta)
+```
+###### Trial power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+TrialPowerVarBehavAllRegions(Behavior, allRegions_RS_theta)
+```
+###### Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberBehavAllRegions(Behavior, allRegions_RS_theta)
+```
+###### Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventNumberVarBehavAllRegions(Behavior, allRegions_RS_theta)
+```
+###### Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationBehavAllRegions(Behavior, allRegions_RS_theta)
+```
+###### Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+EventDurationVarBehavAllRegions(Behavior, allRegions_RS_theta)
+```
+## Delay-Fix vs Behavior
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+delayMinusFix <- merge(allRegions3_4, allRegions_fix, by = c("Subject", "age", "inverseAge", "Band", "Region"), suffixes = c("_Delay", "_Fix"))
+delayMinusFix$log1p_Trial_Power <- delayMinusFix$log1p_Trial_Power_Delay - delayMinusFix$log1p_Trial_Power_Fix
+delayMinusFix$log1p_Trial_Power_Variability <- delayMinusFix$log1p_Trial_Power_Variability_Delay - delayMinusFix$log1p_Trial_Power_Variability_Fix
+delayMinusFix$Event_Number <- delayMinusFix$Event_Number_Delay - delayMinusFix$Event_Number_Fix
+delayMinusFix$Event_Number_Variability  <- delayMinusFix$Event_Number_Variability_Delay - delayMinusFix$Event_Number_Variability_Fix
+delayMinusFix$Event_Duration<- delayMinusFix$Event_Duration_Delay - delayMinusFix$Event_Duration_Fix
+delayMinusFix$Event_Duration_Variability  <- delayMinusFix$Event_Duration_Variability_Delay - delayMinusFix$Event_Duration_Variability_Fix
+
+
+TrialPowerBehavAllRegions(Behavior, delayMinusFix)
+TrialPowerVarBehavAllRegions(Behavior, delayMinusFix)
+EventNumberBehavAllRegions(Behavior, delayMinusFix)
+EventNumberVarBehavAllRegions(Behavior, delayMinusFix)
+EventDurationBehavAllRegions(Behavior, delayMinusFix)
+EventDurationVarBehavAllRegions(Behavior, delayMinusFix)
+
+
+```
+## Delay, Fixation, and Rest
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allregions <- rbind(allRegions3_4, allRegions_fix )
+
+allregions <- rbind(allregions, allRegions_RS)
+allregions <- merge(allregions, Behavior, by = c("Subject", "age"))
+```
+
+### Combine all Regions
+#### Gamma 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_gamma_WB <- allregions %>% filter(allregions$Band == "Gamma") %>% filter(.$Region == "Whole Brain")
+allRegions_gamma_O <- allregions %>% filter(allregions$Band == "Gamma") %>% filter(.$Region == "Occipital")
+allRegions_gamma_P <- allregions %>% filter(allregions$Band == "Gamma") %>% filter(.$Region == "Parietal")
+allRegions_gamma_DLPFC <- allregions %>% filter(allregions$Band == "Gamma") %>% filter(.$Region == "DLPFC")
+allRegions_gamma_frontal <- allregions %>% filter(allregions$Band == "Gamma") %>% filter(.$Region == "Frontal")
+allRegions_gamma_selectiveFrontal <- allregions %>% filter(allregions$Band == "Gamma") %>% filter(.$Region == "SelectiveFrontal")
+
+```
+
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_WB[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_frontal[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_selectiveFrontal[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_O[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_P[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_DLPFC[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+##### Event Number
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_WB[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_frontal[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_selectiveFrontal[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_O[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_P[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_DLPFC[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+##### Event Duration
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_WB[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_frontal[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_selectiveFrontal[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_O[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_P[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_gamma_DLPFC[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+#### Beta 
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_beta_WB <- allregions %>% filter(allregions$Band == "Beta") %>% filter(.$Region == "Whole Brain")
+allRegions_beta_O <- allregions %>% filter(allregions$Band == "Beta") %>% filter(.$Region == "Occipital")
+allRegions_beta_P <- allregions %>% filter(allregions$Band == "Beta") %>% filter(.$Region == "Parietal")
+allRegions_beta_DLPFC <- allregions %>% filter(allregions$Band == "Beta") %>% filter(.$Region == "DLPFC")
+allRegions_beta_frontal <- allregions %>% filter(allregions$Band == "Beta") %>% filter(.$Region == "Frontal")
+allRegions_beta_selectiveFrontal <- allregions %>% filter(allregions$Band == "Beta") %>% filter(.$Region == "SelectiveFrontal")
+
+```
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_WB[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_frontal[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_selectiveFrontal[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_O[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_P[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_DLPFC[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+##### Event Number
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_WB[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_frontal[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_selectiveFrontal[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_O[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_P[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_DLPFC[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+##### Event Duration
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_WB[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_frontal[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_selectiveFrontal[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_O[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_P[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_beta_DLPFC[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+#### Alpha  
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_alpha_WB <- allregions %>% filter(allregions$Band == "Alpha") %>% filter(.$Region == "Whole Brain")
+allRegions_alpha_O <- allregions %>% filter(allregions$Band == "Alpha") %>% filter(.$Region == "Occipital")
+allRegions_alpha_P <- allregions %>% filter(allregions$Band == "Alpha") %>% filter(.$Region == "Parietal")
+allRegions_alpha_DLPFC <- allregions %>% filter(allregions$Band == "Alpha") %>% filter(.$Region == "DLPFC")
+allRegions_alpha_frontal <- allregions %>% filter(allregions$Band == "Alpha") %>% filter(.$Region == "Frontal")
+allRegions_alpha_selectiveFrontal <- allregions %>% filter(allregions$Band == "Alpha") %>% filter(.$Region == "SelectiveFrontal")
+
+```
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_WB[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_frontal[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_selectiveFrontal[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_O[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_P[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_DLPFC[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+##### Event Number
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_WB[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_frontal[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_selectiveFrontal[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_O[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_P[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_DLPFC[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+##### Event Duration
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_WB[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_frontal[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_selectiveFrontal[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_O[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_P[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_alpha_DLPFC[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+
+
+#### Theta  
+##### Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+allRegions_theta_WB <- allregions %>% filter(allregions$Band == "Theta") %>% filter(.$Region == "Whole Brain")
+allRegions_theta_O <- allregions %>% filter(allregions$Band == "Theta") %>% filter(.$Region == "Occipital")
+allRegions_theta_P <- allregions %>% filter(allregions$Band == "Theta") %>% filter(.$Region == "Parietal")
+allRegions_theta_DLPFC <- allregions %>% filter(allregions$Band == "Theta") %>% filter(.$Region == "DLPFC")
+allRegions_theta_frontal <- allregions %>% filter(allregions$Band == "Theta") %>% filter(.$Region == "Frontal")
+allRegions_theta_selectiveFrontal <- allregions %>% filter(allregions$Band == "Theta") %>% filter(.$Region == "SelectiveFrontal")
+
+```
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_WB[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_frontal[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_selectiveFrontal[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_O[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_P[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_DLPFC[], aes(x =absBestError, y = log1p_Trial_Power, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+##### Event Number
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_WB[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_frontal[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_selectiveFrontal[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_O[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_P[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_DLPFC[], aes(x =absBestError, y = Event_Number, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+##### Event Duration
+###### Whole Brain
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_WB[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_frontal[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Selective Frontal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_selectiveFrontal[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Occipital
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_O[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### Parietal
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_P[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+###### DLPFC
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+print(lunaize(ggplot(data = allRegions_theta_DLPFC[], aes(x =absBestError, y = Event_Duration, group = epoch, color = epoch)) + stat_smooth(method = "lm") + theme_classic()))
+```
+
+<!-- ## Mediation Analyses -->
+<!-- #### Gamma  -->
+<!-- ##### Trial Power -->
+<!-- ```{r, echo= FALSE, message = FALSE, warning = FALSE} -->
+<!-- sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/06.Mediation.R", envir = knitr::knit_global(), chdir = TRUE) -->
+<!-- allRegions_gamma_WB <- allregions %>% filter(allregions$Band == "Gamma") %>% filter(.$Region == "Whole Brain") -->
+
+<!-- other_vars <-c("log1p_Trial_Power", "absBestError") #define what you want in the mediation analysis  -->
+
+<!-- mediationAnalysis_invage_behaviorvsFreq(allRegions_gamma_WB, other_vars) -->
+
+<!-- ``` -->

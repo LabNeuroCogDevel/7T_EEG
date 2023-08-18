@@ -1,0 +1,1399 @@
+---
+title: "Spectral Events Mediation Analyses"
+author: "Shane McKeon"
+date: "11/16/2020"
+geometry: margin = 1in
+output:
+  pdf_document:  
+    toc: true
+    toc_depth: 4    
+    fig_caption: yes
+  latex_engine: xelatex
+
+  html_document:
+    df_print: paged
+    code_folding: hide 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev='png', dpi=150, fig.width = 6, fig.height=6, fig.align = 'left', fig.margin = TRUE)
+```
+
+
+```{r load-libraries, message=FALSE}
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(dplyr, ggplot2,lme4, multcomp, tidyr, tidyverse,wesanderson, reshape2, corrplot, ggExtra, cowplot, ggsci, mgcv, ggpointdensity, devtools, ggpubr, itsadug, useful, rmarkdown, tinytex, gratia, gamm4, car, GGally, CCA)
+
+#devtools::install_github('LabneuroCogDevel/LNCDR')
+#library(devtools)
+#devtools::install_github("strengejacke/sjPlot")
+library(LNCDR)
+library(data.table)
+require(dplyr)
+library(factoextra)
+library(tidyverse)
+require(knitr)
+library(ggplot2)
+library(e1071)
+library(caret)
+
+```
+
+
+
+# Mediation Analysis: Trial Level
+## Delay Period
+### Position Error
+#### Gamma Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R")
+
+alldf <- Only_Take_One_Delay_Bin_TrialLevel()
+alldata_TrialLevel <- alldf$alldata_TrialLevel
+
+other_vars <-c("Gamma.log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel, other_vars)
+```
+
+
+
+
+##### Separate Age Groups 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+alldf <- Only_Take_One_Delay_Bin_TrialLevel()
+alldata_TrialLevel <- alldf$alldata_TrialLevel
+
+alldata_TrialLevel_youngest <- alldata_TrialLevel[alldata_TrialLevel$Group == 1,]
+alldata_TrialLevel_Secondyoungest <- alldata_TrialLevel[alldata_TrialLevel$Group == 2,]
+alldata_TrialLevel_thirdyoungest <- alldata_TrialLevel[alldata_TrialLevel$Group == 3,]
+alldata_TrialLevel_oldest <- alldata_TrialLevel[alldata_TrialLevel$Group == 4,]
+
+other_vars <-c("Gamma.log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel_oldest, other_vars)
+
+
+```
+
+#### Gamma Event Number
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Gamma.Event_Number", "absPositionError") #define what you want in the mediation analysis
+
+MediationAnalysis(alldata_TrialLevel, other_vars)
+
+```
+
+##### Separate Age Groups 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+alldf <- Only_Take_One_Delay_Bin_TrialLevel()
+alldata_TrialLevel <- alldf$alldata_TrialLevel
+
+alldata_TrialLevel_youngest <- alldata_TrialLevel[alldata_TrialLevel$Group == 1,]
+alldata_TrialLevel_Secondyoungest <- alldata_TrialLevel[alldata_TrialLevel$Group == 2,]
+alldata_TrialLevel_thirdyoungest <- alldata_TrialLevel[alldata_TrialLevel$Group == 3,]
+alldata_TrialLevel_oldest <- alldata_TrialLevel[alldata_TrialLevel$Group == 4,]
+
+other_vars <-c("Gamma.Event_Number", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel_oldest, other_vars)
+
+
+```
+
+#### Gamma Event Number and power 
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Gamma_Event_Number", "Gamma_log1p_Trial_Power") #define what you want in the mediation analysis
+
+MediationAnalysis(other_vars)
+
+```
+
+#### Gamma Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Gamma.Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel, other_vars)
+
+```
+
+##### Separate Age Groups 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+alldf <- Only_Take_One_Delay_Bin_TrialLevel()
+alldata_TrialLevel <- alldf$alldata_TrialLevel
+
+alldata_TrialLevel_youngest <- alldata_TrialLevel[alldata_TrialLevel$Group == 1,]
+alldata_TrialLevel_Secondyoungest <- alldata_TrialLevel[alldata_TrialLevel$Group == 2,]
+alldata_TrialLevel_thirdyoungest <- alldata_TrialLevel[alldata_TrialLevel$Group == 3,]
+alldata_TrialLevel_oldest <- alldata_TrialLevel[alldata_TrialLevel$Group == 4,]
+
+other_vars <-c("Gamma.Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel_thirdyoungest, other_vars)
+```
+
+#### Beta Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta.log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel, other_vars)
+
+```
+#### Beta Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta.Event_Number", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel,other_vars)
+
+```
+
+#### Beta Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta.Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel, other_vars)
+
+```
+
+#### Alpha Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha.log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel, other_vars)
+
+```
+
+#### Alpha Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha.Event_Number", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysis(alldata_TrialLevel, other_vars)
+
+```
+
+#### Alpha Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha.Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysis(alldata_TrialLevel, other_vars)
+
+```
+
+#### Theta Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysis(other_vars)
+
+```
+
+#### Theta Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_Event_Number", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysis(other_vars)
+
+```
+
+#### Theta Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysis(other_vars)
+
+```
+
+### Latency
+#### Gamma Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R")
+
+alldf <- Only_Take_One_Delay_Bin_TrialLevel()
+alldata_TrialLevel <- alldf$alldata_TrialLevel
+
+other_vars <-c("Gamma.log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel, other_vars)
+
+```
+
+##### Separate Age Groups 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+alldf <- Only_Take_One_Delay_Bin_TrialLevel()
+alldata_TrialLevel <- alldf$alldata_TrialLevel
+
+alldata_TrialLevel_youngest <- alldata_TrialLevel[alldata_TrialLevel$Group == 1,]
+alldata_TrialLevel_Secondyoungest <- alldata_TrialLevel[alldata_TrialLevel$Group == 2,]
+alldata_TrialLevel_thirdyoungest <- alldata_TrialLevel[alldata_TrialLevel$Group == 3,]
+alldata_TrialLevel_oldest <- alldata_TrialLevel[alldata_TrialLevel$Group == 4,]
+
+other_vars <-c("Gamma.log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel_oldest, other_vars)
+
+
+```
+
+#### Gamma Event Number
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Gamma.Event_Number", "mgsLatency") #define what you want in the mediation analysis
+
+MediationAnalysis(alldata_TrialLevel, other_vars)
+
+```
+
+
+##### Separate Age Groups 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+alldf <- Only_Take_One_Delay_Bin_TrialLevel()
+alldata_TrialLevel <- alldf$alldata_TrialLevel
+
+alldata_TrialLevel_youngest <- alldata_TrialLevel[alldata_TrialLevel$Group == 1,]
+alldata_TrialLevel_Secondyoungest <- alldata_TrialLevel[alldata_TrialLevel$Group == 2,]
+alldata_TrialLevel_thirdyoungest <- alldata_TrialLevel[alldata_TrialLevel$Group == 3,]
+alldata_TrialLevel_oldest <- alldata_TrialLevel[alldata_TrialLevel$Group == 4,]
+
+other_vars <-c("Gamma.Event_Number", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel_oldest, other_vars)
+
+
+```
+
+#### Gamma Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Gamma.Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel, other_vars)
+
+```
+
+##### Separate Age Groups 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+alldf <- Only_Take_One_Delay_Bin_TrialLevel()
+alldata_TrialLevel <- alldf$alldata_TrialLevel
+
+alldata_TrialLevel_youngest <- alldata_TrialLevel[alldata_TrialLevel$Group == 1,]
+alldata_TrialLevel_Secondyoungest <- alldata_TrialLevel[alldata_TrialLevel$Group == 2,]
+alldata_TrialLevel_thirdyoungest <- alldata_TrialLevel[alldata_TrialLevel$Group == 3,]
+alldata_TrialLevel_oldest <- alldata_TrialLevel[alldata_TrialLevel$Group == 4,]
+
+other_vars <-c("Gamma.Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel_thirdyoungest, other_vars)
+
+
+```
+
+#### Beta Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta_log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis(other_vars)
+
+```
+
+#### Beta Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta_Event_Number", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis(other_vars)
+
+```
+
+#### Beta Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta.Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel,other_vars)
+
+```
+
+#### Alpha Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha.log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis(alldata_TrialLevel,other_vars)
+
+```
+
+#### Alpha Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha.Event_Number", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysis(alldata_TrialLevel,other_vars)
+
+```
+
+#### Alpha Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha.Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysis(alldata_TrialLevel,other_vars)
+
+```
+
+#### Theta Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysis(other_vars)
+
+```
+#### Theta Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_Event_Number", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysis(other_vars)
+
+```
+#### Theta Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysis(other_vars)
+
+```
+
+
+## Fixation Period
+### Position Error
+#### Gamma Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Gamma_log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysisFixation(other_vars)
+
+```
+#### Gamma Event Number
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Gamma_Event_Number", "absPositionError") #define what you want in the mediation analysis
+
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Gamma Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Gamma_Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Beta Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta_log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Beta Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta_Event_Number", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Beta Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta_Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Alpha Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha_log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Alpha Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha_Event_Number", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Alpha Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha_Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Theta Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Theta Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_Event_Number", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Theta Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysisFixation(other_vars)
+
+```
+
+### Latency
+#### Gamma Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Gamma_log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysisFixation(other_vars)
+
+```
+#### Gamma Event Number
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Gamma_Event_Number", "mgsLatency") #define what you want in the mediation analysis
+
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Gamma Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Gamma_Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Beta Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta_log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Beta Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta_Event_Number", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Beta Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta_Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Alpha Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha_log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Alpha Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha_Event_Number", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Alpha Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha_Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Theta Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysisFixation(other_vars)
+
+```
+#### Theta Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_Event_Number", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysisFixation(other_vars)
+
+```
+
+#### Theta Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysisFixation(other_vars)
+
+```
+
+# Mediation Analysis: Trial Level using Inverse Age 
+## Delay Period
+### Position Error
+#### Gamma Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Gamma_log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Gamma Event Number
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Gamma_Event_Number", "absPositionError") #define what you want in the mediation analysis
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+
+#### Gamma Event Number and power 
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Gamma_Event_Number", "Gamma_log1p_Trial_Power") #define what you want in the mediation analysis
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Gamma Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Gamma_Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Beta Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta_log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+#### Beta Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta_Event_Number", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Beta Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta_Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Alpha Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha_log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Alpha Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha_Event_Number", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Alpha Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha_Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Theta Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Theta Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_Event_Number", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Theta Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+### Latency
+#### Gamma Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Gamma_log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+#### Gamma Event Number
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Gamma_Event_Number", "mgsLatency") #define what you want in the mediation analysis
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Gamma Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Gamma_Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Beta Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta_log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Beta Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta_Event_Number", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Beta Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Beta_Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Alpha Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha_log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Alpha Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha_Event_Number", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Alpha Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Alpha_Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+#### Theta Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysis_inverseAge(other_vars)
+
+```
+#### Theta Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_Event_Number", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysis_inverseAge(other_vars)
+
+```
+#### Theta Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+other_vars <-c("Theta_Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+MediationAnalysis_inverseAge(other_vars)
+
+```
+
+
+
+# Mediation Analysis: Subject Level 
+## Delay Period
+### Position Error
+
+#### Gamma Trial Power 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R")
+
+alldf <- DelayOnly_Sublevel()
+alldata_delayOnly <- alldf$alldata_delayOnly
+
+other_vars <-c("Gamma.log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+
+#### Gamma Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Gamma.log1p_Trial_Power_Variability", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+#### Gamma Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Gamma.Event_Number_Variability", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+#### Gamma Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Gamma.Event_Number_Variability", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+#### Gamma Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Gamma.Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+#### Gamma Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Gamma.Event_Duration_Variability", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+#### Beta Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Beta.log1p_Trial_Power_Variability", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+#### Beta Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Beta.Event_Number_Variability", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+#### Beta Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Beta.Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+#### Alpha Trial Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Alpha.log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+#### Alpha Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Alpha.log1p_Trial_Power_Variability", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+#### Alpha Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Alpha.Event_Number", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+#### Alpha Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Alpha.Event_Duration", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+### Latency
+#### Gamma Trial Power 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R")
+
+alldf <- DelayOnly_Sublevel()
+alldata_delayOnly <- alldf$alldata_delayOnly
+
+other_vars <-c("Gamma.log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+
+#### Gamma Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Gamma.log1p_Trial_Power_Variability", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+#### Gamma Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Gamma.Event_Number", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+#### Gamma Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Gamma.Event_Number_Variability", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+#### Gamma Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Gamma.Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+#### Gamma Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Gamma.Event_Duration_Variability", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+ ```
+
+
+
+## Resting State 
+### Position Error
+#### Gamma Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R")
+
+
+alldf_RS <- Resting_State_Data_TrialLevel()
+alldata_RS_TrialLevel <- alldf_RS$alldata_RS_TrialLevel
+
+other_vars <-c("Gamma.log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_RestingState(alldata_RS_TrialLevel, other_vars)
+
+```
+
+##### Separate Age Groups 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+alldf_RS <- Resting_State_Data_TrialLevel()
+alldata_RS_TrialLevel <- alldf_RS$alldata_RS_TrialLevel
+
+alldata_RS_TrialLevel_youngest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 1,]
+alldata_RS_TrialLevel_Secondyoungest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 2,]
+alldata_RS_TrialLevel_thirdyoungest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 3,]
+alldata_RS_TrialLevel_oldest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 4,]
+
+other_vars <-c("Gamma.log1p_Trial_Power", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_RestingState(alldata_RS_TrialLevel_youngest, other_vars)
+
+
+
+```
+
+#### Gamma Event Number
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Gamma.Event_Number", "absPositionError") #define what you want in the mediation analysis
+
+MediationAnalysis_RestingState(alldata_RS_TrialLevel, other_vars)
+```
+
+##### Separate Age Groups 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+alldf_RS <- Resting_State_Data_TrialLevel()
+alldata_RS_TrialLevel <- alldf_RS$alldata_RS_TrialLevel
+
+alldata_RS_TrialLevel_youngest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 1,]
+alldata_RS_TrialLevel_Secondyoungest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 2,]
+alldata_RS_TrialLevel_thirdyoungest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 3,]
+alldata_RS_TrialLevel_oldest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 4,]
+
+other_vars <-c("Gamma.Event_Number", "absPositionError") #define what you want in the mediation analysis 
+
+MediationAnalysis_RestingState(alldata_RS_TrialLevel_oldest, other_vars)
+
+
+
+```
+#### Beta Event Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Beta.Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+#### Alpha Trial Power 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R")
+
+alldf <- DelayOnly_Sublevel()
+alldata_delayOnly <- alldf$alldata_delayOnly
+
+other_vars <-c("Alpha.log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+#### Alpha Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R")
+
+alldf <- DelayOnly_Sublevel()
+alldata_delayOnly <- alldf$alldata_delayOnly
+
+other_vars <-c("Alpha.log1p_Trial_Power_Variability", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+#### Alpha Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R")
+
+alldf <- DelayOnly_Sublevel()
+alldata_delayOnly <- alldf$alldata_delayOnly
+
+other_vars <-c("Alpha.Event_Number", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+
+#### Alpha Duration
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R")
+
+alldf <- DelayOnly_Sublevel()
+alldata_delayOnly <- alldf$alldata_delayOnly
+
+other_vars <-c("Alpha.Event_Duration", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel(alldata_delayOnly, other_vars)
+
+```
+### Latency 
+#### Gamma Power
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R")
+
+
+alldf_RS <- Resting_State_Data_TrialLevel()
+alldata_RS_TrialLevel <- alldf_RS$alldata_RS_TrialLevel
+
+other_vars <-c("Gamma.log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_RestingState(alldata_RS_TrialLevel, other_vars)
+
+```
+
+##### Separate Age Groups 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+alldf_RS <- Resting_State_Data_TrialLevel()
+alldata_RS_TrialLevel <- alldf_RS$alldata_RS_TrialLevel
+
+alldata_RS_TrialLevel_youngest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 1,]
+alldata_RS_TrialLevel_Secondyoungest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 2,]
+alldata_RS_TrialLevel_thirdyoungest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 3,]
+alldata_RS_TrialLevel_oldest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 4,]
+
+other_vars <-c("Gamma.log1p_Trial_Power", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_RestingState(alldata_RS_TrialLevel_oldest, other_vars)
+
+
+
+```
+
+#### Gamma Event Number
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+other_vars <-c("Gamma.Event_Number", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_RestingState(alldata_RS_TrialLevel, other_vars)
+
+```
+
+
+##### Separate Age Groups 
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+
+alldf_RS <- Resting_State_Data_TrialLevel()
+alldata_RS_TrialLevel <- alldf_RS$alldata_RS_TrialLevel
+
+alldata_RS_TrialLevel_youngest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 1,]
+alldata_RS_TrialLevel_Secondyoungest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 2,]
+alldata_RS_TrialLevel_thirdyoungest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 3,]
+alldata_RS_TrialLevel_oldest <- alldata_RS_TrialLevel[alldata_RS_TrialLevel$Group == 4,]
+
+other_vars <-c("Gamma.Event_Number", "mgsLatency") #define what you want in the mediation analysis 
+
+MediationAnalysis_RestingState(alldata_RS_TrialLevel_oldest, other_vars)
+
+
+
+```
+
+## Fixation Period
+### Position Error
+#### Gamma Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("log1p_Trial_Power_Variability_Fix", "absPositionError_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_GammaFix(other_vars)
+
+```
+
+
+#### Gamma Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Number_Variability_Fix", "absPositionError_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_GammaFix(other_vars)
+
+```
+
+#### Gamma Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Duration_Variability_Fix", "absPositionError_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_GammaFix(other_vars)
+
+```
+
+#### Beta Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("log1p_Trial_Power_Variability_Fix", "absPositionError_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_BetaFix(other_vars)
+
+```
+
+#### Beta Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Number_Variability_Fix", "absPositionError_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_BetaFix(other_vars)
+
+```
+
+#### Beta Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Duration_Variability_Fix", "absPositionError_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_BetaFix(other_vars)
+
+```
+
+
+#### Alpha Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("log1p_Trial_Power_Variability_Fix", "absPositionError_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_AlphaFix(other_vars)
+
+```
+
+#### Alpha Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Number_Variability_Fix", "absPositionError_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_AlphaFix(other_vars)
+
+```
+
+#### Alpha Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Duration_Variability_Fix", "absPositionError_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_AlphaFix(other_vars)
+
+```
+
+
+#### Theta Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("log1p_Trial_Power_Variability_Fix", "absPositionError_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_ThetaFix(other_vars)
+
+```
+
+#### Theta Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Number_Variability_Fix", "absPositionError_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_ThetaFix(other_vars)
+
+```
+
+#### Theta Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Duration_Variability_Fix", "absPositionError_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_ThetaFix(other_vars)
+
+```
+
+
+### Latency
+#### Gamma Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("log1p_Trial_Power_Variability_Fix", "mgsLatency_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_GammaFix(other_vars)
+
+```
+
+
+#### Gamma Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Number_Variability_Fix", "mgsLatency_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_GammaFix(other_vars)
+
+```
+
+#### Gamma Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Duration_Variability_Fix", "mgsLatency_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_GammaFix(other_vars)
+
+```
+
+#### Beta Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("log1p_Trial_Power_Variability_Fix", "mgsLatency_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_BetaFix(other_vars)
+
+```
+
+#### Beta Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Number_Variability_Fix", "mgsLatency_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_BetaFix(other_vars)
+
+```
+
+#### Beta Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Duration_Variability_Fix", "mgsLatency_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_BetaFix(other_vars)
+
+```
+
+
+#### Alpha Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("log1p_Trial_Power_Variability_Fix", "mgsLatency_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_AlphaFix(other_vars)
+
+```
+
+#### Alpha Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Number_Variability_Fix", "mgsLatency_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_AlphaFix(other_vars)
+
+```
+
+#### Alpha Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Duration_Variability_Fix", "mgsLatency_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_AlphaFix(other_vars)
+
+```
+
+
+#### Theta Trial Power Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("log1p_Trial_Power_Variability_Fix", "mgsLatency_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_ThetaFix(other_vars)
+
+```
+
+#### Theta Event Number Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Number_Variability_Fix", "mgsLatency_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_ThetaFix(other_vars)
+
+```
+
+#### Theta Event Duration Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.keep='all'}
+source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.MediationAnalysis.R")
+
+other_vars <-c("Event_Duration_Variability_Fix", "mgsLatency_Variability") #define what you want in the mediation analysis 
+
+MediationAnalysis_SubjectLevel_ThetaFix(other_vars)
+
+```
+
+

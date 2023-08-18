@@ -1,0 +1,1159 @@
+---
+title: "EEG MRS"
+author: "Shane McKeon"
+date: "11/11/2021"
+geometry: margin = 1in
+output:
+  pdf_document:  
+    toc: true
+    toc_depth: 4    
+    fig_caption: yes
+  latex_engine: xelatex
+
+  html_document:
+    df_print: paged
+    code_folding: hide 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev='png', dpi=150, fig.width = 6, fig.height= 6, fig.align = 'center', fig.margin = TRUE, comment = NA)
+```
+
+
+```{r load-libraries, message=FALSE}
+```
+
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+library(LNCDR)
+library(data.table)
+require(dplyr)
+library(factoextra)
+library(tidyverse)
+require(knitr)
+library(ggplot2)
+library(e1071)
+library(caret)
+library(sjPlot)
+library(directlabels)
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(Hmisc)
+library(lmerTest)
+library(corrplot)
+library(RColorBrewer)
+library(data.table)
+library(mediation)
+
+
+```
+# Delay 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/PrepMRSdata.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+
+# Load in MRS
+
+MRS <- LoadMRS()
+#MPFC
+# Cleans and selects roi
+roinumber = 8
+MPFC_Glu <- cleanGlutamate(MRS, roinumber)
+
+MPFC_Glu_invage <- lm(data=MPFC_Glu, Glu.Cr ~ invage + sex + GMrat)
+#summary(ROI_Glu_invage)
+
+var_Glu <- lm(Glu.Cr ~ invage + sex + GMrat, data=MPFC_Glu, na.action=na.exclude)
+MPFC_Glu$Glu_ageResids <- abs(residuals(var_Glu))
+MPFC_Glu$Subject <- MPFC_Glu$ld8
+
+MPFC_Glu <- MPFC_Glu %>% separate(ld8,c("luna","vdate"), remove=F)
+
+
+gluvar <- lm(Glu_ageResids ~ age, data=MPFC_Glu)
+#summary(gluvar)
+
+#DLPFC
+roinumber = 9
+DLPFC_Glu <- cleanGlutamate(MRS, roinumber)
+
+DLPFC_Glu_invage <- lm(data=DLPFC_Glu, Glu.Cr ~ invage + sex + GMrat)
+#summary(ROI_Glu_invage)
+
+var_Glu <- lm(Glu.Cr ~ invage + sex + GMrat, data=DLPFC_Glu, na.action=na.exclude)
+DLPFC_Glu$Glu_ageResids <- abs(residuals(var_Glu))
+DLPFC_Glu$Subject <- DLPFC_Glu$ld8
+
+DLPFC_Glu <- DLPFC_Glu %>% separate(ld8,c("luna","vdate"), remove=F)
+
+
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+# Load in Frontal EEG 
+
+delayRegions <- RegionstoSpectralEventData_SubjectLevel()
+
+alphavars <- grep("Alpha",names(delayRegions),value=TRUE)
+allAlpha <- delayRegions[,c("Subject", "age",alphavars)]
+colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+allAlpha$Band <- "Alpha"
+
+
+thetavars <- grep("Theta",names(delayRegions),value=TRUE)
+allTheta <- delayRegions[,c("Subject", "age",thetavars)]
+colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+allTheta$Band <- "Theta"
+
+betavars <- grep("Beta",names(delayRegions),value=TRUE)
+allBeta <- delayRegions[,c("Subject", "age",betavars)]
+colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+allBeta$Band <- "Beta"
+
+
+gammavars <- grep("Gamma",names(delayRegions),value=TRUE)
+allGamma <- delayRegions[,c("Subject", "age",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+delay_alldata_regions <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+
+
+selectiveFrontalVars <-  grep("selectiveFrontal",names(delay_alldata_regions),value=TRUE)
+allselectiveFrontal <- delay_alldata_regions[,c("Subject", "age", "Band",selectiveFrontalVars)]
+colnames(allselectiveFrontal) <-  sub("_selectiveFrontal", "", colnames(allselectiveFrontal))
+colnames(allselectiveFrontal) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allselectiveFrontal))
+colnames(allselectiveFrontal) <-  sub("_sd", "_Variability", colnames(allselectiveFrontal))
+
+allselectiveFrontal <- allselectiveFrontal %>% separate(Subject,c("luna","vdate"), remove=F)
+
+# DLPFC 
+dlpfcVars <-  grep("dlpfc",names(delay_alldata_regions),value=TRUE)
+allDLPFC <- delay_alldata_regions[,c("Subject", "age", "Band",dlpfcVars)]
+colnames(allDLPFC) <-  sub("_dlpfc", "", colnames(allDLPFC))
+colnames(allDLPFC) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allDLPFC))
+colnames(allDLPFC) <-  sub("_sd", "_Variability", colnames(allDLPFC))
+allDLPFC <- allDLPFC %>% separate(Subject,c("luna","vdate"), remove=F)
+
+```
+
+## DLPFC EEG vs DLPFC Raw Glutamate 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+# Merge MRS and EEG data 
+
+MRS_EEG <- merge(DLPFC_Glu, allDLPFC, by = "luna")
+MRS_EEG <- MRS_EEG %>% filter(Band == 'Gamma')
+
+ggplot(MRS_EEG, aes(x=log1p_Trial_Power_Variability, y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ log1p_Trial_Power_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x=log1p_Trial_Power, y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ log1p_Trial_Power + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+ggplot(MRS_EEG, aes(x=Event_Number_Variability, y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ Event_Number_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+```
+
+
+## DLPFC EEG vs DLPFC Glutamate Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+# Merge MRS and EEG data 
+
+MRS_EEG <- merge(DLPFC_Glu, allDLPFC, by = "luna")
+MRS_EEG <- MRS_EEG %>% filter(Band == 'Gamma') 
+
+
+ggplot(MRS_EEG, aes(x=log1p_Trial_Power_Variability, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ log1p_Trial_Power_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x=log1p_Trial_Power, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ log1p_Trial_Power + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+ggplot(MRS_EEG, aes(x=Event_Number_Variability, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ Event_Number_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+```
+
+
+## Frontal EEG vs MPFC Raw Glutamate 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+# Merge MRS and EEG data 
+
+
+MRS_EEG <- merge(MPFC_Glu, allselectiveFrontal, by = "luna")
+MRS_EEG <- MRS_EEG %>% filter(Band == 'Gamma')
+
+
+ggplot(MRS_EEG, aes(x=log1p_Trial_Power_Variability, y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ log1p_Trial_Power_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x=log1p_Trial_Power, y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ log1p_Trial_Power + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+ggplot(MRS_EEG, aes(x=Event_Number_Variability, y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ Event_Number_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+```
+
+
+## Frontal EEG vs MPFC Glutamate Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+# Merge MRS and EEG data 
+
+MRS_EEG <- merge(MPFC_Glu, allselectiveFrontal, by = "luna")
+MRS_EEG <- MRS_EEG %>% filter(Band == 'Gamma')
+
+
+ggplot(MRS_EEG, aes(x=log1p_Trial_Power_Variability, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ log1p_Trial_Power_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x=log1p_Trial_Power, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ log1p_Trial_Power + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+ggplot(MRS_EEG, aes(x=Event_Number_Variability, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ Event_Number_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+```
+
+## Whole Brain EEG vs MPFC Raw Glutamate 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+
+delayOnly <- DelayOnly_Sublevel_3_4()
+delayOnly_SubLevel <- delayOnly$alldata_delayOnly
+
+ggplot(MPFC_Glu, aes(x=age, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+
+
+delayOnly_SubLevel <- delayOnly_SubLevel %>% separate(Subject,c("luna","vdate"), remove=F)
+
+
+# Merge MRS and EEG data 
+MRS_EEG <- merge(MPFC_Glu, delayOnly_SubLevel, by = "luna")
+
+
+ggplot(MRS_EEG, aes(x=Gamma.log1p_Trial_Power, y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ Gamma.log1p_Trial_Power + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x=Gamma.log1p_Trial_Power_Variability, y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ Gamma.log1p_Trial_Power_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+ggplot(MRS_EEG, aes(x=Gamma.Event_Number, y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ Gamma.Event_Number + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x=Gamma.Event_Number_Variability, y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ Gamma.Event_Number_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+```
+
+## Whole Brain EEG vs MPFC Glutamate Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/PrepMRSdata.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+
+
+delayOnly <- DelayOnly_Sublevel_3_4()
+delayOnly_SubLevel <- delayOnly$alldata_delayOnly
+
+
+delayOnly_SubLevel <- delayOnly_SubLevel %>% separate(Subject,c("luna","vdate"), remove=F)
+
+
+# Merge MRS and EEG data 
+MRS_EEG <- merge(MPFC_Glu, delayOnly_SubLevel, by = "luna")
+
+
+ggplot(MRS_EEG, aes(x=Gamma.log1p_Trial_Power, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ Gamma.log1p_Trial_Power + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x=Gamma.log1p_Trial_Power_Variability, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ Gamma.log1p_Trial_Power_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+ggplot(MRS_EEG, aes(x=Gamma.Event_Number, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ Gamma.Event_Number + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x=Gamma.Event_Number_Variability, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ Gamma.Event_Number_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+
+```
+
+## PCA on EEG Gamma Measures vs Age 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.PCA.R", envir = knitr::knit_global(), chdir = TRUE)
+delayOnly <- DelayOnly_Sublevel_3_4()
+delayOnly_SubLevel <- delayOnly$alldata_delayOnly_subOutliersNotDone
+
+allGamma <- CreatePCAdimensions(delayOnly_SubLevel)
+
+ggplot(allGamma, aes(x=age, y=eeg_pc1)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(eeg_pc1 ~ age, data = allGamma)
+summary(lm.model)
+
+
+ggplot(allGamma, aes(x=age, y=eeg_pc2)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(eeg_pc2 ~ age, data = allGamma)
+summary(lm.model)
+
+ggplot(allGamma, aes(x=age, y=eeg_pc3)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(eeg_pc3 ~ age, data = allGamma)
+summary(lm.model)
+
+```
+
+## PCA on EEG Gamma Measures vs Behavior 
+### Best Error
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.PCA.R", envir = knitr::knit_global(), chdir = TRUE)
+delayOnly <- DelayOnly_Sublevel_3_4()
+delayOnly_SubLevel <- delayOnly$alldata_delayOnly_subOutliersNotDone
+
+allGamma <- CreatePCAdimensions(delayOnly_SubLevel)
+
+Behavior <- Behavior_Sublevel_Maria()
+
+gammaPCA_behavior <- merge(allGamma, Behavior, by = c("Subject", "age"))
+
+
+ggplot(gammaPCA_behavior, aes(x=absBestError, y=eeg_pc1)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(data = gammaPCA_behavior, eeg_pc1 ~ absBestError + age)
+summary(lm.model)
+
+
+```
+
+### Best Error Var
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ggplot(gammaPCA_behavior, aes(x=absBestError_sd, y=eeg_pc1)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(data = gammaPCA_behavior, eeg_pc1 ~ absBestError_sd + age)
+summary(lm.model)
+
+
+```
+
+### Latency
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ggplot(gammaPCA_behavior, aes(x=mgsLatency, y=eeg_pc1)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(data = gammaPCA_behavior, eeg_pc1 ~ mgsLatency + age)
+summary(lm.model)
+
+
+```
+
+### Latency Var
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ggplot(gammaPCA_behavior, aes(x=mgsLatency_sd, y=eeg_pc1)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(data = gammaPCA_behavior, eeg_pc1 ~ mgsLatency_sd + age)
+summary(lm.model)
+
+
+```
+
+
+## PCA on EEG Gamma Measures vs MPFC MRS Measures 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.PCA.R", envir = knitr::knit_global(), chdir = TRUE)
+
+delayOnly <- DelayOnly_Sublevel_3_4()
+delayOnly_SubLevel <- delayOnly$alldata_delayOnly_subOutliersNotDone
+
+allGamma <- CreatePCAdimensions(delayOnly_SubLevel)
+allGamma <- allGamma %>% separate(Subject,c("luna","vdate"), remove=F)
+
+MRS_EEG <- merge(MPFC_Glu, allGamma, by = "luna")
+
+ggplot(MRS_EEG, aes(x = eeg_pc1 , y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ eeg_pc1 + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x = eeg_pc1 , y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ eeg_pc1 + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+```
+
+## PCA on EEG Gamma Measures vs DLPFC MRS Measures 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.PCA.R", envir = knitr::knit_global(), chdir = TRUE)
+
+delayOnly <- DelayOnly_Sublevel_3_4()
+delayOnly_SubLevel <- delayOnly$alldata_delayOnly_subOutliersNotDone
+
+allGamma <- CreatePCAdimensions(delayOnly_SubLevel)
+allGamma <- allGamma %>% separate(Subject,c("luna","vdate"), remove=F)
+
+MRS_EEG <- merge(DLPFC_Glu, allGamma, by = "luna")
+
+ggplot(MRS_EEG, aes(x = eeg_pc1 , y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ eeg_pc1 + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x = eeg_pc1 , y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ eeg_pc1 + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+```
+
+## Mediation between EEG and MRS
+### DLPFC 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/06.Mediation.R", envir = knitr::knit_global(), chdir = TRUE)
+MRS_EEG <- merge(DLPFC_Glu, allDLPFC, by = "luna")
+MRS_EEG <- MRS_EEG %>% filter(Band == 'Gamma')
+
+other_vars <-c("Glu.Cr", "log1p_Trial_Power_Variability") #define what you want in the mediation analysis 
+
+mediationAnalysis(MRS_EEG, other_vars)
+mediationAnalysis_invage(MRS_EEG, other_vars)
+
+```
+
+### Frontal EEG vs MPFC Glu Var
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/06.Mediation.R", envir = knitr::knit_global(), chdir = TRUE)
+MRS_EEG <- merge(MPFC_Glu, allselectiveFrontal, by = "luna")
+MRS_EEG <- MRS_EEG %>% filter(Band == 'Gamma')
+
+other_vars <-c("Glu_ageResids", "log1p_Trial_Power") #define what you want in the mediation analysis 
+
+mediationAnalysis(MRS_EEG, other_vars)
+mediationAnalysis_invage(MRS_EEG, other_vars)
+
+```
+
+
+### Whole Brain EEG vs MPFC Raw Glu
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/06.Mediation.R", envir = knitr::knit_global(), chdir = TRUE)
+
+delayOnly_SubLevel <- delayOnly_SubLevel %>% separate(Subject,c("luna","vdate"), remove=F)
+MRS_EEG <- merge(MPFC_Glu, delayOnly_SubLevel, by = "luna")
+
+other_vars <-c("Glu.Cr", "Gamma.Event_Number") #define what you want in the mediation analysis 
+
+mediationAnalysis(MRS_EEG, other_vars)
+mediationAnalysis_invage(MRS_EEG, other_vars)
+
+```
+
+
+### Whole Brain EEG vs MPFC Glu Var
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/06.Mediation.R", envir = knitr::knit_global(), chdir = TRUE)
+
+delayOnly_SubLevel <- delayOnly_SubLevel %>% separate(Subject,c("luna","vdate"), remove=F)
+MRS_EEG <- merge(MPFC_Glu, delayOnly_SubLevel, by = "luna")
+
+other_vars <-c("Glu_ageResids", "Gamma.log1p_Trial_Power") #define what you want in the mediation analysis 
+
+mediationAnalysis(MRS_EEG, other_vars)
+
+other_vars <-c("Glu_ageResids", "Gamma.Event_Number") #define what you want in the mediation analysis 
+
+mediationAnalysis(MRS_EEG, other_vars)
+mediationAnalysis_invage(MRS_EEG, other_vars)
+
+
+```
+### Whole Brain PC1 EEG vs MPFC Glu
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+delayOnly <- DelayOnly_Sublevel_3_4()
+delayOnly_SubLevel <- delayOnly$alldata_delayOnly_subOutliersNotDone
+
+allGamma <- CreatePCAdimensions(delayOnly_SubLevel)
+
+
+allGamma <- allGamma %>% separate(Subject,c("luna","vdate"), remove=F)
+
+MRS_EEG <- merge(MPFC_Glu, allGamma, by = "luna")
+
+other_vars <-c("Glu_ageResids", "eeg_pc1") #define what you want in the mediation analysis 
+
+mediationAnalysis(MRS_EEG, other_vars)
+mediationAnalysis_invage(MRS_EEG, other_vars)
+
+```
+
+
+# Rest 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/PrepMRSdata.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+
+# Load in MRS
+
+MRS <- LoadMRS()
+#MPFC
+# Cleans and selects roi
+roinumber = 8
+MPFC_Glu <- cleanGlutamate(MRS, roinumber)
+
+MPFC_Glu_invage <- lm(data=MPFC_Glu, Glu.Cr ~ invage + sex + GMrat)
+#summary(ROI_Glu_invage)
+
+var_Glu <- lm(Glu.Cr ~ invage + sex + GMrat, data=MPFC_Glu, na.action=na.exclude)
+MPFC_Glu$Glu_ageResids <- abs(residuals(var_Glu))
+MPFC_Glu$Subject <- MPFC_Glu$ld8
+
+MPFC_Glu <- MPFC_Glu %>% separate(ld8,c("luna","vdate"), remove=F)
+
+
+gluvar <- lm(Glu_ageResids ~ age, data=MPFC_Glu)
+#summary(gluvar)
+
+#DLPFC
+roinumber = 9
+DLPFC_Glu <- cleanGlutamate(MRS, roinumber)
+
+DLPFC_Glu_invage <- lm(data=DLPFC_Glu, Glu.Cr ~ invage + sex + GMrat)
+#summary(ROI_Glu_invage)
+
+var_Glu <- lm(Glu.Cr ~ invage + sex + GMrat, data=DLPFC_Glu, na.action=na.exclude)
+DLPFC_Glu$Glu_ageResids <- abs(residuals(var_Glu))
+DLPFC_Glu$Subject <- DLPFC_Glu$ld8
+
+DLPFC_Glu <- DLPFC_Glu %>% separate(ld8,c("luna","vdate"), remove=F)
+
+
+
+```
+
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+# Load in Frontal EEG 
+
+delayRegions <- RegionstoSpectralEventData_SubjectLevel()
+
+alphavars <- grep("Alpha",names(delayRegions),value=TRUE)
+allAlpha <- delayRegions[,c("Subject", "age",alphavars)]
+colnames(allAlpha) <-  sub("Alpha.", "", colnames(allAlpha))
+allAlpha$Band <- "Alpha"
+
+
+thetavars <- grep("Theta",names(delayRegions),value=TRUE)
+allTheta <- delayRegions[,c("Subject", "age",thetavars)]
+colnames(allTheta) <-  sub("Theta.", "", colnames(allTheta))
+allTheta$Band <- "Theta"
+
+betavars <- grep("Beta",names(delayRegions),value=TRUE)
+allBeta <- delayRegions[,c("Subject", "age",betavars)]
+colnames(allBeta) <-  sub("Beta.", "", colnames(allBeta))
+allBeta$Band <- "Beta"
+
+
+gammavars <- grep("Gamma",names(delayRegions),value=TRUE)
+allGamma <- delayRegions[,c("Subject", "age",gammavars)]
+colnames(allGamma) <-  sub("Gamma.", "", colnames(allGamma))
+allGamma$Band <- "Gamma"
+
+delay_alldata_regions <- rbind(allAlpha,allTheta) %>% rbind(., allBeta) %>% rbind(.,allGamma)
+
+
+selectiveFrontalVars <-  grep("selectiveFrontal",names(delay_alldata_regions),value=TRUE)
+allselectiveFrontal <- delay_alldata_regions[,c("Subject", "age", "Band",selectiveFrontalVars)]
+colnames(allselectiveFrontal) <-  sub("_selectiveFrontal", "", colnames(allselectiveFrontal))
+colnames(allselectiveFrontal) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allselectiveFrontal))
+colnames(allselectiveFrontal) <-  sub("_sd", "_Variability", colnames(allselectiveFrontal))
+
+allselectiveFrontal <- allselectiveFrontal %>% separate(Subject,c("luna","vdate"), remove=F)
+
+# DLPFC 
+dlpfcVars <-  grep("dlpfc",names(delay_alldata_regions),value=TRUE)
+allDLPFC <- delay_alldata_regions[,c("Subject", "age", "Band",dlpfcVars)]
+colnames(allDLPFC) <-  sub("_dlpfc", "", colnames(allDLPFC))
+colnames(allDLPFC) <-  sub("log1p_Power", "log1p_Trial_Power", colnames(allDLPFC))
+colnames(allDLPFC) <-  sub("_sd", "_Variability", colnames(allDLPFC))
+allDLPFC <- allDLPFC %>% separate(Subject,c("luna","vdate"), remove=F)
+
+```
+
+
+
+## Whole Brain EEG vs MPFC Raw Glutamate 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+
+restOnly <- Resting_State_Data_SubjectLevel()
+restOnly_SubLevel <- restOnly$alldata_RestOnly
+
+ggplot(MPFC_Glu, aes(x=age, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+
+
+restOnly_SubLevel <- restOnly_SubLevel %>% separate(Subject,c("luna","vdate"), remove=F)
+
+
+# Merge MRS and EEG data 
+MRS_EEG <- merge(MPFC_Glu, restOnly_SubLevel, by = "luna")
+
+
+ggplot(MRS_EEG, aes(x=Gamma.log1p_Trial_Power, y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ Gamma.log1p_Trial_Power + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x=Gamma.log1p_Trial_Power_Variability, y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ Gamma.log1p_Trial_Power_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+ggplot(MRS_EEG, aes(x=Gamma.Event_Number, y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ Gamma.Event_Number + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x=Gamma.Event_Number_Variability, y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ Gamma.Event_Number_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+```
+
+## Whole Brain EEG vs MPFC Glutamate Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/PrepMRSdata.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+
+restOnly <- Resting_State_Data_SubjectLevel()
+restOnly_SubLevel <- restOnly$alldata_RestOnly
+
+restOnly_SubLevel <- restOnly_SubLevel %>% separate(Subject,c("luna","vdate"), remove=F)
+
+
+# Merge MRS and EEG data 
+MRS_EEG <- merge(MPFC_Glu, restOnly_SubLevel, by = "luna")
+
+
+ggplot(MRS_EEG, aes(x=Gamma.log1p_Trial_Power, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ Gamma.log1p_Trial_Power + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x=Gamma.log1p_Trial_Power_Variability, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ Gamma.log1p_Trial_Power_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+ggplot(MRS_EEG, aes(x=Gamma.Event_Number, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ Gamma.Event_Number + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x=Gamma.Event_Number_Variability, y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ Gamma.Event_Number_Variability + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+
+```
+
+## PCA on EEG Gamma Measures vs Age 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.PCA.R", envir = knitr::knit_global(), chdir = TRUE)
+
+restOnly <- Resting_State_Data_SubjectLevel()
+restOnly_SubLevel <- restOnly$alldata_RestOnly
+
+allGamma <- CreatePCAdimensions(restOnly_SubLevel)
+
+ggplot(allGamma, aes(x=age, y=eeg_pc1)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(eeg_pc1 ~ age, data = allGamma)
+summary(lm.model)
+
+
+ggplot(allGamma, aes(x=age, y=eeg_pc2)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(eeg_pc2 ~ age, data = allGamma)
+summary(lm.model)
+
+ggplot(allGamma, aes(x=age, y=eeg_pc3)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(eeg_pc3 ~ age, data = allGamma)
+summary(lm.model)
+
+```
+
+
+## PCA on EEG Gamma Measures vs Behavior 
+### Best Error
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.PCA.R", envir = knitr::knit_global(), chdir = TRUE)
+
+restOnly <- Resting_State_Data_SubjectLevel()
+restOnly_SubLevel <- restOnly$alldata_RestOnly
+
+allGamma <- CreatePCAdimensions(restOnly_SubLevel)
+Behavior <- Behavior_Sublevel_Maria()
+
+gammaPCA_behavior <- merge(allGamma, Behavior, by = c("Subject", "age"))
+
+
+ggplot(gammaPCA_behavior, aes(x=absBestError, y=eeg_pc1)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(data = gammaPCA_behavior, eeg_pc1 ~ absBestError + age)
+summary(lm.model)
+
+
+```
+
+### Best Error Var
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ggplot(gammaPCA_behavior, aes(x=absBestError_sd, y=eeg_pc1)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(data = gammaPCA_behavior, eeg_pc1 ~ absBestError_sd + age)
+summary(lm.model)
+
+
+```
+
+### Latency
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ggplot(gammaPCA_behavior, aes(x=mgsLatency, y=eeg_pc1)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(data = gammaPCA_behavior, eeg_pc1 ~ mgsLatency + age)
+summary(lm.model)
+
+
+```
+
+### Latency Var
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ggplot(gammaPCA_behavior, aes(x=mgsLatency_sd, y=eeg_pc1)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(data = gammaPCA_behavior, eeg_pc1 ~ mgsLatency_sd + age)
+summary(lm.model)
+
+
+```
+
+
+## PCA on EEG Gamma Measures vs MPFC MRS Measures 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.PCA.R", envir = knitr::knit_global(), chdir = TRUE)
+
+restOnly <- Resting_State_Data_SubjectLevel()
+restOnly_SubLevel <- restOnly$alldata_RestOnly
+
+allGamma <- CreatePCAdimensions(restOnly_SubLevel)
+allGamma <- allGamma %>% separate(Subject,c("luna","vdate"), remove=F)
+
+MRS_EEG <- merge(MPFC_Glu, allGamma, by = "luna")
+
+ggplot(MRS_EEG, aes(x = eeg_pc1 , y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ eeg_pc1 + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x = eeg_pc1 , y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ eeg_pc1 + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+```
+
+## PCA on EEG Gamma Measures vs DLPFC MRS Measures 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.PCA.R", envir = knitr::knit_global(), chdir = TRUE)
+
+
+restOnly <- Resting_State_Data_SubjectLevel()
+restOnly_SubLevel <- restOnly$alldata_RestOnly
+
+allGamma <- CreatePCAdimensions(restOnly_SubLevel)
+allGamma <- allGamma %>% separate(Subject,c("luna","vdate"), remove=F)
+
+MRS_EEG <- merge(DLPFC_Glu, allGamma, by = "luna")
+
+ggplot(MRS_EEG, aes(x = eeg_pc1 , y=Glu_ageResids)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu_ageResids ~ eeg_pc1 + age.x, data = MRS_EEG)
+summary(lm.model)
+
+ggplot(MRS_EEG, aes(x = eeg_pc1 , y=Glu.Cr)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+lm.model <- lm(Glu.Cr ~ eeg_pc1 + age.x, data = MRS_EEG)
+summary(lm.model)
+
+
+```
+
+## Mediation between EEG and MRS
+
+
+### Whole Brain EEG vs MPFC Raw Glu
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/06.Mediation.R", envir = knitr::knit_global(), chdir = TRUE)
+
+delayOnly_SubLevel <- delayOnly_SubLevel %>% separate(Subject,c("luna","vdate"), remove=F)
+MRS_EEG <- merge(MPFC_Glu, delayOnly_SubLevel, by = "luna")
+
+other_vars <-c("Glu.Cr", "Gamma.Event_Number") #define what you want in the mediation analysis 
+
+mediationAnalysis(MRS_EEG, other_vars)
+mediationAnalysis_invage(MRS_EEG, other_vars)
+
+```
+
+
+### Whole Brain EEG vs MPFC Glu Var
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/06.Mediation.R", envir = knitr::knit_global(), chdir = TRUE)
+
+restOnly_SubLevel <- restOnly_SubLevel %>% separate(Subject,c("luna","vdate"), remove=F)
+MRS_EEG <- merge(MPFC_Glu, restOnly_SubLevel, by = "luna")
+
+other_vars <-c("Glu_ageResids", "Gamma.log1p_Trial_Power") #define what you want in the mediation analysis 
+
+mediationAnalysis(MRS_EEG, other_vars)
+
+other_vars <-c("Glu_ageResids", "Gamma.Event_Number") #define what you want in the mediation analysis 
+
+mediationAnalysis(MRS_EEG, other_vars)
+mediationAnalysis_invage(MRS_EEG, other_vars)
+
+
+```
+### Whole Brain PC1 EEG vs MPFC Glu
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+restOnly <- Resting_State_Data_SubjectLevel()
+restOnly_SubLevel <- restOnly$alldata_RestOnly
+
+allGamma <- CreatePCAdimensions(restOnly_SubLevel)
+allGamma <- allGamma %>% separate(Subject,c("luna","vdate"), remove=F)
+
+MRS_EEG <- merge(MPFC_Glu, allGamma, by = "luna")
+
+other_vars <-c("Glu_ageResids", "eeg_pc1") #define what you want in the mediation analysis 
+
+mediationAnalysis(MRS_EEG, other_vars)
+mediationAnalysis_invage(MRS_EEG, other_vars)
+
+```
+
+# Combine Delay and Rest
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+delayOnly <- DelayOnly_Sublevel_3_4()
+delayOnly_SubLevel <- delayOnly$alldata_delayOnly
+
+delayOnly_SubLevel <- delayOnly_SubLevel %>% separate(Subject,c("luna","vdate"), remove=F)
+MRS_EEG_delay <- merge(MPFC_Glu, delayOnly_SubLevel, by = "luna")
+MRS_EEG_delay$epoch = 'Delay'
+
+restOnly <- Resting_State_Data_SubjectLevel()
+restOnly_SubLevel <- restOnly$alldata_RestOnly
+
+restOnly_SubLevel <- restOnly_SubLevel %>% separate(Subject,c("luna","vdate"), remove=F)
+
+
+# Merge MRS and EEG data 
+MRS_EEG_rest <- merge(MPFC_Glu, restOnly_SubLevel, by = "luna")
+MRS_EEG_rest$epoch = "Rest"
+
+MRS_EEG <- rbind(MRS_EEG_delay, MRS_EEG_rest)
+
+```
+## Whole Brain EEG vs MPFC Raw Glutamate 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ggplot(MRS_EEG, aes(x=Gamma.log1p_Trial_Power, y=Glu.Cr, group = epoch, color = epoch)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+ cat(paste("",
+            "",
+            "Delay Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Delay',], Glu.Cr ~ Gamma.log1p_Trial_Power + age.x)
+  print(anova(lm.model))  
+  
+  cat(paste("",
+            "",
+            "Rest Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Rest',], Glu.Cr ~ Gamma.log1p_Trial_Power + age.x)
+  print(anova(lm.model))  
+
+
+ggplot(MRS_EEG, aes(x=Gamma.log1p_Trial_Power_Variability, y=Glu.Cr, group = epoch, color = epoch)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+
+
+ cat(paste("",
+            "",
+            "Delay Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Delay',], Glu.Cr ~ Gamma.log1p_Trial_Power_Variability + age.x)
+  print(anova(lm.model))  
+  
+  cat(paste("",
+            "",
+            "Rest Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Rest',], Glu.Cr ~ Gamma.log1p_Trial_Power_Variability + age.x)
+  print(anova(lm.model))  
+
+
+ggplot(MRS_EEG, aes(x=Gamma.Event_Number, y=Glu.Cr, group = epoch, color = epoch)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+
+ cat(paste("",
+            "",
+            "Delay Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Delay',], Glu.Cr ~ Gamma.Event_Number + age.x)
+  print(anova(lm.model))  
+  
+  cat(paste("",
+            "",
+            "Rest Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Rest',], Glu.Cr ~ Gamma.Event_Number + age.x)
+  print(anova(lm.model))  
+
+
+ggplot(MRS_EEG, aes(x=Gamma.Event_Number_Variability, y=Glu.Cr, group = epoch, color = epoch)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+
+cat(paste("",
+            "",
+            "Delay Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Delay',], Glu.Cr ~ Gamma.Event_Number_Variability + age.x)
+  print(anova(lm.model))  
+  
+  cat(paste("",
+            "",
+            "Rest Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Rest',], Glu.Cr ~ Gamma.Event_Number_Variability + age.x)
+  print(anova(lm.model)) 
+
+
+```
+
+## Whole Brain EEG vs MPFC Glutamate Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/PrepMRSdata.R", envir = knitr::knit_global(), chdir = TRUE)
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+
+
+ggplot(MRS_EEG, aes(x=Gamma.log1p_Trial_Power, y=Glu_ageResids, group = epoch, color = epoch)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+ cat(paste("",
+            "",
+            "Delay Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Delay',], Glu_ageResids ~ Gamma.log1p_Trial_Power + age.x)
+  print(anova(lm.model))  
+  
+  cat(paste("",
+            "",
+            "Rest Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Rest',], Glu_ageResids ~ Gamma.log1p_Trial_Power + age.x)
+  print(anova(lm.model))  
+
+
+ggplot(MRS_EEG, aes(x=Gamma.log1p_Trial_Power_Variability, y=Glu_ageResids, group = epoch, color = epoch)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+
+
+ cat(paste("",
+            "",
+            "Delay Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Delay',], Glu_ageResids ~ Gamma.log1p_Trial_Power_Variability + age.x)
+  print(anova(lm.model))  
+  
+  cat(paste("",
+            "",
+            "Rest Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Rest',], Glu_ageResids ~ Gamma.log1p_Trial_Power_Variability + age.x)
+  print(anova(lm.model))  
+
+
+ggplot(MRS_EEG, aes(x=Gamma.Event_Number, y=Glu_ageResids, group = epoch, color = epoch)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+
+ cat(paste("",
+            "",
+            "Delay Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Delay',], Glu_ageResids ~ Gamma.Event_Number + age.x)
+  print(anova(lm.model))  
+  
+  cat(paste("",
+            "",
+            "Rest Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Rest',], Glu_ageResids ~ Gamma.Event_Number + age.x)
+  print(anova(lm.model))  
+
+
+ggplot(MRS_EEG, aes(x=Gamma.Event_Number_Variability, y=Glu_ageResids, group = epoch, color = epoch)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+
+cat(paste("",
+            "",
+            "Delay Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Delay',], Glu_ageResids ~ Gamma.Event_Number_Variability + age.x)
+  print(anova(lm.model))  
+  
+  cat(paste("",
+            "",
+            "Rest Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = MRS_EEG[MRS_EEG$epoch == 'Rest',], Glu_ageResids ~ Gamma.Event_Number_Variability + age.x)
+  print(anova(lm.model)) 
+
+
+
+```
+
+## PCA on EEG Gamma Measures vs Age 
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/05.PCA.R", envir = knitr::knit_global(), chdir = TRUE)
+
+restOnly <- Resting_State_Data_SubjectLevel()
+restOnly_SubLevel <- restOnly$alldata_RestOnly
+
+allGammaRest <- CreatePCAdimensions(restOnly_SubLevel)
+allGammaRest$epoch = 'Rest'
+allGammaRest$eeg_pc1 = -1*allGammaRest$eeg_pc1
+
+allGammaDelay <- CreatePCAdimensions(delayOnly_SubLevel)
+allGammaDelay$epoch = 'Delay'
+
+allGamma <- rbind(allGammaDelay, allGammaRest)
+
+allGamma <- allGamma %>% separate(Subject,c("luna","vdate"), remove=F)
+
+allGamma_MRS <- merge(allGamma, MPFC_Glu, by = "luna")
+
+ggplot(allGamma_MRS, aes(x=age.x, y=eeg_pc1, group = epoch, color = epoch)) + geom_point() + geom_smooth(method="lm", formula = 'y~I(1/x)') + theme_classic()
+  cat(paste("",
+            "",
+            "Rest Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = allGamma_MRS[allGamma_MRS$epoch == 'Rest',], eeg_pc1 ~ age.x)
+  print(anova(lm.model)) 
+  
+  cat(paste("",
+            "",
+            "Delay Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = allGamma_MRS[allGamma_MRS$epoch == 'Delay',], eeg_pc1 ~ age.x)
+  print(anova(lm.model)) 
+
+
+
+
+ggplot(allGamma_MRS, aes(x=age.x, y=eeg_pc2, group = epoch, color = epoch)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+  cat(paste("",
+            "",
+            "Rest Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = allGamma_MRS[allGamma_MRS$epoch == 'Rest',], eeg_pc2 ~ age.x)
+  print(anova(lm.model)) 
+  
+  cat(paste("",
+            "",
+            "Delay Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = allGamma_MRS[allGamma_MRS$epoch == 'Delay',], eeg_pc2 ~ age.x)
+  print(anova(lm.model)) 
+
+
+
+
+```
+## PCA on EEG Gamma Measures vs MPFC Glu Raw
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ggplot(allGamma_MRS, aes(x=Glu.Cr, y=eeg_pc1, group = epoch, color = epoch)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+  cat(paste("",
+            "",
+            "Rest Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = allGamma_MRS[allGamma_MRS$epoch == 'Rest',], eeg_pc1 ~ Glu.Cr + age.x)
+  print(anova(lm.model)) 
+  
+  cat(paste("",
+            "",
+            "Delay Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = allGamma_MRS[allGamma_MRS$epoch == 'Delay',], eeg_pc1 ~ Glu.Cr + age.x)
+  print(anova(lm.model)) 
+
+
+```
+
+## PCA on EEG Gamma Measures vs MPFC Glu Variability
+```{r, echo= FALSE, message = FALSE, warning = FALSE}
+
+ggplot(allGamma_MRS, aes(x=Glu_ageResids, y=eeg_pc1, group = epoch, color = epoch)) + geom_point() + geom_smooth(method="lm") + theme_classic()
+  cat(paste("",
+            "",
+            "Rest Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = allGamma_MRS[allGamma_MRS$epoch == 'Rest',], eeg_pc1 ~ Glu_ageResids + age.x)
+  print(anova(lm.model)) 
+  
+  cat(paste("",
+            "",
+            "Delay Statistics",
+            "", sep = "\n"))
+  
+  lm.model <- lm(data = allGamma_MRS[allGamma_MRS$epoch == 'Delay',], eeg_pc1 ~ Glu_ageResids + age.x)
+  print(anova(lm.model)) 
+
+
+```
