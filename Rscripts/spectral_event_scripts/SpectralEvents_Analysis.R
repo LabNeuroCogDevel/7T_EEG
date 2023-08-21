@@ -37,8 +37,8 @@ outliers <- function(x) {
 
 # 3.0 Load in Behavior ----
   
-  sys.source("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
-  sys.source("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/03.BehaviorAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
+  sys.source("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/spectral_event_scripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+  sys.source("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/spectral_event_scripts/03.BehaviorAcrossAge.R", envir = knitr::knit_global(), chdir = TRUE)
   agefile <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/agefile_20220914.csv')
   Behavior <- Behavior_Sublevel_Maria()
   trialLevelBehavior <- Behavior_TrialLevel_Maria()

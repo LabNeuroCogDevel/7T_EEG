@@ -3,7 +3,7 @@
 %if class labels doesnt work:
 
 addpath(('/Projects/7TBrainMech/scripts/eeg/toolbox/SpectralEvents-master/'))
-addpath(genpath('Functions'));
+addpath(genpath('Functions/'));
 addpath(hera('/Projects/7TBrainMech/scripts/fieldtrip-20220104'))
 ft_defaults
 

@@ -99,7 +99,7 @@ for i = 1:numSubj
     [data] = ft_preprocessing(cfg);
     
     
-    %redefine the trails to be between 3-4 seconds of the delay period
+    %redefine the trails to be between 0-1 seconds of the fixation period
     cfg.trl = [];
     cfg = rmfield(cfg, 'trl');
     cfg.toilim = [0 1];
