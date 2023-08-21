@@ -1,4 +1,4 @@
-function [] = preprocessing_pipeline(inputfile, outpath, lowBP, topBP, FLAG, condition, varargin)
+function [] = preprocessing_pipeline(inputfile, outpath, lowBP, topBP, FLAG, condition, task, varargin)
 
 % what file are we using
 if ~exist(inputfile,'file'), error('inputfile "%s" does not exist!', inputfile), end
@@ -11,7 +11,7 @@ correction_cap_location = hera('Projects/7TBrainMech/scripts/eeg/Shane/resources
 if ~exist(correction_cap_location, 'file'), error('cannot find file for correction 128 channel cap: %s', correction_cap_location), end
 
 %% Files
-subj_files = file_locs(inputfile, outpath);
+subj_files = file_locs(inputfile, outpath, task);
 
 % to know how far your script is with running
 fprintf('==========\n%s:\n\t Initial Preprocessing(%s,%f,%f,%s)\n',...
@@ -43,24 +43,10 @@ commonPlus = {'AFz','C1','C2','C3','C4','C5','C6','CP1','CP2','CP3','CP4',...
     'FC2','FC3','FC4','FC5','FC6','FCz','Fp1','Fp2','FT10','FT9','Fz','I1',...
     'I2','O1','O2','Oz','P1','P10','P2','P3','P4','P5','P6','P7','P8','P9',...
     'PO10','PO3','PO4','PO7','PO8','PO9','POz','Pz','T7','T8',...
-    'AF8','AF7','AF4','AF3'};% This
-% check if we've already run subject
-% if we have, read in what we need from set file
+    'AF8','AF7','AF4','AF3'};
 
-% dont check if already done
 epochrj = fullfile(outpath, epochrj_folder, [epochrj_name '.set']);
-% if exist(epochrj, 'file')
-%     warning('%s already complete (have "%s")! todo load from file', currentName, epochrj)
-%     rj = pop_loadset(epochrj);
-%     channels_removed = {chrm_name, rj.channels_rj, find(rj.etc.clean_channel_mask==0)}';
-%     data_removed = {datarm_name, rj.data_rj, rj.data_rj_nr}';
-%     epochs_removed = {epochrm_name, rj.epoch_rj, rj.epoch_rj_nr}';
-%     % ica wont rerun if already run
-%     runICAss(epochrj, icaout)
-%     % runICAss will skip if fullfile(icaout, [name '_ICA_SAS.set']) already exists
-%     return
-% end
-%
+
 if condition == 1
     icawholeoutFile = fullfile( icawholeout, [icawholeout_name '.set']);
     
@@ -72,10 +58,6 @@ if exist(icawholeoutFile, 'file')
     warning('%s already complete (have "%s")! todo load from file', currentName, icawholeout_name)
     return
 end
-%     % ica wont rerun if already run
-%     runICAss(icawholein, icawholeout)
-%     return
-% end
 
 if condition == 1
     xEEG = load_if_exists(subj_files.filter);
@@ -108,8 +90,7 @@ else
         'gui','on');
     [ALLEEG EEG CURRENTSET] = eeg_store(ALLEEG, EEG);
     
-    % split 10129_20180919_mgs_Rem into
-    %    subj=10129_20180919    and    condition=mgs_Rem
+    
     EEG.subject = currentName(1:findstr(currentName,'mgs')-2);
     EEG.condition =  currentName(findstr(currentName,'mgs'):end);
     

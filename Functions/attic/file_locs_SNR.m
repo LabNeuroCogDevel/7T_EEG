@@ -1,6 +1,9 @@
 function loc = file_locs_SNR(filepath, id_task_regexp, savedir)
 % From any file in the eeg pipeline, get all paths used
 % default id_task_regexp and savedir should work for rest EEG
+
+
+
 if nargin < 2
    % expect $id_$task_$procsteps
    id_task_regexp='(?<id>\d{5}_\d{8})_(?<task>ss)(?<extra>.*)';

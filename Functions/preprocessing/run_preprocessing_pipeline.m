@@ -1,3 +1,4 @@
+function [] = run_preprocessing_pipeline(task)
 
 % load in paths to feildtrip and eeglab 
 addpath(genpath('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Functions/preprocessing'));
@@ -21,16 +22,8 @@ FLAG = 1;
 only128 = 0; % 0==do all, 1==only 128 channel subjects
 condition = 1; %0 - if you want to overwrite an already existing file; 1- if you want it to skip subjects who have already been run through singlesubject
 
-if task == 'MGS'
-    remarkMGS
+remark(task, taskdirectory) % change the trigger values to be single digit 
 
-elseif task == 'SNR'
-    remarkSNR
-
-elseif task == 'Resting_State'
-    remarkRest
-
-end
 
 % gather all file paths for all subjects remarked data 
 setfilesDir = [taskdirectory, '/remarked/1*_20*.set'];    
@@ -42,7 +35,7 @@ n = size(setfiles,1); %number of EEG sets to preprocess
 for i = 1:n
     inputfile = setfiles{i};
     try
-      preprocessing_pipeline(inputfile, taskdirectory, lowBP, topBP, FLAG, condition)
+      preprocessing_pipeline(inputfile, taskdirectory, lowBP, topBP, FLAG, condition, task)
    catch e
       fprintf('Error processing "%s": %s\n',inputfile, e.message)
       for s=e.stack
