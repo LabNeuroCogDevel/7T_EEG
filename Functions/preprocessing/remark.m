@@ -1,9 +1,7 @@
 function [EEG] =  remark(task, taskdirectory)
 
-eeglab
-
 path_file = hera('Raw/EEG/7TBrainMech');
-outputpath = [taskdirectory '/remarked'];
+outputpath = [taskdirectory '/remarked/'];
 
 %directory of EEG data
 [path,folder] = fileparts(path_file);
@@ -11,7 +9,7 @@ d =[path,'/',folder,'/'];
 
 namesOri = dir([d,'*/*.bdf']);
 
-if task == 'MGS'
+if task == "MGS"
     mgsIDX = find (cellfun (@any,regexpi ( {namesOri.name}.', 'mgs')));
 
     for idx = mgsIDX'
@@ -80,7 +78,7 @@ if task == 'MGS'
     end
 
 
-elseif task == 'Resting_State'
+elseif task == "Resting_State"
 
     restIDX = find (cellfun (@any,regexpi ( {namesOri.name}.', 'rest')));
 
@@ -133,7 +131,7 @@ elseif task == 'Resting_State'
 
     end
 
-elseif task == 'SNR'
+elseif task == "SNR"
 
     AudSSIDX = find (cellfun (@any,regexpi ( {namesOri.name}.', 'ss')));
    
@@ -148,10 +146,7 @@ elseif task == 'SNR'
             fprintf('already have %s\n', finalfile)
             continue
         end
-        if dryrun
-            fprintf('want to run %s; set dryrun=0 to actually run\n', finalfile)
-            continue
-        end
+        
         fprintf('making %s\n',finalfile);
 
         %% load EEG set
@@ -159,7 +154,7 @@ elseif task == 'SNR'
         if isempty(EEG.event)
             continue
         else
-            EEG.setname=[currentName 'Rem']; %name the EEGLAB set (this is not the set file itself)
+            EEG.setname=[currentName '_Rem']; %name the EEGLAB set (this is not the set file itself)
 
             eeglab redraw
 
@@ -176,7 +171,7 @@ elseif task == 'SNR'
                 end
             end
 
-            EEG = pop_saveset( EEG, 'filename',[currentName '_Rem.set'],'filepath',outputpath);
+            EEG = pop_saveset(EEG, 'filename',[currentName '_Rem.set'],'filepath',outputpath);
         end
     end
 

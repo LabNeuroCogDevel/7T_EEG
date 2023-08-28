@@ -1,8 +1,8 @@
-function [] = homogenizeChanLoc(setfiles,correction_cap_location,outpath)
+function [] = homogenizeChanLoc(setfiles,correction_cap_location,savepath,outpath, task)
 
 
 [filepath,filename ,ext] =  fileparts((setfiles));
-locs = file_locs(setfiles);
+locs = file_locs(setfiles, outpath, task);
 
 if exist(locs.ICACleanHomongenize, 'file')
     OUTEEG = [];
@@ -37,4 +37,4 @@ for idealIDX = differ'
     
 end
 
-EEG = pop_saveset( EEG, 'filename',filename, 'filepath',outpath);
+EEG = pop_saveset( EEG, 'filename',filename, 'filepath',savepath);

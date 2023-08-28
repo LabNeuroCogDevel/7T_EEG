@@ -1,5 +1,6 @@
 function [] = run_preprocessing_pipeline(task)
 
+
 % load in paths to feildtrip and eeglab 
 addpath(genpath('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Functions/preprocessing'));
 addpath(genpath('/resources/Euge/'))
@@ -9,8 +10,12 @@ run('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1
 maindir = hera('Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data');
 
 % which task do you want to run. CHANGE ACCORDING TO MGS, REST, SNR, etc. 
-task = 'SNR'; 
-
+if nargin == 0 %check if something is passed 
+    task = 'SNR'; 
+   
+end
+disp(["i am running this" task]) 
+   
 taskdirectory = [maindir, '/', task]; 
 
 % initial values
@@ -22,7 +27,7 @@ FLAG = 1;
 only128 = 0; % 0==do all, 1==only 128 channel subjects
 condition = 1; %0 - if you want to overwrite an already existing file; 1- if you want it to skip subjects who have already been run through singlesubject
 
-remark(task, taskdirectory) % change the trigger values to be single digit 
+remark(task, taskdirectory); % change the trigger values to be single digit 
 
 
 % gather all file paths for all subjects remarked data 
@@ -31,7 +36,7 @@ setfiles = all_remarked_set(setfilesDir);
 
 n = size(setfiles,1); %number of EEG sets to preprocess
 
-% clean epochs
+% loop through every subject to preprocess
 for i = 1:n
     inputfile = setfiles{i};
     try

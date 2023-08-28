@@ -133,6 +133,7 @@ MRSlong[idx,]$GluGABAimbalance <- (gabaglu.lm$residuals)
 
 MRSlong$Ratio_gamadj <- MRSlong$Glu_gamadj/MRSlong$GABA_gamadj 
 
+write.csv(MRSlong,"/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/allSubjectsDLPFCMRSMeasures_20230613.csv")
 
 
 ## 2.3 Prep Behavior ----
@@ -262,6 +263,10 @@ fooofMRS <- merge(fooofLong, MRSlong, by = c("luna", "visitno", "age", "Region")
 behav$luna <- as.factor(behav$luna)
 fooofMRSbehavior <- merge(fooofMRS, behav, by = c("luna", "visitno", "age"))
 
+write.csv(fooofMRSbehavior,"/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/allSubjectsDLPFCfooofMRSBehaviorMeasures_20230822.csv")
+write.csv(fooofMRS,"/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/allSubjectsDLPFCfooofMRSMeasures_20230822.csv")
+
+
 # 4.0 FOOOF stats ----
 
 ## 4.1 Exponent vs Offset ----
@@ -270,10 +275,11 @@ lunaize(ggplot(data = fooofLong,
                aes(y = Exponent, x = Offset, by = luna, color = ageGroup))+ 
           geom_line(aes(group=interaction(luna,Region)), alpha = 0.2) + 
           geom_point(alpha=.4) + 
-          stat_smooth(aes(group = Condition, linetype = Condition), color='black', method="gam", alpha = 0.4, size = 1) + 
-          scale_color_manual(values=c("gold3", "blue4")))
+          stat_smooth(aes(group = 1), color='black', method="gam", alpha = 0.4, size = 1) + 
+          scale_color_manual(values=c("gold3", "blue4")))+ theme(legend.position = "none")+ 
+  theme(text = element_text(size = 30))
 
-corDF <- fooofLong %>% filter(Condition == "eyesOpen")
+corDF <- fooofLong
 cor.test(corDF$Exponent , corDF$Offset, method = "pearson")
 
 corDF <- fooofLong %>% filter(Condition == "eyesClosed")
@@ -320,6 +326,10 @@ summary(model$gam)
 
 lm.model <-  lmerTest::lmer(Exponent ~ inverseAge*Condition + Region + (1|luna), data = fooofLong)
 summary(lm.model)
+ 
+# checking to see which condition has a stonger effect
+gam.model <-  gamm(Exponent ~ s(age, k = 3) + Region, data = fooofLong %>% filter(Condition == 'eyesClosed'), random=list(luna=~1))
+summary(gam.model$gam)
 
 
 ### 4.2.2 region interaction, controlling for condition ----
@@ -398,6 +408,10 @@ model <- gamm(model_formula,
               data = MRSlong )
 summary(model$gam)
 
+#see which hemisphere has a stronger age association
+gam.model <-  gamm(Glu_gamadj ~ s(age, k = 3), data = MRSlong %>% filter(Region == 'RDLPFC'), random=list(luna=~1))
+summary(gam.model$gam)
+
 
 ## 5.2 GABA VS AGE ----
 lunaize(ggplot(data = MRSlong,
@@ -468,7 +482,7 @@ summary(model$gam)
 lunaize(ggplot(data = fooofMRS , 
                aes(x = Exponent, y = Glu_gamadj, by = luna, color = ageGroup))+ 
           geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) +
-          geom_point(alpha=.5) + geom_smooth(aes(group = Region, linetype = Region), method="lm", alpha = 0.8) + 
+          geom_point(aes(shape=Region),alpha=.5) + geom_smooth(aes(group = 1), method="lm", alpha = 0.8) + 
           scale_color_manual(values=c("gold3", "blue4"))) + 
   ylab("Glutamate") + xlab("Exponent") + theme(text = element_text(size = 30))+ theme(legend.position='none')
 
@@ -507,7 +521,7 @@ AIC(lmer(Exponent ~ Glu_gamadj + age + Condition + Region + (1|luna), data = foo
 lunaize(ggplot(data = fooofMRS, 
                aes(x = Offset, y = Glu_gamadj, by = luna, color = ageGroup))+ 
           geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) + 
-          geom_point(alpha=.5) + geom_smooth(aes(group = Region, linetype=Region), method="lm", alpha = 0.8) + 
+          geom_point(aes(shape =Region),alpha=.5) + geom_smooth(aes(group = 1), method="lm", alpha = 0.8) + 
           scale_color_manual(values=c("gold3", "blue4"))) + 
   ylab("Glutamte") + xlab("Offset") + theme(text = element_text(size = 30))+ theme(legend.position='none')
 
@@ -555,7 +569,7 @@ AIC(lmer(Offset ~ Glu_gamadj + age + Condition + Region + (1|luna), data = fooof
 lunaize(ggplot(data = fooofMRS , 
                aes(x = Exponent, y = GABA_gamadj, by = luna, color = ageGroup))+ 
           geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) + 
-          geom_point(alpha=.5) + geom_smooth(aes(group = Region, linetype=Region), method="lm", alpha = 0.8) + 
+          geom_point(aes(shape=Region),alpha=.5) + geom_smooth(aes(group = 1), method="lm", alpha = 0.8) + 
           scale_color_manual(values=c("gold3", "blue4"))) + 
   ylab("GABA") + xlab("Exponent") + theme(text = element_text(size = 30))+ theme(legend.position='none')
 
@@ -588,7 +602,7 @@ AIC(lmer(Exponent ~ GABA_gamadj + age + Condition + Region + (1|luna), data = fo
 lunaize(ggplot(data = fooofMRS , 
                aes(x = Offset, y = GABA_gamadj, by = luna, color = ageGroup))+ 
           geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) + 
-          geom_point(alpha=.5) + geom_smooth(aes(group = Region, linetype=Region), method="lm", alpha = 0.8) + 
+          geom_point(aes(shape=Region),alpha=.5) + geom_smooth(aes(group = 1), method="lm", alpha = 0.8) + 
           scale_color_manual(values=c("gold3", "blue4"))) + 
   ylab("GABA") + xlab("Offset")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
 
@@ -622,8 +636,8 @@ AIC(lmer(Offset ~ GABA_gamadj + age + Condition + Region + (1|luna), data = fooo
 lunaize(ggplot(data = fooofMRS, 
                aes(x = Exponent, y = Ratio_gamadj, by = luna, color = ageGroup)) + 
           geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) + 
-          geom_point(alpha=.5) + 
-          geom_smooth(aes(group = Region, linetype=Region, alpha = 0.1), method="lm", alpha = 0.8)  + 
+          geom_point(aes(shape=Region),alpha=.5) + 
+          geom_smooth(aes(group = 1, alpha = 0.1), method="lm", alpha = 0.8)  + 
           scale_color_manual(values=c("gold3", "blue4"))) +
   ylab("Glu/GABA Ratio") + xlab("Exponent")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
 
@@ -660,8 +674,8 @@ AIC(lmer(Exponent ~ Ratio_gamadj + age + Condition + Region + (1|luna), data = f
 lunaize(ggplot(data = fooofMRS, 
                aes(x = Offset, y = Ratio_gamadj, by = luna, color = ageGroup)) + 
           geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) + 
-          geom_point(alpha=.5) + 
-          geom_smooth(aes(group = Region, linetype=Region, alpha = 0.1), method="lm", alpha = 0.8) + 
+          geom_point(aes(shape=Region),alpha=.5) + 
+          geom_smooth(aes(group = 1, alpha = 0.1), method="lm", alpha = 0.8) + 
           scale_color_manual(values=c("gold3", "blue4"))) + 
   ylab("Glu/GABA Ratio") + xlab("Offset")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
 
@@ -705,8 +719,8 @@ AIC(lmer(Offset ~ Ratio_gamadj + age + Condition + Region + (1|luna), data = foo
 lunaize(ggplot(data = fooofMRS, 
                aes(x = Offset, y = GluGABAimbalanceABS, by =luna, color = ageGroup)) + 
           geom_line(aes(group=interaction(luna,Region, Condition)), alpha = 0.2) + 
-          geom_point(alpha=.5) + 
-          geom_smooth(aes(group = Region, linetype=Region, alpha = 0.01), method="lm",alpha=.8,size=1)) + 
+          geom_point(aes(shape=Region),alpha=.5) + 
+          geom_smooth(aes(group = 1, alpha = 0.01), method="lm",alpha=.8,size=1)) + 
   scale_color_manual(values=c("gold3", "blue4")) + 
   ylab("Glu GABA Imbalance") + xlab("Offset")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
 
@@ -730,12 +744,12 @@ AIC(lmer(Offset ~ GluGABAimbalanceABS + age + Condition + Region + (1|luna), dat
 
 ## 6.8 Gaba glu imbalance VS exponent ----
 
-lunaize(ggplot(data = fooofMRS %>% mutate(zExp = abs(scale(Exponent)[,1])) %>% filter(zExp < 2), 
-               aes(x = GluGABAimbalance, y = Exponent, by =luna, color = ageGroup)) + 
-          geom_line(aes(group=interaction(luna,Region, Condition)), alpha = 0.2) + geom_point(alpha=.5) + 
-          geom_smooth(aes(group = 1, linetype=Region, alpha = 0.01), method="lm",formula = y ~ poly(x,2),alpha=.8,size=1)) + 
+lunaize(ggplot(data = fooofMRS, 
+               aes(y = GluGABAimbalanceABS, x = Exponent, by =luna, color = ageGroup)) + 
+          geom_line(aes(group=interaction(luna,Region, Condition)), alpha = 0.2) + geom_point(aes(shape=Region),alpha=.5) + 
+          geom_smooth(aes(group = 1, alpha = 0.01), method="lm",formula = y ~ poly(x,2),alpha=.8,size=1)) + 
   scale_color_manual(values=c("gold3", "blue4")) + 
-  xlab("Glu GABA Imbalance") + ylab("Exponent")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
+  ylab("Glu GABA Imbalance") + xlab("Exponent")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
 
 
 
@@ -1512,16 +1526,15 @@ AIC(lmer(GluGABAimbalanceABS ~ mgsLatency + age + Condition + Region + (1|luna),
     lmer(GluGABAimbalanceABS ~ mgsLatency + inverseAge + Condition + Region + (1|luna), data = fooofMRSbehavior))
 
 # visualizing age interactions
-lunaize(ggplot(data = fooofMRSbehavior %>% mutate(ageGroup = cut(age, breaks=c(0,16,22,Inf), labels=c("10-16","17-22", "23-30"))), 
+lunaize(ggplot(data = fooofMRSbehavior %>% mutate(ageGroup = cut(age, breaks=c(0,18,Inf), labels=c("adol","adults"))), 
                aes(y = GluGABAimbalanceABS, x = mgsLatency, by = luna, color = ageGroup)) + 
           geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2)) + 
   geom_point(alpha=.5) + 
   geom_smooth(aes(group = ageGroup), method="lm", alpha = 0.4) + 
-  xlab("Latency") + ylab("Glu GABA Imbalance")+ theme(text = element_text(size = 30))+ 
-  theme(legend.position='none') + scale_color_manual(values=c("gold3", "blue4", "red4"))
+  xlab("Latency") + ylab("Glu GABA Imbalance")+ theme(text = element_text(size = 30)) + scale_color_manual(values=c("gold3", "blue4", "red4"))
 
 
-lm.model <- lmer(GluGABAimbalanceABS ~  mgsLatency + Region + (1|luna), data = fooofMRSbehavior%>% mutate(ageGroup = cut(age, breaks=c(0,16,22,Inf), labels=c("10-16","17-22", "23-30")))  %>% filter(ageGroup == "17-22"))
+lm.model <- lmer(GluGABAimbalanceABS ~  mgsLatency + Region + (1|luna), data = fooofMRSbehavior%>% mutate(ageGroup = cut(age, breaks=c(0,18,Inf), labels=c("adol","adults")))  %>% filter(ageGroup == "adults"))
 car::Anova(lm.model)
 summ(lm.model)
 
@@ -2079,13 +2092,13 @@ output
 
 ### MRS vs Behavior ----
 #'absBestError','absBestError_sd','mgsLatency', 'mgsLatency_sd', 'Glu_gamadj', 'GABA_gamadj', 'GluGABAimbalanceABS'
-mrsiVars <- c('Ratio_gamadj')
-behVars <- c('SSP_maxSpan')
+mrsiVars <- c('GluGABAimbalanceABS')
+behVars <- c('mgsLatency')
 
 output <- c()  
 for (mrsiVar in mrsiVars) {
   for (behVar in behVars) {
-    model <- paste0(mrsiVar, ' ~ ', behVar, '+ inverseAge + Region + Condition + (1|luna)')
+    model <- paste0(mrsiVar, ' ~ ', behVar, '+ inverseAge + Region + (1|luna)')
     model.out <- summary(lmerTest::lmer(model, data = fooofMRSbehavior))  
     b <- model.out$coefficients[2,1]
     t <- model.out$coefficients[2,4]
@@ -2101,11 +2114,11 @@ output
 output <- c()  
 for (mrsiVar in mrsiVars) {
   for (behVar in behVars) {
-    model <- paste0(mrsiVar, ' ~ ', behVar, '* age + Region + Condition + (1|luna)')
+    model <- paste0(mrsiVar, ' ~ ', behVar, '* inverseAge + Region + (1|luna)')
     model.out <- summary(lmerTest::lmer(model, data = fooofMRSbehavior))
-    b <- model.out$coefficients[6,1]
-    t <- model.out$coefficients[6,4]
-    p <- model.out$coefficients[6,5]
+    b <- model.out$coefficients[5,1]
+    t <- model.out$coefficients[5,4]
+    p <- model.out$coefficients[5,5]
     pcor <- p.adjust((p), method = "bonferroni", n = 4)
     
     output <- rbind(output, data.frame(mrsiVar, behVar, b, t, pcor, p))

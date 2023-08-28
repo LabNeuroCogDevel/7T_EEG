@@ -1,4 +1,4 @@
-function [] = runICAs(inpath, outpath, varargin)
+function [] = runICAs(inpath, outpath, task, varargin)
 %% this script runs ICA on all filtered/cleaned/epoched EEG dmt data.
 % PCA is used to decrease the number of components 
 % inpath like ....rerefwhole/*_rerefwhole.set
@@ -7,7 +7,7 @@ function [] = runICAs(inpath, outpath, varargin)
 
 
 % could use files from file_locs instead of defining here
-files = file_locs(inpath);
+files = file_locs(inpath, outpath, task);
 
 % -- icawhole defined elswhere like:
 % icawholeout = fullfile(outpath, 'ICAwhole');

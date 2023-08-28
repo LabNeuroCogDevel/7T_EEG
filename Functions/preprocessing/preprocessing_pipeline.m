@@ -5,6 +5,7 @@ if ~exist(inputfile,'file'), error('inputfile "%s" does not exist!', inputfile),
 [d, currentName, ext ] = fileparts(inputfile);
 
 %% cap locations
+eeglabpath = fileparts(which('eeglab'));
 cap_location = fullfile(eeglabpath,'/plugins/dipfit/standard_BESA/standard-10-5-cap385.elp');
 if ~exist(cap_location, 'file'), error('cannot find file for 128 channel cap: %s', cap_location), end
 correction_cap_location = hera('Projects/7TBrainMech/scripts/eeg/Shane/resources/ChanLocMod128to64.ced');
@@ -27,6 +28,7 @@ epoch_rj_marked_folder = 'marked_epochs';
 epochrj_folder = 'rejected_epochs';
 icaout = fullfile(outpath, 'ICA');
 icawholeout = fullfile(outpath, 'ICAwhole');
+icawholeouthomog = fullfile(outpath, 'AfterWhole/ICAwholeClean_homogenize');
 
 % and what files will we create
 rerefwhole_name = [currentName '_rerefwhole'];
@@ -48,7 +50,7 @@ commonPlus = {'AFz','C1','C2','C3','C4','C5','C6','CP1','CP2','CP3','CP4',...
 epochrj = fullfile(outpath, epochrj_folder, [epochrj_name '.set']);
 
 if condition == 1
-    icawholeoutFile = fullfile( icawholeout, [icawholeout_name '.set']);
+    icawholeoutFile = fullfile(icawholeout, [icawholeout_name '.set']);
 
 else
     icawholeoutFile = 'no';
@@ -117,16 +119,18 @@ else
     [ALLEEG EEG CURRENTSET] = eeg_store(ALLEEG, EEG);
 
 
-    % %50 hz notch filter: 47.5-52.5
-    % EEG = pop_eegfiltnew(EEG, 47.5,52.5,826,1,[],0);
+   
 
     %% Resample data
 
     % Downsample the data to 150Hz using antialiasing filter
-    EEG = pop_resample(EEG, 150, 0.8, 0.4); %0.8 is fc and 0.4 is dc. Default is .9 and .2. We dont know why Alethia changed them
+    if task == "MGS" || task == "Resting_State"
+        EEG = pop_resample(EEG, 150, 0.8, 0.4); %0.8 is fc and 0.4 is dc. Default is .9 and .2. We dont know why Alethia changed them
+    elseif task == "SNR"
+        EEG = pop_resample(EEG, 512, 0.8, 0.4); %0.8 is fc and 0.4 is dc. Default is .9 and .2. We dont know why Alethia changed them
+    end
 
-    % Downsample the data to 512Hz
-    % EEGb = pop_resample( EEG, 512);
+
     EEG = eeg_checkset(EEG);
 
     %change setname
@@ -140,8 +144,8 @@ end
 
 %% CHANNELS
 % remove external channels
-EEG = pop_select( EEG,'nochannel',{'EX5' 'EX6' 'EX7' 'EX8' 'EXG1' 'EXG2' 'EXG3' 'EXG4' 'EXG5' 'EXG6' 'EXG7' 'EXG8' 'GSR1' 'GSR2' 'Erg1' 'Erg2' 'Resp' 'Plet' 'Temp' 'FT7' 'FT8' 'TP7' 'TP8' 'TP9' 'TP10'});
-
+EEG = pop_select( EEG,'nochannel',{'EX3' 'EX4' 'EX5' 'EX6' 'EX7' 'EX8' 'EXG1' 'EXG2' 'EXG3' 'EXG4' 'EXG5' 'EXG6' 'EXG7' 'EXG8' 'GSR1' 'GSR2' 'Erg1' 'Erg2' 'Resp' 'Plet' 'Temp' 'FT7' 'FT8' 'TP7' 'TP8' 'TP9' 'TP10'});
+ 
 [ALLEEG EEG] = eeg_store(ALLEEG, EEG, CURRENTSET);
 %import channel locations
 
@@ -307,22 +311,22 @@ end
 icawholein = fullfile(outpath, icawholein_folder, [rerefwhole_name '.set']);
 
 if ~exist(subj_files.icawhole, 'file')
-    runICAs(icawholein, icawholeout)
+    runICAs(icawholein,icawholeout,task)
 else
     fprintf('have %s, not rerunning\n', subj_files.icawholeout)
 end
 
 %% select ICA values to reject
 
-ICA_Path = [taskdirectory '/ICAwhole'];
-CleanICApath = [taskdirectory '/AfterWhole/ICAwholeClean/'];
+ICA_Path = [outpath '/ICAwhole'];
+CleanICApath = [outpath '/AfterWhole/ICAwholeClean/'];
 
 
 EEGfileNames = dir([ICA_Path '/*.set']);
 
 for fidx = 1:length(EEGfileNames)
     filename = EEGfileNames(fidx).name;
-    locs = file_locs(fullfile(ICA_Path,filename));
+    locs = file_locs(fullfile(ICA_Path,filename), outpath, task);
     if exist(locs.ICAwholeClean, 'file')
         fprintf('skipping; already created %s\n', locs.ICAwholeClean);
         continue
@@ -333,9 +337,9 @@ end
 
 %% Clean epochs to remove
 
-epoch_path = [taskdirectory '/AfterWhole/ICAwholeClean/'];
-epoch_folder = [taskdirectory '/AfterWhole/epoch/'];
-epoch_rj_marked_folder = [taskdirectory '/AfterWhole/epochclean/'];
+epoch_path = [outpath '/AfterWhole/ICAwholeClean/'];
+epoch_folder = [outpath '/AfterWhole/epoch/'];
+epoch_rj_marked_folder = [outpath '/AfterWhole/epochclean/'];
 
 EEGfileNames = dir([path_data, '/*_icapru.set']);
 
@@ -348,8 +352,8 @@ end
 
 
 %% Homogenize Chanloc
-datapath = [taskdirectory '/AfterWhole/ICAwholeClean'];
-outpath = hera('Projects/7TBrainMech/scripts/eeg/Shane/Prep/AfterWhole/ICAwholeClean_homogenize');
+datapath = [outpath '/AfterWhole/ICAwholeClean'];
+savepath = [outpath '/AfterWhole/ICAwholeClean_homogenize'];
 
 setfiles0 = dir([datapath,'/*icapru.set']);
 setfiles = {};
@@ -359,6 +363,18 @@ end
 
 correction_cap_location = hera('Projects/7TBrainMech/scripts/eeg/Shane/resources/ELchanLoc.ced');
 for i = 1:length(setfiles)
-    homogenizeChanLoc(setfiles{i},correction_cap_location,outpath)
+    homogenizeChanLoc(setfiles{i},correction_cap_location,savepath, outpath, task)
 end
 
+
+%% filter out the 60hz artifact from electronics 
+datapath = [outpath '/AfterWhole/ICAwholeClean_homogenize'];
+savepath = hera('Projects/7TBrainMech/scripts/eeg/Shane/Prep/AfterWhole/ICAwholeClean_homogenize');
+
+setfiles0 = dir([datapath,'/*icapru.set']);
+setfiles = {};
+for epo = 1:length(setfiles0)
+    setfiles{epo,1} = fullfile(datapath, setfiles0(epo).name); % cell array with EEG file names
+end
+
+i6

@@ -1,24 +1,21 @@
 function loc = file_locs(filepath, savedir, task)
 % From any file in the eeg pipeline, get all paths used
-if task == 'MGS'
+if task == "MGS"
     id_task_regexp='(?<id>\d{5}_\d{8})_(?<task>MGS)(?<extra>.*)';
 
 
-elseif task == 'SNR'
+elseif task == "SNR"
     id_task_regexp='(?<id>\d{5}_\d{8})_(?<task>ss)(?<extra>.*)';
 
 
-elseif task == 'Resting_State'
+elseif task == "Resting_State"
     id_task_regexp='(?<id>\d{5}_\d{8})_(?<task>REST)(?<extra>.*)';
 
 
 end
 
 [filedir, filename, filext ] = fileparts(filepath);
-% make sure the file we have makes sense
-if isempty(strmatch(savedir,filedir))
-   error('file "%s" does not contain the base directory (%s)!', filepath, savedir)
-end
+
 
 % todo maybe this isn't a problem.
 if ~exist(filepath, 'file'), error('file "%s" does not exist', filepath), end
