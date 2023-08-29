@@ -1,17 +1,62 @@
-% EEGLAB history file generated on the 28-Aug-2023
-% ------------------------------------------------
+function [ersp,itc,powbase,times,freqs, errorSubjects] = evokedActivity(i, inputfile, triggerValue, channelValue, errorSubjects)
+
+% open eeglab
 [ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
-EEG = pop_loadset('filename','11633_20180510_SS_Rem_rerefwhole_ICA_icapru.set','filepath','/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data/SNR/AfterWhole/ICAwholeClean_homogenize/');
+EEG = pop_loadset(inputfile); % load in eeg file
+
+if EEG.srate ~= 512 %check that the subject has been resampled to 512 Hz, and if not
+    EEG = pop_resample(EEG, 512, 0.8, 0.4);
+
+end
+
 [ALLEEG, EEG, CURRENTSET] = eeg_store( ALLEEG, EEG, 0 );
 EEG = eeg_checkset( EEG );
-EEG = pop_rmdat( EEG, {'4'},[-0.2 0.5] ,0);
-[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 1,'gui','off'); 
+
+EEG = pop_rmdat( EEG, {triggerValue},[-0.2 0.5] ,0); % select events with trigger value you want
+[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 1,'gui','off');
 EEG = eeg_checkset( EEG );
-EEG = pop_epoch( EEG, {  '4'  }, [-0.2         0.5], 'newname', '11633_20180510_SS_Rem_rerefwhole_ICA epochs', 'epochinfo', 'yes');
-[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 2,'gui','off'); 
+
+try
+    EEG = pop_epoch( EEG, {triggerValue}, [-0.2 0.5], 'epochinfo', 'yes'); % create epochs using selected events
+catch
+    disp(['subject doesnt have correct epoch: ' inputfile(112:125)])
+    errorSubjects{i} = [inputfile(112:125) 'channel' channelValue];
+    ersp = [];
+    itc = []; 
+    powbase = [];
+    times = [];
+    freqs = [];
+    return;
+end
+
+[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 2,'gui','off');
 EEG = eeg_checkset( EEG );
-EEG = pop_rmbase( EEG, [-200.1953 0] ,[]);
-[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 3,'gui','off'); 
+
+try
+    EEG = pop_rmbase( EEG, [-.2 0] ,[]); % remove baseline
+catch
+    disp(['subject doesnt have correct baseline values: ' inputfile(112:125)])
+    errorSubjects{i} = [inputfile(112:125) 'channel' channelValue];
+     ersp = [];
+    itc = []; 
+    powbase = [];
+    times = [];
+    freqs = [];
+    return;
+end
+
+[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 3,'gui','off');
 EEG = eeg_checkset( EEG );
-figure; pop_newtimef( EEG, 1, 6, [-200  499], [2  15] , 'topovec', 6, 'elocs', EEG.chanlocs, 'chaninfo', EEG.chaninfo, 'caption', 'F3', 'baseline',[0], 'freqs', [10 70], 'plotphase', 'off', 'padratio', 4);
+
+% compute the time frequency spectrum
+% [-200  499]: time bin to analyze , [2  15]: 2 wavelets at low frequencies and 15 at high frequencies
+% baseline 0: use entire section before 0 for the baseline and use divisive strategy for baseline correction
+% freqs, [10 70]: look at frequencies 10 - 70 Hz
+% padratio 16: increases frequency resolution
+figure;
+[ersp,itc,powbase,times,freqs] = pop_newtimef( EEG, 1, channelValue, [-200  499], [2  15] , 'topovec', channelValue, 'elocs', EEG.chanlocs, 'chaninfo', EEG.chaninfo, 'baseline',[0], 'freqs', [10 70], 'plotphase', 'off', 'padratio', 16);
 eeglab redraw;
+close all;
+
+
+end
