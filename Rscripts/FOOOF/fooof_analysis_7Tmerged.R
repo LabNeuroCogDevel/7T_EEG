@@ -141,6 +141,7 @@ write.csv(MRSlong,"/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/
 behav <- merge7t[c("lunaid","visitno","eeg.age", "eeg.BestError_DelayAll", "eeg.BestError_sd_DelayAll","eeg.mgsLatency_DelayAll", "eeg.mgsLatency_sd_DelayAll","cantab.ssp_max.span","cantab.ssp_nerrors", "cantab.ssp_ntrials")]
 
 colnames(behav) <- c("luna","visitno","age","absBestError","absBestError_sd","mgsLatency","mgsLatency_sd", "SSP_maxSpan", "SSP_nErrors", "SSP_nTrials")
+write.csv(behav,"/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/allSubjectsBehavior.csv")
 
 ### 2.3.1 Behavior vs age ----
 
@@ -249,6 +250,17 @@ gam.model <- gam(SSP_nTrials ~ s(age), data = behav, random=list(luna=~1))
 gam.growthrate <- gam_growthrate(gam.model, agevar = 'age')
 lunaize(gam_growthrate_plot(behav, gam.model, gam.growthrate, idvar = "luna", agevar = 'age', yvar = 'SSP_nTrials', draw_points = T, xplotname = "Age", yplotname = "SSP nTrials"))
 
+## 2.4 FOOOF all channels ----
+
+allchannels <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/Results/allSubjectsFooofMeasures_20230516.csv')
+allchannels <- subset(allchannels, select = -X)
+
+merge7t <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/txt/merged_7t.csv')
+subjectInfo <- merge7t[c("lunaid","eeg.date","visitno","eeg.age", "sex")]
+subjectInfo$Subject <- paste(subjectInfo$lunaid, subjectInfo$eeg.date, sep = "_")
+fooofAllChannels <- merge(allchannels, subjectInfo, 'Subject')
+fooofAllChannels <- subset(fooofAllChannels, select = -c(lunaid, eeg.date))
+write.csv(fooofAllChannels,'/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/Results/allSubjectsAllChannelsFooofMeasures_20230911.csv')
 
 # 3.0 Merge Data Frames ----
 

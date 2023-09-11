@@ -3,6 +3,7 @@
 %
 % run like 
 %  result = runtests('test_mgs_remark_vec') 
+% see https://www.mathworks.com/help/matlab/matlab_prog/write-script-based-unit-tests.html
 %
 % 20230904WF  - used as example for matlab testing
 

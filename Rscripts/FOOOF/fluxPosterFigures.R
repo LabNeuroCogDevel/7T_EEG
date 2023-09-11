@@ -120,3 +120,46 @@ lunaize(ggplot(data = fooofMRS ,
           geom_point(alpha=.5) + geom_smooth(aes(group = 1), method="lm", alpha = 0.8) + 
           scale_color_manual(values=c("gold3", "blue4"))) + 
   ylab("Glu GABA Imbalance") + xlab("Offset") + theme(text = element_text(size = 30))+ theme(legend.position='none')
+
+
+### Latency vs Exponent ----
+
+lunaize(ggplot(data = fooofMRSbehavior , 
+               aes(x = Exponent, y = mgsLatency, by = luna, color = ageGroup))+ 
+          geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) + 
+          geom_point(alpha=.5) + 
+          geom_smooth(aes(group = 1), method="lm", alpha = 0.8) + 
+          scale_color_manual(values=c("gold3", "blue4"))) + 
+  ylab("Latency") + xlab("Exponent")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
+
+###  Latency  vs Offset ----
+
+lunaize(ggplot(data = fooofMRSbehavior, 
+               aes(x = Offset, y = mgsLatency, by = luna, color = ageGroup))+ 
+          geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) + 
+          geom_point(alpha=.5) + 
+          geom_smooth(aes(group = 1), method="lm", alpha = 0.8) + 
+          scale_color_manual(values=c("gold3", "blue4"))) + 
+  ylab("Latency") + xlab("Offset")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
+
+### Spatial Span Max vs Exponent ----
+
+lunaize(ggplot(data = fooofMRSbehavior  , 
+               aes(x = Exponent, y = SSP_maxSpan, by = luna, color = ageGroup))+ 
+          geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) + 
+          geom_point(alpha=.5) + 
+          geom_smooth(aes(group = 1), method="lm", alpha = 0.8) + 
+          scale_color_manual(values=c("gold3", "blue4"))) + 
+  ylab("Span Max") + xlab("Exponent")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
+
+
+
+### Spatial Span Max vs Offset ----
+
+lunaize(ggplot(data = fooofMRSbehavior  , 
+               aes(x = Offset, y = SSP_maxSpan, by = luna, color = ageGroup))+ 
+          geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) + 
+          geom_point(alpha=.5) + 
+          geom_smooth(aes(group = 1), method="lm", alpha = 0.8) + 
+          scale_color_manual(values=c("gold3", "blue4"))) + 
+  ylab("Span Max") + xlab("Offset")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
