@@ -21,7 +21,7 @@ library(tidyr)
 library(jtools)
 
 # FOOOF vs MRS ----
-fooofMRS<- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/allSubjectsDLPFCfooofMRSMeasures_20230822.csv")
+fooofMRS <- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/allSubjectsDLPFCfooofMRSMeasures_20230822.csv")
 
 ## GLU VS Exponent ----
 
@@ -587,12 +587,6 @@ results <- mediation::mediate(model.M, model.Y, treat = "age", mediator = "Glu_g
 
 
 
-
-
-
-
-
-
 # FOOOF vs MRS Loop ----
 ### Linear Models ----
 
@@ -706,3 +700,7 @@ for (mrsiVar in mrsiVars) {
   }
 }
 output  
+
+
+
+
