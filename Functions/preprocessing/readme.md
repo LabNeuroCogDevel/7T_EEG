@@ -8,7 +8,7 @@ Note: you need the [hera.m](https://github.com/LabNeuroCogDevel/7T_EEG/blob/main
     - Loads in the desired subject
     - Loads in the file containing the coordinates of the cap electrodes
     - Checks to see if the subject has already been preprocessed. If yes, skips and moves on to the next
-      - [file_locs.m] (https://github.com/LabNeuroCogDevel/7T_EEG/blob/main/Functions/preprocessing/file_locs.m) will load in all the path and file names 
+      - [file_locs.m](https://github.com/LabNeuroCogDevel/7T_EEG/blob/main/Functions/preprocessing/file_locs.m) will load in all the path and file names 
     - References the data to the electrodes corresponding to the mastoids
     - Filters out the data below 0.5 Hz (low frequency drifts) and 70 Hz
     - Resample the data to 150 Hz (all tasks besides SNR) or 512 Hz (for SNR task)
