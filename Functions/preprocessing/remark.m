@@ -142,10 +142,10 @@ elseif task == "SNR"
 
         % skip if we've already done
         finalfile=fullfile(outputpath, [currentName '_Rem.set']);
-        if exist(finalfile,'file')
-            fprintf('already have %s\n', finalfile)
-            continue
-        end
+        % if exist(finalfile,'file')
+        %     fprintf('already have %s\n', finalfile)
+        %     continue
+        % end
         
         fprintf('making %s\n',finalfile);
 
@@ -159,6 +159,8 @@ elseif task == "SNR"
             eeglab redraw
 
             [micromed_time,mark]=make_photodiodevector(EEG); % micromed_time: the time the trigger goes off; mark: the trigger value
+      
+            mark = mark - min(mark(mark>0));
 
             %changes the triggers to be single digit numbers
             for i=unique(mark)

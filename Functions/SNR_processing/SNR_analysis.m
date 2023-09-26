@@ -1,3 +1,6 @@
+
+set(0,'DefaultFigureVisible','off'); %set figure visibility to off
+
 %% set needed paths
 addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1')));
 addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/Functions/SNR_processing')));
@@ -22,10 +25,12 @@ for j = 1 : length(setfiles0)
 end
 
 numSubj = length(idvalues);
-
+subjectERSP = cell(1,50);
+subjectITC = cell(1,50);
+subjectPowbase= cell(1,50);
 
 %% run evoked activity function 
-for i = 1:numSubj
+for i = 201:250
     ersp = zeros(121,200); % clear previous subjects data by zeroing
     itc = zeros(121,200); % clear previous subjects data by zeroing
     powbase = zeros(1,121); % clear previous subjects data by zeroing
@@ -44,3 +49,10 @@ for i = 1:numSubj
 
     disp(i);
 end
+
+save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectERPs_201_250.mat','subjectERSP')
+save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectITC_201_250.mat', 'subjectITC')
+save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectPowbase_201_250.mat', 'subjectPowbase')
+
+
+

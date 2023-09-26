@@ -22,15 +22,18 @@ for i=1:max(size(EEG.event))
         mark(i)=EEG.event(i).type;
 
 
-        % if isempty(EEG.event(i).edftype)
-        %     EEG.event(i).edftype = EEG.event(i-1).edftype; 
-        % end
-        % mark(i)=EEG.event(i).edftype;
+        if isempty(EEG.event(i).edftype)
+            EEG.event(i).edftype = EEG.event(i-1).edftype; 
+        end
+        mark(i)=EEG.event(i).edftype;
         
     else
+        if isempty(EEG.event(i).type)
+            mark(i)=0;
+        else 
         mark(i)=EEG.event(i).type;
         mark(i) = mark(i) - min(mark);
-  
+        end
     end
    
 end

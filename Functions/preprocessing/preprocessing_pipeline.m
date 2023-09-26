@@ -335,21 +335,6 @@ for fidx = 1:length(EEGfileNames)
     selectcompICA
 end
 
-%% Clean epochs to remove
-
-epoch_path = [outpath '/AfterWhole/ICAwholeClean/'];
-epoch_folder = [outpath '/AfterWhole/epoch/'];
-epoch_rj_marked_folder = [outpath '/AfterWhole/epochclean/'];
-
-EEGfileNames = dir([path_data, '/*_icapru.set']);
-
-revisar = {};
-for currentEEG = 1:size(EEGfileNames,1)
-    filename = [EEGfileNames(currentEEG).name];
-    inputfile = [epoch_path,filename];
-    revisar{currentEEG} = epochlean(inputfile,epoch_folder,epoch_rj_marked_folder);
-end
-
 
 %% Homogenize Chanloc
 datapath = [outpath '/AfterWhole/ICAwholeClean'];
@@ -377,4 +362,32 @@ for epo = 1:length(setfiles0)
     setfiles{epo,1} = fullfile(datapath, setfiles0(epo).name); % cell array with EEG file names
 end
 
-i6
+for i = 1:length(setfiles)
+    EEG = pop_eegfiltnew(EEG, 59, 61, [], 1, [], 0);
+end
+
+EEG = pop_saveset(EEG, 'filename', rerefwhole_name, 'filepath', outpath);
+    [ALLEEG EEG] = eeg_store(ALLEEG, EEG, CURRENTSET);
+
+
+
+
+
+
+
+if task == "MGS"
+    %% Clean epochs to remove
+
+    epoch_path = [outpath '/AfterWhole/ICAwholeClean/'];
+    epoch_folder = [outpath '/AfterWhole/epoch/'];
+    epoch_rj_marked_folder = [outpath '/AfterWhole/epochclean/'];
+
+    EEGfileNames = dir([path_data, '/*_icapru.set']);
+
+    revisar = {};
+    for currentEEG = 1:size(EEGfileNames,1)
+        filename = [EEGfileNames(currentEEG).name];
+        inputfile = [epoch_path,filename];
+        revisar{currentEEG} = epochlean(inputfile,epoch_folder,epoch_rj_marked_folder);
+    end
+end

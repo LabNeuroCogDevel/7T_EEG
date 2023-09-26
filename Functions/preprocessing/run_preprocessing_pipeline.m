@@ -1,5 +1,3 @@
-function [] = run_preprocessing_pipeline(task)
-
 
 % load in paths to feildtrip and eeglab 
 addpath(genpath('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Functions/preprocessing'));
@@ -10,11 +8,9 @@ run('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1
 maindir = hera('Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data');
 
 % which task do you want to run. CHANGE ACCORDING TO MGS, REST, SNR, etc. 
-if nargin == 0 %check if something is passed 
-    task = 'SNR'; 
-   
-end
-disp(["i am running this" task]) 
+task = 'SNR'; 
+  
+disp(["i am running" task]) 
    
 taskdirectory = [maindir, '/', task]; 
 
