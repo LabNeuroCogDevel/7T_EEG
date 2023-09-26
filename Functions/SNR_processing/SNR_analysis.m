@@ -30,7 +30,7 @@ subjectITC = cell(1,50);
 subjectPowbase= cell(1,50);
 
 %% run evoked activity function 
-for i = 201:250
+for i = 251:numSubj
     ersp = zeros(121,200); % clear previous subjects data by zeroing
     itc = zeros(121,200); % clear previous subjects data by zeroing
     powbase = zeros(1,121); % clear previous subjects data by zeroing
@@ -50,9 +50,9 @@ for i = 201:250
     disp(i);
 end
 
-save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectERPs_201_250.mat','subjectERSP')
-save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectITC_201_250.mat', 'subjectITC')
-save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectPowbase_201_250.mat', 'subjectPowbase')
+save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectERPs_251_end.mat','subjectERSP')
+save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectITC_251_end.mat', 'subjectITC')
+save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectPowbase_251_end.mat', 'subjectPowbase')
 
 
 
