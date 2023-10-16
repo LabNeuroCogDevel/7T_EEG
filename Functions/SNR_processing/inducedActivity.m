@@ -1,4 +1,4 @@
-function [ersp,itc,powbase,times,freqs, errorSubjects] = evokedActivity(i, inputfile, triggerValue, channelValue, errorSubjects)
+function [errorSubjects, tfdata] = inducedActivity(i, inputfile, triggerValue, channelValue, errorSubjects)
 
 % open eeglab
 [ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
@@ -26,6 +26,7 @@ catch
     powbase = [];
     times = [];
     freqs = [];
+    tfdata = [];
     return;
 end
 
@@ -37,16 +38,18 @@ try
 catch
     disp(['subject doesnt have correct baseline values: ' inputfile(112:125)])
     errorSubjects{i} = [inputfile(112:125) 'channel' channelValue];
-     ersp = [];
+    ersp = [];
     itc = []; 
     powbase = [];
     times = [];
     freqs = [];
+    tfdata = [];
     return;
 end
 
 [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 3,'gui','off');
 EEG = eeg_checkset( EEG );
+
 
 % compute the time frequency spectrum
 % [-200  499]: time bin to analyze , [2  15]: 2 wavelets at low frequencies and 15 at high frequencies
@@ -54,10 +57,11 @@ EEG = eeg_checkset( EEG );
 % freqs, [10 70]: look at frequencies 10 - 70 Hz
 % padratio 16: increases frequency resolution
 % powbase is the baseline power spectrum
+
+% tfdata returns the time frequency array for each trial 
+
 figure;
-[ersp,itc,powbase,times,freqs] = pop_newtimef( EEG, 1, channelValue, [-200  499], [2  15] , 'topovec', channelValue, 'elocs', EEG.chanlocs, 'chaninfo', EEG.chaninfo, 'baseline',[0], 'freqs', [10 70], 'plotphase', 'off', 'padratio', 16);
+[ersp,itc,powbase,times,freqs,erspboot,itcboot,tfdata] = pop_newtimef(EEG, 1, channelValue, [-200 499], [2 15], 'baseline',[0], 'freqs', [10 70], 'topovec', channelValue, 'elocs', EEG.chanlocs, 'chaninfo', EEG.chaninfo, 'plotphase', 'off', 'padratio', 16);
 eeglab redraw;
 close all;
 
-
-end

@@ -21,7 +21,7 @@ for epo = 1:length(setfiles0)
 end
 
 for j = 1 : length(setfiles0)
-    idvalues(j,:) = (setfiles0(j).name(1:14));
+    idvalues{j} = (setfiles0(j).name(1:14));
 end
 
 numSubj = length(idvalues);
@@ -53,6 +53,25 @@ end
 save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectERPs_251_end.mat','subjectERSP')
 save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectITC_251_end.mat', 'subjectITC')
 save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectPowbase_251_end.mat', 'subjectPowbase')
+
+
+subjecttfData = cell(1,50);
+%% run induced activity function 
+for i = 251:numSubj
+    tfdata = zeros(121,200,150); % clear previous subjects data by zeroing
+
+    for c = 1:length(channelValues)
+        inputfile = setfiles{i};
+        [errorSubjects, tfdata] = inducedActivity(i, inputfile, triggerValue, channelValues(c),errorSubjects);
+        channeltfdata{c} = tfdata;
+    end
+
+    subjecttfData{i} = channeltfdata;
+    
+    disp(i);
+end
+
+save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/trialTFdata_251_end.mat','subjecttfData', '-v7.3')
 
 
 
