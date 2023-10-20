@@ -41,5 +41,6 @@ resources/
 fooof_mat-main*
 maybe-missing_AdditionalFunctionsfromEEGLAB/
 python/fooof/venv/
-
+sshkey
+sshkey.pub
 
