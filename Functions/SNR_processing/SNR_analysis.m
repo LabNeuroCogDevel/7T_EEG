@@ -1,6 +1,5 @@
 
 set(0,'DefaultFigureVisible','off'); %set figure visibility to off
-
 %% set needed paths
 addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1')));
 addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/Functions/SNR_processing')));
@@ -8,8 +7,8 @@ addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/Functions/SNR_proc
 %% set initial values 
 datapath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data/SNR/AfterWhole/ICAwholeClean_homogenize');
 triggerValue = '4'; 
-channelValues = [4,5,6,36,37,38];
-errorSubjects = [];
+% channelValues = [4,5,6,36,37,38]; if you only want to run DLPFC
+outpath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR');
 
 %% load in all the data files
 setfiles0 = dir([datapath,'/*icapru*.set']);
@@ -25,53 +24,20 @@ for j = 1 : length(setfiles0)
 end
 
 numSubj = length(idvalues);
-subjectERSP = cell(1,50);
-subjectITC = cell(1,50);
-subjectPowbase= cell(1,50);
+errorSubjects = cell(1,numSubj);
 
-%% run evoked activity function 
-for i = 251:numSubj
-    ersp = zeros(121,200); % clear previous subjects data by zeroing
-    itc = zeros(121,200); % clear previous subjects data by zeroing
-    powbase = zeros(1,121); % clear previous subjects data by zeroing
+%% run evoked and induced activity function 
+for i = 1:numSubj
+    subject = idvalues{i};
+    inputfile = setfiles{i};
+    savePath = [outpath '/' subject '_SNRdata.csv'];
 
-    for c = 1:length(channelValues)
-        inputfile = setfiles{i};
-        [ersp,itc,powbase,times,freqs, errorSubjects] = evokedActivity(i, inputfile, triggerValue, channelValues(c),errorSubjects);
-        channelERSP{c} = ersp; 
-        channelITC{c} = itc; 
-        channelPowbase{c} = powbase; 
+    if ~exist(savePath, 'file')
+        fprintf('The file %s does not exist, running SNR code\n', savePath)
+
+       [errorSubjects] = evokedInducedActivity(i, inputfile, triggerValue,outpath,subject,errorSubjects);
     end
-
-    subjectERSP{i} = channelERSP;
-    subjectITC{i} = channelITC;
-    subjectPowbase{i} = channelPowbase;
 
     disp(i);
 end
-
-save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectERPs_251_end.mat','subjectERSP')
-save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectITC_251_end.mat', 'subjectITC')
-save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/subjectPowbase_251_end.mat', 'subjectPowbase')
-
-
-subjecttfData = cell(1,50);
-%% run induced activity function 
-for i = 251:numSubj
-    tfdata = zeros(121,200,150); % clear previous subjects data by zeroing
-
-    for c = 1:length(channelValues)
-        inputfile = setfiles{i};
-        [errorSubjects, tfdata] = inducedActivity(i, inputfile, triggerValue, channelValues(c),errorSubjects);
-        channeltfdata{c} = tfdata;
-    end
-
-    subjecttfData{i} = channeltfdata;
-    
-    disp(i);
-end
-
-save('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/trialTFdata_251_end.mat','subjecttfData', '-v7.3')
-
-
 
