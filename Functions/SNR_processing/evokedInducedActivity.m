@@ -4,9 +4,31 @@ function [errorSubjects] = evokedInducedActivity(i, inputfile, triggerValue, out
 [ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
 EEG = pop_loadset(inputfile); % load in eeg file
 
-if EEG.srate ~= 512 %check that the subject has been resampled to 512 Hz, and if not
-    EEG = pop_resample(EEG, 512, 0.8, 0.4);
+if max([EEG.event.type]) ~= 4
+    errorSubjects{i} = subject;
+    ersp = [];
+    itc = [];
+    powbase = [];
+    times = [];
+    freqs = [];
+    tfdata = [];
+    return;
+end
 
+if EEG.srate ~= 512 %check that the subject has been resampled to 512 Hz, and if not
+    try
+        EEG = pop_resample(EEG, 512, 0.8, 0.4);
+    catch
+        disp(['subject doesnt have correct epoch: ' subject])
+        errorSubjects{i} = subject;
+        ersp = [];
+        itc = [];
+        powbase = [];
+        times = [];
+        freqs = [];
+        tfdata = [];
+        return;
+    end
 end
 
 [ALLEEG, EEG, CURRENTSET] = eeg_store( ALLEEG, EEG, 0 );
@@ -19,8 +41,8 @@ EEG = eeg_checkset( EEG );
 try
     EEG = pop_epoch( EEG, {triggerValue}, [-0.2 0.5], 'epochinfo', 'yes'); % create epochs using selected events
 catch
-    disp(['subject doesnt have correct epoch: ' inputfile(112:125)])
-    errorSubjects{i} = [inputfile(112:125)];
+    disp(['subject doesnt have correct epoch: ' subject])
+    errorSubjects{i} = subject;
     ersp = [];
     itc = [];
     powbase = [];
@@ -36,8 +58,8 @@ EEG = eeg_checkset( EEG );
 try
     EEG = pop_rmbase( EEG, [-.2 0] ,[]); % remove baseline
 catch
-    disp(['subject doesnt have correct baseline values: ' inputfile(112:125)])
-    errorSubjects{i} = [inputfile(112:125)];
+    disp(['subject doesnt have correct baseline values: ' subject])
+    errorSubjects{i} = subject;
     ersp = [];
     itc = [];
     powbase = [];

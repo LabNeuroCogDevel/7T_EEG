@@ -3,6 +3,7 @@ set(0,'DefaultFigureVisible','off'); %set figure visibility to off
 %% set needed paths
 addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1')));
 addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/Functions/SNR_processing')));
+addpath(genpath('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Functions/preprocessing'));
 
 %% set initial values 
 datapath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data/SNR/AfterWhole/ICAwholeClean_homogenize');
@@ -40,4 +41,46 @@ for i = 1:numSubj
 
     disp(i);
 end
+
+
+
+
+
+%% addressing the failed subjects
+
+% Find the indices of empty cells
+emptyCellIndices = cellfun('isempty', errorSubjects);
+
+% Use logical indexing to remove empty cells
+errorSubjects = errorSubjects(~emptyCellIndices);
+
+for i = 21:length(errorSubjects)
+    sub = errorSubjects{i};
+    rawPath_file = hera('Raw/EEG/7TBrainMech'); % path to raw data 
+
+    ssmatches = dir(fullfile(rawPath_file, ['/' sub '/*_SS*bdf'])); 
+    rawFile = fullfile(ssmatches(1).folder, ssmatches(1).name);
+
+    EEG = pop_biosig(rawFile); %load in the raw file
+    [micromed_time,mark]=make_photodiodevector(EEG); %find the trigger values
+       
+    newMark = fixMarks(mark);
+
+    processedPath = hera('Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data/SNR/AfterWhole/ICAwholeClean_homogenize/');
+
+    ssmatches = dir(fullfile(processedPath, [sub '*_SS*u.set'])); 
+    preprocessedFile = fullfile(ssmatches(1).folder, ssmatches(1).name);
+
+    preprocessedEEG = pop_loadset(preprocessedFile); %load in the raw file
+     
+    for j = 1:length(EEG.event)
+        preprocessedEEG.event(j).urevent = EEG.event(j).urevent;
+        preprocessedEEG.event(j).latency = EEG.event(j).latency;
+        preprocessedEEG.event(j).type = newMark(j);
+    end
+
+   preprocessedEEG = pop_saveset(preprocessedEEG, preprocessedFile);
+
+end
+
 
