@@ -44,8 +44,6 @@ end
 
 
 
-
-
 %% addressing the failed subjects
 
 % Find the indices of empty cells
