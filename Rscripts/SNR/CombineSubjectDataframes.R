@@ -23,7 +23,7 @@ library(jtools)
 # Initialize directory and empty dataframes ----
 
 # Set your working directory to the folder containing your CSV files
-setwd("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/individual_subject_files/")
+setwd("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/")
 
 # List all CSV files in the directory
 csv_files <- list.files(pattern = ".csv")

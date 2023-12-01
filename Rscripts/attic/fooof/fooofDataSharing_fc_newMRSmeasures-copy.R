@@ -73,7 +73,7 @@ chanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Resul
 
 chanLocs$Channel <- chanLocs$labels
 
-fooofunmerged <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/fooof/Results/allSubjectsFooofMeasures_20230516.csv')
+fooofunmerged <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/allSubjectsFooofMeasures_20230516.csv')
 
   
 ### 2.1.1 Remove EEG outlier per channel ----

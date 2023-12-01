@@ -190,10 +190,10 @@ spectralEvents_individualChannels <- function () {
   agefile <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/agefile_20220914.csv')
   agefile$inverseAge <- 1/agefile$age
   
-  gammaAllChannels <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Gamma/Gamma_allChannels_TrialLevel_Delay_3_4.csv') 
+  gammaAllChannels2 <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/Spectral_Analysis/Spectral_events_analysis/Gamma/Gamma_allChannels_TrialLevel_Delay_3_4.csv') 
   gammaAllChannels$Epoch <- 'Delay'
   
-  gammaAllChannelsFix <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Power_Analysis/Spectral_events_analysis/Gamma/Gamma_allChannels_TrialLevel_FIX.csv') 
+  gammaAllChannelsFix <- read.csv('H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/Spectral_Analysis/Spectral_events_analysis/Gamma/Gamma_allChannels_TrialLevel_FIX.csv') 
   gammaAllChannelsFix$Epoch <- 'Fix'
   
   gammaDelayFix <- rbind(gammaAllChannels, gammaAllChannelsFix)
