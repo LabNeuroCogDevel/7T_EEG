@@ -91,6 +91,7 @@ EEG = eeg_checkset( EEG );
 
 parpool('local', 4);
 parfor c = 1:64
+    figure;
     [ersp,itc,powbase,times,freqs,erspboot,itcboot,tfdata] = pop_newtimef( EEG, 1, c, [-199  799], [2  15] , 'elocs', EEG.chanlocs, 'chaninfo', EEG.chaninfo, 'baseline',[0], 'freqs', [10 70], 'plotphase', 'off', 'padratio', 4, 'winsize', 102);
     channelERSP{c} = ersp;
     channelITC{c} = itc;
@@ -114,7 +115,7 @@ end
 for j = 1:length(channelITC)
     channel = channelITC{1,j};
     selectfreq = channel(idx,:);
-    avgChannel = abs(mean(mean(selectfreq)));
+    avgChannel = mean(mean(abs(selectfreq)));
     subjectAvgITC{j} = avgChannel;
 end
 
@@ -130,7 +131,7 @@ end
 for j = 1:length(channeltfdata)
     channel = channeltfdata{1,j};
     selectfreq = channel(idx,:);
-    avgChannel = mean(squeeze(abs(mean(mean(selectfreq))))); % average across time and frequency for each trial and then average across trials
+    avgChannel = mean(squeeze(mean(mean(abs(selectfreq))))); % average across time and frequency for each trial and then average across trials
     subjectAvgTF{j} = avgChannel;
 end
 

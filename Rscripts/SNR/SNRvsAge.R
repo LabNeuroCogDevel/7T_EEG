@@ -32,27 +32,28 @@ merge7t <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/txt/merged_7t.cs
 
 snr <- merge7t[c("lunaid","eeg.date","visitno","eeg.age","eeg.snr.ERSP_40Hz_LDLPFC", "eeg.snr.ERSP_40Hz_RDLPFC", "eeg.snr.ITC_40Hz_LDLPFC", 
                  "eeg.snr.ITC_40Hz_RDLPFC", "eeg.snr.BaselinePower_40Hz_LDLPFC", "eeg.snr.BaselinePower_40Hz_RDLPFC", "eeg.snr.Induced_40Hz_LDLPFC", 
-                 "eeg.snr.Induced_40Hz_RDLPFC", "eeg.snr.Evoked_40Hz_RDLPFC", "eeg.snr.Evoked_40Hz_LDLPFC")]
+                 "eeg.snr.Induced_40Hz_RDLPFC", "eeg.snr.Evoked_40Hz_RDLPFC", "eeg.snr.Evoked_40Hz_LDLPFC","eeg.snr.InducedDB_40Hz_LDLPFC", 
+                 "eeg.snr.InducedDB_40Hz_RDLPFC", "eeg.snr.EvokedDB_40Hz_RDLPFC", "eeg.snr.EvokedDB_40Hz_LDLPFC")]
 
 snrLong <- snr %>% 
-  select(matches('lunaid|visitno|eeg.age|(eeg).snr.*(ERSP|Induced|BaselinePower|ITC|Evoked).40Hz.*[LR]DLPFC')) %>%
+  select(matches('lunaid|visitno|eeg.age|(eeg).snr.*(ERSP|Induced|BaselinePower|ITC|Evoked|InducedDB|EvokedDB).40Hz.*[LR]DLPFC')) %>%
   pivot_longer(cols=matches('DLPFC'),
                names_pattern='(.*)_(40Hz).([LR]DLPFC)',
                names_to=c("measure","Freq", "Region"))  %>% 
   filter(!is.na(value)) %>% 
   pivot_wider(id_cols=c('lunaid','visitno','eeg.age','Region','Freq'),
               names_from=c('measure')) %>% 
-  select(matches('lunaid|visitno|Region|Freq|eeg.age|(eeg).*(ERSP|Induced|BaselinePower|ITC|Evoked)'))
+  select(matches('lunaid|visitno|Region|Freq|eeg.age|(eeg).*(ERSP|Induced|BaselinePower|ITC|Evoked|InducedDB|EvokedDB)'))
 
 colnames(snrLong) <- c("luna", "visitno", "age", "Region", "Freq", "ERSP", 
-                       "ITC", "BaselinePower", "Induced", "Evoked")
+                       "ITC", "BaselinePower", "Induced", "Evoked","InducedDB", "EvokedDB")
 
 # Outlier by age group ----
 snrLong <- snrLong %>% mutate(ageGroup = cut(age, c(0,17,23,Inf), labels = c('10-16','17-22','23-30')))
 
 snrLong <- snrLong %>% 
   group_by(ageGroup) %>% 
-  mutate(across(c("ERSP", "ITC", "Induced", "BaselinePower", "Evoked"), naoutlier))%>% ungroup()
+  mutate(across(c("ERSP", "ITC", "Induced", "BaselinePower", "Evoked","InducedDB", "EvokedDB"), naoutlier))%>% ungroup()
 
 # DLPFC from Merge7T ----
 ## ERSP  ----

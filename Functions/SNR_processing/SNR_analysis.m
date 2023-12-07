@@ -29,7 +29,7 @@ errorSubjects = cell(1,numSubj);
 
 %% run evoked and induced activity function
 for i = 1:numSubj
-    
+
     subject = idvalues{i};
     inputfile = setfiles{i};
     savePath = [outpath '/' subject '_SNRdata.csv'];
@@ -38,9 +38,8 @@ for i = 1:numSubj
         fprintf('The file %s does not exist, running SNR code\n', savePath)
         
         [errorSubjects, subjectAvgERSP, subjectAvgITC, subjectAvgPowBase, subjectAvgTF] = ERSP_ITC(i, inputfile, triggerValue, outpath, subject,errorSubjects);
-        
+
         [errorSubjectsEvoked, channelPower] = evokedActivity(i, inputfile, triggerValue, outpath, subject,errorSubjects);
-        
         
         %% create a table with all the info
         if ~isempty(subjectAvgERSP) || ~isempty(channelPower)
