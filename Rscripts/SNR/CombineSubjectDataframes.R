@@ -23,7 +23,7 @@ library(jtools)
 # Initialize directory and empty dataframes ----
 
 # Set your working directory to the folder containing your CSV files
-setwd("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/")
+setwd("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/totalEvokedInduced_indivSubjects/")
 
 # List all CSV files in the directory
 csv_files <- list.files(pattern = ".csv")
@@ -36,6 +36,10 @@ for (file in csv_files) {
   data <- read.csv(file, header = TRUE)  # Change header argument if needed
   combined_data <- rbind(combined_data, data)
 }
+
+
+write.csv(combined_data, file = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/allSubjectsTotalEvokedInduced_40hz.csv', row.names = F)
+
 
 # Prep the file for merge 7t eeg ----
 

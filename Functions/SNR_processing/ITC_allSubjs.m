@@ -1,14 +1,15 @@
 
 %% set needed paths
+cd '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Functions'
 addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1')));
 addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/Functions/SNR_processing')));
 addpath(genpath('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Functions/preprocessing'));
 
 %% set initial values
 datapath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data/SNR/AfterWhole/ICAwholeClean_homogenize');
-triggerValue = '4';
+triggerValue = '3';
 % channelValues = [4,5,6,36,37,38]; if you only want to run DLPFC
-outpath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR');
+outpath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/');
 
 %% load in all the data files
 setfiles0 = dir([datapath,'/*icapru*.set']);
@@ -23,15 +24,15 @@ for j = 1 : length(setfiles0)
     idvalues{j} = (setfiles0(j).name(1:14));
 end
 
+idvalues = unique(idvalues);
 numSubj = length(idvalues);
 errorSubjects = cell(1,numSubj);
 
 %% run evoked and induced activity function
-for i = 291:numSubj
-
+for i = 1:numSubj
+    disp(i);
     subject = idvalues{i};
     inputfile = setfiles{i};
-    savePath = [outpath '/' subject '_SNRdata.csv'];
 
     % open eeglab
     [ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
@@ -44,7 +45,7 @@ for i = 291:numSubj
         subjectAvgITC = [];
         subjectAvgPowBase = [];
         subjectAvgTF = [];
-        return;
+        continue;
     end
 
     % if max([EEG.event.type]) ~= 4 || max([EEG.event.type]) ~= 121
@@ -68,16 +69,27 @@ for i = 291:numSubj
             subjectAvgITC = [];
             subjectAvgPowBase = [];
             subjectAvgTF = [];
-            return;
+            continue;
         end
     end
-
+    
+try
     [ALLEEG, EEG, CURRENTSET] = eeg_store( ALLEEG, EEG, 0 );
     EEG = eeg_checkset( EEG );
 
     EEG = pop_rmdat( EEG, {triggerValue},[-0.2 0.8] ,0); % select events with trigger value you want
     [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 1,'gui','off');
     EEG = eeg_checkset( EEG );
+catch
+       disp(['subject wont run through pop_rmdat: ' subject])
+        errorSubjects{i} = subject;
+        subjectAvgERSP = [];
+        subjectAvgITC = [];
+        subjectAvgPowBase = [];
+        subjectAvgTF = [];
+        continue;
+        
+end
 
     try
         EEG = pop_epoch( EEG, {triggerValue}, [-0.2 0.8], 'epochinfo', 'yes'); % create epochs using selected events
@@ -130,7 +142,22 @@ for i = 291:numSubj
 close all;
 end
 
-save("allsubjectsITCmatries.mat", 'subjectITC');
+
+if triggerValue == '2'
+    
+    savePath = [outpath '/' 'allsubjectsITCmatries_20Hz.mat'];
+    save(savePath, 'subjectITC');
+    
+elseif triggerValue =='3'
+    
+    savePath = [outpath '/' 'allsubjectsITCmatries_30Hz.mat'];
+    save(savePath, 'subjectITC');
+    
+elseif triggerValue =='4'
+    
+    savePath = [outpath '/' 'allsubjectsITCmatries_40Hz.mat'];
+    save(savePath, 'subjectITC');
+end
 
 ages = table2cell(readtable('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/subject_ages.csv'));
 
@@ -209,13 +236,52 @@ for f = 1:size(subjectITC, 1)
     end
 end
 
-save("ageEstimate.mat", 'ageEstimate');
-save("ageTvalue.mat", 'ageTvalue');
-save("agePvalue.mat", 'agePvalue');
+if triggerValue == '2'
+    save([outpath '/ageEstimate_20hz.mat'], 'ageEstimate');
+    save([outpath '/ageTvalue_20hz.mat'], 'ageTvalue');
+    save([outpath '/agePvalue_20hz.mat'], 'agePvalue');
+    save([outpath '/intEstimate_20hz.mat'], 'intEstimate');
+    save([outpath '/intTvalue_20hz.mat'], 'intTvalue');
+    save([outpath '/intPvalue_20hz.mat'], 'intPvalue');
 
-save("intEstimate.mat", 'intEstimate');
-save("intTvalue.mat", 'intTvalue');
-save("intPvalue.mat", 'intPvalue');
+    writematrix(ageEstimate, [outpath '/ageEstimate_20hz.csv']);
+    writematrix(ageTvalue, [outpath '/ageTvalue_20hz.csv']);
+    writematrix(agePvalue, [outpath '/agePvalue_20hz.csv']);
+    writematrix(intEstimate, [outpath '/intEstimate_20hz.csv']);
+    writematrix(intTvalue, [outpath '/intTvalue_20hz.csv']);
+    writematrix(intPvalue, [outpath '/intPvalue_20hz.csv']);
+    
+elseif triggerValue =='3'
+    save([outpath '/ageEstimate_30hz.mat'], 'ageEstimate');
+    save([outpath '/ageTvalue_30hz.mat'], 'ageTvalue');
+    save([outpath '/agePvalue_30hz.mat'], 'agePvalue');
+    save([outpath '/intEstimate_30hz.mat'], 'intEstimate');
+    save([outpath '/intTvalue_30hz.mat'], 'intTvalue');
+    save([outpath '/intPvalue_30hz.mat'], 'intPvalue');
+
+    writematrix(ageEstimate, [outpath '/ageEstimate_30hz.csv']);
+    writematrix(ageTvalue, [outpath '/ageTvalue_30hz.csv']);
+    writematrix(agePvalue, [outpath '/agePvalue_30hz.csv']);
+    writematrix(intEstimate, [outpath '/intEstimate_30hz.csv']);
+    writematrix(intTvalue, [outpath '/intTvalue_30hz.csv']);
+    writematrix(intPvalue, [outpath '/intPvalue_30hz.csv']);
+
+elseif triggerValue =='4'
+    save([outpath '/ageEstimate_40hz.mat'], 'ageEstimate');
+    save([outpath '/ageTvalue_40hz.mat'], 'ageTvalue');
+    save([outpath '/agePvalue_40hz.mat'], 'agePvalue');
+    save([outpath '/intEstimate_40hz.mat'], 'intEstimate');
+    save([outpath '/intTvalue_40hz.mat'], 'intTvalue');
+    save([outpath '/intPvalue_40hz.mat'], 'intPvalue');
+
+    writematrix(ageEstimate, [outpath '/ageEstimate_40hz.csv']);
+    writematrix(ageTvalue, [outpath '/ageTvalue_40hz.csv']);
+    writematrix(agePvalue, [outpath '/agePvalue_40hz.csv']);
+    writematrix(intEstimate, [outpath '/intEstimate_40hz.csv']);
+    writematrix(intTvalue, [outpath '/intTvalue_40hz.csv']);
+    writematrix(intPvalue, [outpath '/intPvalue_40hz.csv']);
+end
+
 
 sigEstimates = ageEstimate.*(agePvalue<0.05);
 
@@ -259,15 +325,6 @@ xlabel('Time');
 ylabel('Frequency');
 
 
-% Create a heatmap
-imagesc(times, freqs, intPvalue);
-% Customize the plot as needed
-colormap('jet'); % Adjust the colormap as needed
-colorbar;
-title('Time-Frequency by intercept P values');
-xlabel('Time');
-ylabel('Frequency');
-
 allSubs = [];
 % create a giant array for all subs and all TF values
 for s = 1:length(mergedCellArray)
@@ -286,5 +343,13 @@ end
 
 allSubstable = array2table(allSubs, 'VariableNames', {'lunaID','visitDate','age', 'time','freqs', 'ITC'});
 
-writetable(allSubstable, 'allSubsTFvalues.csv');
-
+if triggerValue == '2'
+    writetable(allSubstable, [outpath '/allSubsITC_20Hz.csv']);
+    
+elseif triggerValue =='3'
+    writetable(allSubstable, [outpath '/allSubsITC_30Hz.csv']);
+    
+elseif triggerValue == '4'
+    writetable(allSubstable, [outpath '/allSubsITC_40Hz.csv']);
+    
+end
