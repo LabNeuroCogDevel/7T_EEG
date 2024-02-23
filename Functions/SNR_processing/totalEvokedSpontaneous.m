@@ -1,3 +1,5 @@
+function [] = totalEvokedSpontaneous(triggerValue)
+
 %% set needed paths
 addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1')));
 addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/Functions/SNR_processing')));
@@ -5,7 +7,7 @@ addpath(genpath('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Functions/
 
 %% set initial values
 datapath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data/SNR/AfterWhole/ICAwholeClean_homogenize');
-triggerValue = '4';
+% triggerValue = '3';
 % channelValues = [4,5,6,36,37,38]; if you only want to run DLPFC
 outpath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/TEI_indivSubs_allChans/');
 
@@ -31,7 +33,15 @@ for i = 1:numSubj
     disp(i);
     subject = idvalues{i};
     inputfile = setfiles{i};
-    savePath = [outpath subject '_totalEvokedInduced_40Hz.csv'];
+
+    if triggerValue == '2'
+        savePath = [outpath subject '_totalEvokedInduced_20Hz.csv'];
+    elseif triggerValue =='3'
+        savePath = [outpath subject '_totalEvokedInduced_30Hz.csv'];
+    elseif triggerValue == '4'
+        savePath = [outpath subject '_totalEvokedInduced_40Hz.csv'];
+    end
+
 
     if ~exist(savePath, 'file')
         fprintf('The file %s does not exist, running SNR code\n', savePath)
@@ -146,19 +156,19 @@ for i = 1:numSubj
             findx = find(frequencies >= minf & frequencies <= maxf);
             newfreqs = frequencies(:, findx);
 
-            % Plot the original signal and the FFT result
-            % subplot(2,1,1);
-            % plot(evokedtime, avgData);
-            % title('Original Signal');
-            % xlabel('Time (s)');
-            % ylabel('Amplitude');
-            %
-            % subplot(2,1,2);
-            % plot(frequencies(2:end), (evokedPower(2:end)));
-            % xlim([0,70]);
-            % title('FFT');
-            % xlabel('Frequency (Hz)');
-            % ylabel('Power');
+           %Plot the original signal and the FFT result
+            subplot(2,1,1);
+            plot(evokedtime, avgData);
+            title('Original Signal');
+            xlabel('Time (s)');
+            ylabel('Amplitude');
+            
+            subplot(2,1,2);
+            plot(frequencies(2:end), (evokedPower(2:end,6)));
+            xlim([0,70]);
+            title('FFT');
+            xlabel('Frequency (Hz)');
+            ylabel('Power');
             %
             % to find power on each individual trial
             for t = 1:size(chanData, 2)
@@ -193,18 +203,18 @@ for i = 1:numSubj
 
             totalPower(:,c) = mean(trialPower_spectrum,2);
             inducedPower(:,c) = totalPower(:,c) - evokedPower(:,c);
-            % figure;
-            % semilogy(frequencies, trialPower_spectrum);
-            % xlim([0,70]);
-            % title('FFT ');
-            % xlabel('Frequency (Hz)');
-            % ylabel('Power');
-            % hold on;
-            % semilogy(frequencies, totalPower, 'LineWidth',4, 'Color','r');
-            % hold on;
-            % semilogy(frequencies, evokedPower, 'LineWidth',4, 'Color','b');
-            % hold on;
-            % semilogy(frequencies, inducedPower, 'LineWidth',4, 'Color','g');
+            figure;
+%             semilogy(frequencies, trialPower_spectrum);
+            xlim([0,70]);
+            title('FFT ');
+            xlabel('Frequency (Hz)');
+            ylabel('Power');
+            hold on;
+            semilogy(frequencies, totalPower, 'LineWidth',4, 'Color','r');
+            hold on;
+            semilogy(frequencies, evokedPower, 'LineWidth',4, 'Color','b');
+            hold on;
+            semilogy(frequencies, inducedPower, 'LineWidth',4, 'Color','g');
 
 
            
@@ -231,10 +241,21 @@ for i = 1:numSubj
 
             T = [T ; chanT];
         end
-
-
-            savePath = [outpath '/' subject '_totalEvokedInduced_40Hz.csv'];
+        
+        if triggerValue == '2'
+            savePath = [outpath subject '_totalEvokedInduced_20Hz.csv'];
             writetable(T, savePath);
+
+        elseif triggerValue =='3'
+            savePath = [outpath subject '_totalEvokedInduced_30Hz.csv'];
+            writetable(T, savePath);
+
+        elseif triggerValue == '4'
+            savePath = [outpath subject '_totalEvokedInduced_40Hz.csv'];
+            writetable(T, savePath);
+
+        end
+
 
     end
 
@@ -262,3 +283,4 @@ end
 % savePath = [outpath '/SNRdata_40Hz_totalEvokedInduced_baselineRemoved.csv'];
 % writetable(T, savePath)
 
+end

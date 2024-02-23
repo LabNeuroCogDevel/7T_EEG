@@ -72,24 +72,24 @@ for i = 1:numSubj
             continue;
         end
     end
-    
-try
-    [ALLEEG, EEG, CURRENTSET] = eeg_store( ALLEEG, EEG, 0 );
-    EEG = eeg_checkset( EEG );
 
-    EEG = pop_rmdat( EEG, {triggerValue},[-0.2 0.8] ,0); % select events with trigger value you want
-    [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 1,'gui','off');
-    EEG = eeg_checkset( EEG );
-catch
-       disp(['subject wont run through pop_rmdat: ' subject])
+    try
+        [ALLEEG, EEG, CURRENTSET] = eeg_store( ALLEEG, EEG, 0 );
+        EEG = eeg_checkset( EEG );
+
+        EEG = pop_rmdat( EEG, {triggerValue},[-0.2 0.8] ,0); % select events with trigger value you want
+        [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 1,'gui','off');
+        EEG = eeg_checkset( EEG );
+    catch
+        disp(['subject wont run through pop_rmdat: ' subject])
         errorSubjects{i} = subject;
         subjectAvgERSP = [];
         subjectAvgITC = [];
         subjectAvgPowBase = [];
         subjectAvgTF = [];
         continue;
-        
-end
+
+    end
 
     try
         EEG = pop_epoch( EEG, {triggerValue}, [-0.2 0.8], 'epochinfo', 'yes'); % create epochs using selected events
@@ -133,223 +133,268 @@ end
 
     % tfdata returns the time frequency array for each trial
 
-    for c = 51
+    for c = 1:64
         [ersp,itc,powbase,times,freqs,erspboot,itcboot,tfdata] = pop_newtimef( EEG, 1, c, [-199  799], [2  15] , 'elocs', EEG.chanlocs, 'chaninfo', EEG.chaninfo, 'baseline',[0], 'freqs', [10 70], 'plotphase', 'off', 'padratio', 4, 'winsize', 102);
-        subjectITC(:,:,i) = itc;
+        subjectITC(:,:,c) = itc;
+        close all;
+    end
+
+
+
+
+
+    % if triggerValue == '2'
+    %
+    %     savePath = [outpath '/' 'allsubjectsITCmatries_20Hz.mat'];
+    %     save(savePath, 'subjectITC');
+    %
+    % elseif triggerValue =='3'
+    %
+    %     savePath = [outpath '/' 'allsubjectsITCmatries_30Hz.mat'];
+    %     save(savePath, 'subjectITC');
+    %
+    % elseif triggerValue =='4'
+    %
+    %     savePath = [outpath '/' 'allsubjectsITCmatries_40Hz.mat'];
+    %     save(savePath, 'subjectITC');
+    % end
+    %
+
+
+    allchans = [];
+    % create a giant array for all subs and all TF values
+    for c = 1:64
+        chanTFarray = abs(subjectITC(:,:,c));
+        % Split the char variable into two parts using '_'
+
+        [timeGrid, freqGrid] = meshgrid(times, freqs);
+        % Reshape the matrix and grids into a 3-column array
+        subDataArray = [timeGrid(:), freqGrid(:), chanTFarray(:), repmat(c, 9600, 1)];
+
+        allchans = [allchans; subDataArray];
+    end
+
+    
+  T = table('Size', [0, 5], 'VariableTypes', {'string', 'double', 'double','double','double'});
+  T.Properties.VariableNames = {'Subject', 'Channel','time','freq','ITC'};
+       
+T.Subject(1:length(allchans)) = idvalues{i};
+T.Channel = allchans(:,4);
+T.freq = allchans(:,2);
+T.time = allchans(:,1);
+T.ITC = allchans(:,3);
+
+
+            savePath = [outpath '/' subject '_ITC_40Hz.csv'];
+            writetable(T, savePath);
+
+
+
+
+
+
+
+
+
+
+
+
+
+    % 
+    % % Get the size of the original array
+    % [m, n, p] = size(subjectITC);
+    % 
+    % % Create a cell array to store the 2D arrays
+    % cellArray = cell(p, 2);
+    % 
+    % % Loop through the 3rd dimension and extract 2D arrays into the cell array
+    % for i = 1:p
+    %     cellArray{i,2} = subjectITC(:, :, i);
+    %     cellArray{i,1} = idvalues{1,i};
+    % end
+    % 
+    % % Extract the common subject IDs
+    % commonSubjectIDs = intersect(cellArray(:, 1), ages(:, 1));
+    % 
+    % % Initialize the merged cell array
+    % mergedCellArray = [];
+    % 
+    % % Loop through common subject IDs and concatenate corresponding rows
+    % for i = 1:length(commonSubjectIDs)
+    %     subjectID = commonSubjectIDs{i};
+    % 
+    %     % Find rows with the common subject ID in each cell array
+    %     idx1 = ismember(cellArray(:, 1), subjectID);
+    %     idx2 = ismember(ages(:, 1), subjectID);
+    % 
+    %     % Concatenate corresponding rows
+    %     mergedRow = [subjectID, {cellArray{idx1, 2}}, ages{idx2, 2}];
+    % 
+    %     % Append the merged row to the result
+    %     mergedCellArray = [mergedCellArray; mergedRow];
+    % end
+
+
+    % for f = 1:size(subjectITC, 1)
+    %     for t = 1:size(subjectITC,2)
+    %         for s = 1:length(mergedCellArray)
+    %             subTFarray = abs(mergedCellArray{s,2});
+    %
+    %             % Split the char variable into two parts using '_'
+    %             splitValues = strsplit(mergedCellArray{s,1}, '_');
+    %
+    %             % Convert the split values to numeric
+    %             timeFreqValue(s,1) = str2double(splitValues{1});
+    %             timeFreqValue(s,2) = str2double(splitValues{2});
+    %             timeFreqValue(s,3) = subTFarray(f,t);
+    %             timeFreqValue(s,4) = mergedCellArray{s,3}; % array of everyones (f,t) freq time value and age
+    %         end
+    %
+    %         % Find rows where value in first column is 1
+    %         rowsWithZeroInColumn1 = find(timeFreqValue(:, 3) == 0);
+    %
+    %         % Remove rows with all values 0
+    %         timeFreqValue(rowsWithZeroInColumn1, :) = [];
+    %
+    %         % Mean-center the age vector
+    %         meanAge = mean(timeFreqValue(:,4));
+    %         timeFreqValue(:,5) = timeFreqValue(:,4) - meanAge;
+    %
+    %         TFtable = array2table(timeFreqValue, 'VariableNames', {'lunaID','visitDate','TFvalue', 'age', 'meanCenteredAge'});
+    %
+    %         lme = fitlme(TFtable,'TFvalue~meanCenteredAge+(1|lunaID)');
+    %
+    % %        model = fitlm(timeFreqValue(:,2), timeFreqValue(:,1), 'linear');
+    %        ageEstimate(f,t) = lme.Coefficients{2,2};
+    %        ageTvalue(f,t) = lme.Coefficients{2,4};
+    %        agePvalue(f,t) = lme.Coefficients{2,6};
+    %
+    %        intEstimate(f,t) = lme.Coefficients{1,2};
+    %        intTvalue(f,t) = lme.Coefficients{1,4};
+    %        intPvalue(f,t) = lme.Coefficients{1,6};
+    %
+    %     end
+    % end
+    %
+    % if triggerValue == '2'
+    %     save([outpath '/ageEstimate_20hz.mat'], 'ageEstimate');
+    %     save([outpath '/ageTvalue_20hz.mat'], 'ageTvalue');
+    %     save([outpath '/agePvalue_20hz.mat'], 'agePvalue');
+    %     save([outpath '/intEstimate_20hz.mat'], 'intEstimate');
+    %     save([outpath '/intTvalue_20hz.mat'], 'intTvalue');
+    %     save([outpath '/intPvalue_20hz.mat'], 'intPvalue');
+    %
+    %     writematrix(ageEstimate, [outpath '/ageEstimate_20hz.csv']);
+    %     writematrix(ageTvalue, [outpath '/ageTvalue_20hz.csv']);
+    %     writematrix(agePvalue, [outpath '/agePvalue_20hz.csv']);
+    %     writematrix(intEstimate, [outpath '/intEstimate_20hz.csv']);
+    %     writematrix(intTvalue, [outpath '/intTvalue_20hz.csv']);
+    %     writematrix(intPvalue, [outpath '/intPvalue_20hz.csv']);
+    %
+    % elseif triggerValue =='3'
+    %     save([outpath '/ageEstimate_30hz.mat'], 'ageEstimate');
+    %     save([outpath '/ageTvalue_30hz.mat'], 'ageTvalue');
+    %     save([outpath '/agePvalue_30hz.mat'], 'agePvalue');
+    %     save([outpath '/intEstimate_30hz.mat'], 'intEstimate');
+    %     save([outpath '/intTvalue_30hz.mat'], 'intTvalue');
+    %     save([outpath '/intPvalue_30hz.mat'], 'intPvalue');
+    %
+    %     writematrix(ageEstimate, [outpath '/ageEstimate_30hz.csv']);
+    %     writematrix(ageTvalue, [outpath '/ageTvalue_30hz.csv']);
+    %     writematrix(agePvalue, [outpath '/agePvalue_30hz.csv']);
+    %     writematrix(intEstimate, [outpath '/intEstimate_30hz.csv']);
+    %     writematrix(intTvalue, [outpath '/intTvalue_30hz.csv']);
+    %     writematrix(intPvalue, [outpath '/intPvalue_30hz.csv']);
+    %
+    % elseif triggerValue =='4'
+    %     save([outpath '/ageEstimate_40hz.mat'], 'ageEstimate');
+    %     save([outpath '/ageTvalue_40hz.mat'], 'ageTvalue');
+    %     save([outpath '/agePvalue_40hz.mat'], 'agePvalue');
+    %     save([outpath '/intEstimate_40hz.mat'], 'intEstimate');
+    %     save([outpath '/intTvalue_40hz.mat'], 'intTvalue');
+    %     save([outpath '/intPvalue_40hz.mat'], 'intPvalue');
+    %
+    %     writematrix(ageEstimate, [outpath '/ageEstimate_40hz.csv']);
+    %     writematrix(ageTvalue, [outpath '/ageTvalue_40hz.csv']);
+    %     writematrix(agePvalue, [outpath '/agePvalue_40hz.csv']);
+    %     writematrix(intEstimate, [outpath '/intEstimate_40hz.csv']);
+    %     writematrix(intTvalue, [outpath '/intTvalue_40hz.csv']);
+    %     writematrix(intPvalue, [outpath '/intPvalue_40hz.csv']);
+    % end
+    %
+
+    % sigEstimates = ageEstimate.*(agePvalue<0.05);
+    %
+    % % Create a heatmap
+    % imagesc(times, freqs, ageEstimate);
+    % % Customize the plot as needed
+    % colormap('jet'); % Adjust the colormap as needed
+    % colorbar;
+    % title('Time-Frequency by age linear estimates');
+    % xlabel('Time');
+    % ylabel('Frequency');
+    %
+    %
+    % % Create a heatmap
+    % imagesc(times, freqs, sigEstimates);
+    % % Customize the plot as needed
+    % colormap('jet'); % Adjust the colormap as needed
+    % colorbar;
+    % title('Time-Frequency by age sig estimates');
+    % xlabel('Time');
+    % ylabel('Frequency');
+    %
+    %
+    % % Create a heatmap
+    % imagesc(times, freqs, -log10(agePvalue));
+    % % Customize the plot as needed
+    % colormap('jet'); % Adjust the colormap as needed
+    % colorbar;
+    % title('Time-Frequency by age linear p values');
+    % xlabel('Time');
+    % ylabel('Frequency');
+    %
+    %
+    % % Create a heatmap
+    % imagesc(times, freqs, intEstimate);
+    % % Customize the plot as needed
+    % colormap('jet'); % Adjust the colormap as needed
+    % colorbar;
+    % title('Time-Frequency by intercept linear estimates');
+    % xlabel('Time');
+    % ylabel('Frequency');
+
+
+    allSubs = [];
+    % create a giant array for all subs and all TF values
+    for c = 1:size(mergedCellArray,1)
+        subTFarray = abs(mergedCellArray{c,2});
+        % Split the char variable into two parts using '_'
+        splitValues = strsplit(mergedCellArray{s,1}, '_');
+
+        [timeGrid, freqGrid] = meshgrid(times, freqs);
+        % Reshape the matrix and grids into a 3-column array
+        subDataArray = [repmat(str2double(splitValues), 9600, 1),timeGrid(:), freqGrid(:), subTFarray(:), ];
+
+        allSubs = [allSubs; subDataArray];
+    end
+
+    allSubstable = array2table(allSubs, 'VariableNames', {'lunaID','visitDate','age', 'time','freqs', 'ITC'});
+
+    if triggerValue == '2'
+
+        savePath = [outpath '/' subject '_ITC_20Hz.csv'];
+        writetable(T, savePath);
+
+
+    elseif triggerValue =='3'
+        savePath = [outpath '/' subject '_ITC_30Hz.csv'];
+        writetable(T, savePath);
+
+    elseif triggerValue == '4'
+        savePath = [outpath '/' subject '_ITC_40Hz.csv'];
+        writetable(T, savePath);
 
     end
 
-close all;
-end
-
-
-if triggerValue == '2'
-    
-    savePath = [outpath '/' 'allsubjectsITCmatries_20Hz.mat'];
-    save(savePath, 'subjectITC');
-    
-elseif triggerValue =='3'
-    
-    savePath = [outpath '/' 'allsubjectsITCmatries_30Hz.mat'];
-    save(savePath, 'subjectITC');
-    
-elseif triggerValue =='4'
-    
-    savePath = [outpath '/' 'allsubjectsITCmatries_40Hz.mat'];
-    save(savePath, 'subjectITC');
-end
-
-ages = table2cell(readtable('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/subject_ages.csv'));
-
-% Get the size of the original array
-[m, n, p] = size(subjectITC);
-
-% Create a cell array to store the 2D arrays
-cellArray = cell(p, 2);
-
-% Loop through the 3rd dimension and extract 2D arrays into the cell array
-for i = 1:p
-    cellArray{i,2} = subjectITC(:, :, i);
-    cellArray{i,1} = idvalues{1,i};
-end
-
-% Extract the common subject IDs
-commonSubjectIDs = intersect(cellArray(:, 1), ages(:, 1));
-
-% Initialize the merged cell array
-mergedCellArray = [];
-
-% Loop through common subject IDs and concatenate corresponding rows
-for i = 1:length(commonSubjectIDs)
-    subjectID = commonSubjectIDs{i};
-    
-    % Find rows with the common subject ID in each cell array
-    idx1 = ismember(cellArray(:, 1), subjectID);
-    idx2 = ismember(ages(:, 1), subjectID);
-    
-    % Concatenate corresponding rows
-    mergedRow = [subjectID, {cellArray{idx1, 2}}, ages{idx2, 2}];
-    
-    % Append the merged row to the result
-    mergedCellArray = [mergedCellArray; mergedRow];
-end
-
-
-for f = 1:size(subjectITC, 1)
-    for t = 1:size(subjectITC,2)
-        for s = 1:length(mergedCellArray)
-            subTFarray = abs(mergedCellArray{s,2});
-            
-            % Split the char variable into two parts using '_'
-            splitValues = strsplit(mergedCellArray{s,1}, '_');
-            
-            % Convert the split values to numeric
-            timeFreqValue(s,1) = str2double(splitValues{1});
-            timeFreqValue(s,2) = str2double(splitValues{2});
-            timeFreqValue(s,3) = subTFarray(f,t);
-            timeFreqValue(s,4) = mergedCellArray{s,3}; % array of everyones (f,t) freq time value and age
-        end
-        
-        % Find rows where value in first column is 1
-        rowsWithZeroInColumn1 = find(timeFreqValue(:, 3) == 0);
-        
-        % Remove rows with all values 0
-        timeFreqValue(rowsWithZeroInColumn1, :) = [];
-        
-        % Mean-center the age vector
-        meanAge = mean(timeFreqValue(:,4));
-        timeFreqValue(:,5) = timeFreqValue(:,4) - meanAge;
-        
-        TFtable = array2table(timeFreqValue, 'VariableNames', {'lunaID','visitDate','TFvalue', 'age', 'meanCenteredAge'});
-        
-        lme = fitlme(TFtable,'TFvalue~meanCenteredAge+(1|lunaID)');
-
-%        model = fitlm(timeFreqValue(:,2), timeFreqValue(:,1), 'linear');
-       ageEstimate(f,t) = lme.Coefficients{2,2}; 
-       ageTvalue(f,t) = lme.Coefficients{2,4}; 
-       agePvalue(f,t) = lme.Coefficients{2,6}; 
-
-       intEstimate(f,t) = lme.Coefficients{1,2}; 
-       intTvalue(f,t) = lme.Coefficients{1,4}; 
-       intPvalue(f,t) = lme.Coefficients{1,6}; 
-        
-    end
-end
-
-if triggerValue == '2'
-    save([outpath '/ageEstimate_20hz.mat'], 'ageEstimate');
-    save([outpath '/ageTvalue_20hz.mat'], 'ageTvalue');
-    save([outpath '/agePvalue_20hz.mat'], 'agePvalue');
-    save([outpath '/intEstimate_20hz.mat'], 'intEstimate');
-    save([outpath '/intTvalue_20hz.mat'], 'intTvalue');
-    save([outpath '/intPvalue_20hz.mat'], 'intPvalue');
-
-    writematrix(ageEstimate, [outpath '/ageEstimate_20hz.csv']);
-    writematrix(ageTvalue, [outpath '/ageTvalue_20hz.csv']);
-    writematrix(agePvalue, [outpath '/agePvalue_20hz.csv']);
-    writematrix(intEstimate, [outpath '/intEstimate_20hz.csv']);
-    writematrix(intTvalue, [outpath '/intTvalue_20hz.csv']);
-    writematrix(intPvalue, [outpath '/intPvalue_20hz.csv']);
-    
-elseif triggerValue =='3'
-    save([outpath '/ageEstimate_30hz.mat'], 'ageEstimate');
-    save([outpath '/ageTvalue_30hz.mat'], 'ageTvalue');
-    save([outpath '/agePvalue_30hz.mat'], 'agePvalue');
-    save([outpath '/intEstimate_30hz.mat'], 'intEstimate');
-    save([outpath '/intTvalue_30hz.mat'], 'intTvalue');
-    save([outpath '/intPvalue_30hz.mat'], 'intPvalue');
-
-    writematrix(ageEstimate, [outpath '/ageEstimate_30hz.csv']);
-    writematrix(ageTvalue, [outpath '/ageTvalue_30hz.csv']);
-    writematrix(agePvalue, [outpath '/agePvalue_30hz.csv']);
-    writematrix(intEstimate, [outpath '/intEstimate_30hz.csv']);
-    writematrix(intTvalue, [outpath '/intTvalue_30hz.csv']);
-    writematrix(intPvalue, [outpath '/intPvalue_30hz.csv']);
-
-elseif triggerValue =='4'
-    save([outpath '/ageEstimate_40hz.mat'], 'ageEstimate');
-    save([outpath '/ageTvalue_40hz.mat'], 'ageTvalue');
-    save([outpath '/agePvalue_40hz.mat'], 'agePvalue');
-    save([outpath '/intEstimate_40hz.mat'], 'intEstimate');
-    save([outpath '/intTvalue_40hz.mat'], 'intTvalue');
-    save([outpath '/intPvalue_40hz.mat'], 'intPvalue');
-
-    writematrix(ageEstimate, [outpath '/ageEstimate_40hz.csv']);
-    writematrix(ageTvalue, [outpath '/ageTvalue_40hz.csv']);
-    writematrix(agePvalue, [outpath '/agePvalue_40hz.csv']);
-    writematrix(intEstimate, [outpath '/intEstimate_40hz.csv']);
-    writematrix(intTvalue, [outpath '/intTvalue_40hz.csv']);
-    writematrix(intPvalue, [outpath '/intPvalue_40hz.csv']);
-end
-
-
-sigEstimates = ageEstimate.*(agePvalue<0.05);
-
-% Create a heatmap
-imagesc(times, freqs, ageEstimate);
-% Customize the plot as needed
-colormap('jet'); % Adjust the colormap as needed
-colorbar;
-title('Time-Frequency by age linear estimates');
-xlabel('Time');
-ylabel('Frequency');
-
-
-% Create a heatmap
-imagesc(times, freqs, sigEstimates);
-% Customize the plot as needed
-colormap('jet'); % Adjust the colormap as needed
-colorbar;
-title('Time-Frequency by age sig estimates');
-xlabel('Time');
-ylabel('Frequency');
-
-
-% Create a heatmap
-imagesc(times, freqs, -log10(agePvalue));
-% Customize the plot as needed
-colormap('jet'); % Adjust the colormap as needed
-colorbar;
-title('Time-Frequency by age linear p values');
-xlabel('Time');
-ylabel('Frequency');
-
-
-% Create a heatmap
-imagesc(times, freqs, intEstimate);
-% Customize the plot as needed
-colormap('jet'); % Adjust the colormap as needed
-colorbar;
-title('Time-Frequency by intercept linear estimates');
-xlabel('Time');
-ylabel('Frequency');
-
-
-allSubs = [];
-% create a giant array for all subs and all TF values
-for s = 1:length(mergedCellArray)
-    subTFarray = abs(mergedCellArray{s,2});
-    subAge = mergedCellArray{s,3};
-    
-    % Split the char variable into two parts using '_'
-    splitValues = strsplit(mergedCellArray{s,1}, '_');
-    
-    [timeGrid, freqGrid] = meshgrid(times, freqs);
-    % Reshape the matrix and grids into a 3-column array
-    subDataArray = [repmat(str2double(splitValues), 9600, 1),repmat((subAge), 9600, 1),timeGrid(:), freqGrid(:), subTFarray(:)];
-    
-    allSubs = [allSubs; subDataArray];
-end
-
-allSubstable = array2table(allSubs, 'VariableNames', {'lunaID','visitDate','age', 'time','freqs', 'ITC'});
-
-if triggerValue == '2'
-    writetable(allSubstable, [outpath '/allSubsITC_20Hz.csv']);
-    
-elseif triggerValue =='3'
-    writetable(allSubstable, [outpath '/allSubsITC_30Hz.csv']);
-    
-elseif triggerValue == '4'
-    writetable(allSubstable, [outpath '/allSubsITC_40Hz.csv']);
-    
 end

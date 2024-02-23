@@ -119,14 +119,14 @@ MRSlong[idx,]$GluGABAimbalance <- (gabaglu.lm$residuals)
 
 MRSlong$Ratio_gamadj <- MRSlong$Glu_gamadj/MRSlong$GABA_gamadj 
 
-write.csv(MRSlong,"/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/allSubjectsDLPFCMRSMeasures_20230613.csv")
+write.csv(MRSlong,"/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/allSubjectsDLPFCMRSMeasures_20240223.csv")
 
 
 ## Prep Behavior ----
 
-behav <- merge7t[c("lunaid","visitno","eeg.age", "eeg.BestError_DelayAll", "eeg.BestError_sd_DelayAll","eeg.mgsLatency_DelayAll", "eeg.mgsLatency_sd_DelayAll","cantab.ssp_max.span","cantab.ssp_nerrors", "cantab.ssp_ntrials")]
+behav <- merge7t[c("lunaid","visitno","eeg.age", "eeg.vgsLatency_DelayAll","eeg.BestError_DelayAll", "eeg.BestError_sd_DelayAll","eeg.mgsLatency_DelayAll", "eeg.mgsLatency_sd_DelayAll","cantab.ssp_max.span","cantab.ssp_nerrors", "cantab.ssp_ntrials")]
 
-colnames(behav) <- c("luna","visitno","age","absBestError","absBestError_sd","mgsLatency","mgsLatency_sd", "SSP_maxSpan", "SSP_nErrors", "SSP_nTrials")
+colnames(behav) <- c("luna","visitno","age","vgsLatency","absBestError","absBestError_sd","mgsLatency","mgsLatency_sd", "SSP_maxSpan", "SSP_nErrors", "SSP_nTrials")
 write.csv(behav,"/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/allSubjectsBehavior.csv")
 
 

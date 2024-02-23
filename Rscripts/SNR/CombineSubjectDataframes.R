@@ -23,10 +23,10 @@ library(jtools)
 # Initialize directory and empty dataframes ----
 
 # Set your working directory to the folder containing your CSV files
-setwd("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/totalEvokedInduced_indivSubjects/")
+setwd("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/ITC_indivSubs_allChans/")
 
 # List all CSV files in the directory
-csv_files <- list.files(pattern = ".csv")
+csv_files <- list.files(pattern = "30Hz.csv")
 
 # Initialize an empty data frame to store the combined data
 combined_data <- data.frame()
@@ -37,14 +37,9 @@ for (file in csv_files) {
   combined_data <- rbind(combined_data, data)
 }
 
-
-write.csv(combined_data, file = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/allSubjectsTotalEvokedInduced_40hz.csv', row.names = F)
-
-
 # Prep the file for merge 7t eeg ----
 
 # rename channel to urchan to merge with channel labels and coordinates 
 names(combined_data)[names(combined_data) == "Channel"] <- "urchan"
 
-
-write.csv(combined_data, file = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/allSubjectsSNR.csv', row.names = F)
+write.csv(combined_data, file = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/allSubjectsSNR_allChans_30Hz.csv', row.names = F)

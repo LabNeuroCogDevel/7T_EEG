@@ -33,19 +33,20 @@ merge7tEEG <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/merge7tEE
 SNR <- merge7tEEG[c("labels","Subject", "ERSP", "ITC" ,"BaselinePower","Induced","Evoked","EvokedDB", "InducedDB", "visitno","age")]
 
 ## DLPFC ----
+SNRallChans_outlier <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/allSubjectsSNR_allChans_allfreqs.csv')
 
-SNR_bothDLPFCs <- rbind(SNR %>% filter(labels %in% c('F3', 'F5', 'F7'))%>% mutate(Region="LDLPFC"), 
-                        SNR %>% filter(labels %in% c('F4', 'F6', 'F8'))%>% mutate(Region="RDLPFC"))
+SNR_bothDLPFCs <- rbind(SNRallChans_outlier %>% filter(labels %in% c('F3', 'F5', 'F7'))%>% mutate(Region="LDLPFC"), 
+                        SNRallChans_outlier %>% filter(labels %in% c('F4', 'F6', 'F8'))%>% mutate(Region="RDLPFC"))
 
-SNR_avgDLPFCs <- aggregate(cbind(ERSP, ITC, BaselinePower, Induced, Evoked, InducedDB, EvokedDB, age, visitno) ~ Subject + Region, data = SNR_bothDLPFCs, mean) %>% separate(Subject,c("luna","vdate"), remove=F)
+SNR_avgDLPFCs <- aggregate(cbind(Total, Induced, Evoked, SNR, age) ~ lunaID + Region + hertz + freqs + visitno, data = SNR_bothDLPFCs, mean)
 
 ### Outlier Detection Subject Level 
 SNR_avgDLPFCs_naout <- SNR_avgDLPFCs %>% 
   group_by(Region) %>% 
-  mutate(across(c("ERSP", "ITC", "Induced", "Evoked","BaselinePower", "EvokedDB", "InducedDB"), naoutlier)) %>% mutate(Freq ="40Hz")
+  mutate(across(c("Total", "Induced", "Evoked", "SNR"), naoutlier)) %>% mutate(Freq ="40Hz")
 
 
-write.csv(SNR_avgDLPFCs_naout, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/allSubjectDLPFC_SNRMeasures.csv')
+write.csv(SNR_avgDLPFCs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/SNR_avgDLPFCs.csv')
 
 
 ## Central Parietal for Auditory Response
