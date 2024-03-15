@@ -23,10 +23,10 @@ library(jtools)
 # Initialize directory and empty dataframes ----
 
 # Set your working directory to the folder containing your CSV files
-setwd("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/ITC_indivSubs_allChans/")
+setwd("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/TEI_indivSubs_allChans/40hz/")
 
 # List all CSV files in the directory
-csv_files <- list.files(pattern = "30Hz.csv")
+csv_files <- list.files(pattern = "40Hz.csv")
 
 # Initialize an empty data frame to store the combined data
 combined_data <- data.frame()
@@ -42,4 +42,4 @@ for (file in csv_files) {
 # rename channel to urchan to merge with channel labels and coordinates 
 names(combined_data)[names(combined_data) == "Channel"] <- "urchan"
 
-write.csv(combined_data, file = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/allSubjectsSNR_allChans_30Hz.csv', row.names = F)
+write.csv(combined_data, file = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/allSubjectsSNR_allChans_40Hz.csv', row.names = F)

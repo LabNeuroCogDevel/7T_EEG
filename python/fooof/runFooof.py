@@ -96,7 +96,7 @@ for fname in files:
 
     closed_idx = np.where((raw.annotations.description != '16129') & (raw.annotations.description != '15361') & (
                 raw.annotations.description != '0'))[
-        0]  #  find indices where the trigger DOES NOT equal 16129, 15361, 0(eyes closed) or 16130, 15262, 1 (eyes closed)
+        0]  #  find indices where the trigger DOES NOT equal 16129, 15361, 0(eyes closed) or 16130, 15262, 1 (eyes open)
     closedData = raw.copy()  # copy the raw file
     closedData.annotations.delete(closed_idx)  # delete all other triggers
 
