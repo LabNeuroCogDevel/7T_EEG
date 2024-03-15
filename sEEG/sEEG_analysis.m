@@ -1,11 +1,10 @@
 
-addpath((onedrivePathData('Image Reconstruction/customFcns')))
-addpath(genpath(onedrivePathCode('ripple/Tools/neuroshare')))
+addpath(('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/1. Recording & Stimulation of iEEG - pbelchps files/Image Reconstruction/customFcns'))
+addpath(genpath('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/abelCode/ripple/Tools/neuroshare'))
 
-datapath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/sEEG/sEEG_rawData/');
-addpath((onedrivePathData('Image Reconstruction/patients')))
-
-savePath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/sEEG/sEEG_rawData/');
+datapath = ('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/PBE Lab/sEEG_backup/sEEG_rawData/');
+patientAnatPath = ('/Users/shanemckeon/Library/CloudStorage/OneDrive - University of Pittsburgh/1. Recording & Stimulation of iEEG - pbelchps files/Image Reconstruction/patients/');
+savePath = ('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/PBE Lab/sEEG_backup/sEEG_rawData/');
 
 %load in all the files
 setfiles0 = dir([datapath, 'P*/Rest/rest*ns2*']);
@@ -17,7 +16,7 @@ for epo = 1:length(setfiles0)
 end
 
 for j = 1:length(setfiles0)
-    idvalues(j,:) = (setfiles0(j).folder(99:105));
+    idvalues(j,:) = (setfiles0(j).folder(106:112));
     disp(idvalues(j,:))
     if isfile([savePath, idvalues(j,:), '/Rest/data.mat']) % is there a .mat file for the patient
         continue
@@ -43,12 +42,8 @@ end
 for j = 1:length(setfiles0)
     idvalues(j,:) = (setfiles0(j).folder(99:105));
     disp(idvalues(j,:))
-    if isfile([savePath, idvalues(j,:), '/data.mat']) % is there a .mat file for the patient, if there is lets make an roi file
+    if isfile([savePath, idvalues(j,:), '/Rest/data.mat']) % is there a .mat file for the patient, if there is lets make an roi file
         
-        if isfile([savePath, idvalues(j,:), '/roi.mat']) % if there is an roi.mat file then break this loop and move onto the next subject
-            continue
-        else %if there isnt a roi.mat then we need to create one
-            
             anatFolder = ([patientAnatPath, idvalues(j,:)]);
             
             if isfile([patientAnatPath, idvalues(j,:), '/anat.mat']) % is there a anat file
@@ -63,7 +58,7 @@ for j = 1:length(setfiles0)
                 continue
                 
             end
-        end
+      
     else % if there isnt a data.mat file, break the loop and move on
         continue
     end
