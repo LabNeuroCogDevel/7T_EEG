@@ -1,4 +1,4 @@
-function [EEG] =  remark(task, taskdirectory)
+function [EEG] =  remark(task, taskdirectory, dryrun)
 
 path_file = hera('Raw/EEG/7TBrainMech');
 outputpath = [taskdirectory '/remarked/'];

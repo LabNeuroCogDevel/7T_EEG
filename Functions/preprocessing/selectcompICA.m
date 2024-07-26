@@ -7,9 +7,8 @@ EEG = pop_loadset('filename',filename,'filepath',ICA_Path);
 % EEG.setname = ['UG_' suj_n, '_',prefix(1:end-4)];
 EEG = eeg_checkset( EEG );
 
-% DB point on 12
-[EEG, com] = pop_selectcomps(EEG, [1:30] );
-pop_eegplot(EEG, 0, 1, 1);
+%% DB point on 12
+[EEG, com] = pop_selectcomps(EEG, [1:30] );pop_eegplot(EEG, 0, 1, 1);
 pop_saveset( EEG, 'filename',[filename(1:end-4),'_pesos.set'],'filepath',CleanICApath);
 % pop_eegplot( EEG, 0, 1, 1);
 eeglab redraw

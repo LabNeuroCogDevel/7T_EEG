@@ -15,7 +15,8 @@ setfiles = {};
 
 for epo = 1:length(setfiles0)
     setfiles{epo,1} = fullfile(datapath, setfiles0(epo).name); % cell array with EEG file names
-    % setfiles = arrayfun(@(x) fullfile(folder, x.name), setfiles(~[setfiles.isdir]),folder, 'Uni',0); % cell array with EEG file names
+    % setfiles = arrayfun(@(x) fullfile(folder, x.name), setfiles(~[setfiles.isdir]),folder, 'Uni',0); 
+    % cell array with EEG file names
 end
 
 for j = 1 : length(setfiles0)

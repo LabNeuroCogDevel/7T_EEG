@@ -21,7 +21,11 @@ library(tidyr)
 library(jtools)
 
 # Load Dataframe ----
-fooofLong <- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/Results/allSubjectsDLPFCfooofMeasures_20230613.csv")
+fooofLong <- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/Results/allSubjectsFooofMeasures_20240625.csv")
+agefile <- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/subject_ages.csv")
+
+fooofLong <- merge(fooofLong, agefile, by = "Subject")
+
 
 # FOOOF error measures ---- 
 fooofErrors <- read.csv(hera('/Projects/7TBrainMech/scripts/eeg/Shane/fooof/Results/allSubjectsErrorMeasures_20230516.csv'))
@@ -66,13 +70,131 @@ AIC(lm.model, lm.model.int)
 
 
 ## Exponent vs age ----
+fooofLong <- fooofLong %>% separate(Subject, c('luna','vdate'))
+
+
+# Function to classify channels
+classify_channel <- function(channel) {
+  dlpfc_channels <- c("F4", "F6", "F7", "F8", "F3", "F5")
+  
+  if (startsWith(channel, "Fp")) {
+    return("Prefrontal")
+  } else if (startsWith(channel, "AF")) {
+    return("Prefrontal")
+  } else if (channel %in% dlpfc_channels) {
+    return("DLPFC")
+  } else if (startsWith(channel, "F")) {
+    return("Frontal")
+  } else if (startsWith(channel, "O")) {
+    return("Occipital")
+  } else if (startsWith(channel, "P")) {
+    return("Parietal")
+  } else if (startsWith(channel, "I")) {
+    return("Parietal")
+  } else if (startsWith(channel, "C")) {
+    return("Central")
+  } else if (startsWith(channel, "T")) {
+    return("Temporal")
+  } else {
+    return("Unknown")
+  }
+}
+
+
+# Apply classification and create new column 'region'
+fooofLong$region <- (sapply(fooofLong$Channel, classify_channel))
 
 lunaize(ggplot(data = fooofLong %>% filter(Condition == 'eyesOpen'), 
-               aes(x = age, y = Exponent)) + 
-          geom_line(aes(group=interaction(luna,Region), shape =Region), alpha = 0.2) + 
-          geom_point(aes(shape=Region),alpha=.5) + 
-          geom_smooth(aes(group = 1, alpha = 0.2), method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T),alpha=0.8,size=1)) + 
-  theme(text = element_text(size = 30)) + xlab("Age") + ylab("Exponent") + theme(legend.position = "none")
+               aes(x = age, y = Exponent, color = region)) + 
+          geom_smooth(aes(group = Channel, alpha = 0.02), method=mgcv::"gam", formula = y ~ s(x, k = 5, fx = T),alpha=0.02,size=1)) + 
+  theme(text = element_text(size = 30)) + xlab("Age") + ylab("Exponent") + 
+  scale_color_manual(values = c("Prefrontal" = "blue", "Frontal" = "gray", 
+                                "Occipital" = "gray", "Parietal" = "gray", 
+                                "Central" = "gray","AnteriorFrontal" = "green",
+                                "Temporal" = "gray", 
+                                "DLPFC" = "purple"))+ theme(legend.position = "right")
+
+
+fooofLong$luna <- as.factor(fooofLong$luna)
+
+exponentAge <- lunaize(ggplot(data = fooofLong %>% filter(Condition == 'eyesOpen'), 
+               aes(x = age, y = Exponent, color = region)) + 
+          geom_smooth(aes(group = region, alpha = 0.02), method=mgcv::"gam", formula = y ~ s(x, k = 5, fx = F), alpha=0.02,size=1)) + 
+  theme(text = element_text(size = 30), legend.position = "top") + xlab("Age") + ylab("Exponent") 
+
+
+
+agetiles <- lapply(unique(fooofLong$region), function (r) {
+  
+  gam.model <- gam(Exponent ~ s(age, k = 5, fx = F) + Condition + s(luna, bs="re"), data = fooofLong %>% filter(region == r))
+  gam.growthrate <- gam_growthrate(gam.model, idvar = 'luna', agevar = 'age')
+  gam_growthrate_plot(fooofLong, gam.model, gam.growthrate, agevar = 'age', yvar = 'Exponent', draw_points = F, xplotname = "Age", yplotname =r)$both
+
+  })
+
+agetilesPretty <- lapply(agetiles, function(p) p + theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.ticks = element_blank(),axis.title.y = element_text()) + ylab("        "))
+
+alltiles <- do.call(cowplot::plot_grid, c(agetilesPretty, nrow = length(agetilesPretty)))
+
+cowplot::plot_grid(exponentAge, alltiles, ncol=1)
+
+
+do.call(cowplot::plot_grid, c(agetiles, nrow =2))
+
+
+gam.model <- gam(Exponent ~ s(age,k=4, fx = F) + Condition + s(luna, bs="re"), data = fooofLong %>% filter(region == 'DLPFC'))
+gam.growthrate <- gam_growthrate(gam.model, idvar = 'luna', agevar = 'age')
+ageplot <- gam_growthrate_plot(fooofLong, gam.model, gam.growthrate, agevar = 'age', yvar = 'Exponent', draw_points = F, xplotname = "Age", yplotname = "DLPFC")$ageplot
+tile <- gam_growthrate_plot(fooofLong, gam.model, gam.growthrate, agevar = 'age', yvar = 'Exponent', draw_points = F, xplotname = "Age", yplotname = "DLPFC")$tile
+
+ageplot <- ageplot + ylim(1,2)
+tile <- tile + theme(axis.title.y = element_text()) + ylab("             ")
+
+cowplot::plot_grid(ageplot, tile, nrow = 2)
+
+
+
+
+
+# Define a function to get the plots for a given region
+get_plots_for_region <- function(region_name) {
+  gam.model <- gam(Exponent ~ s(age, k = 5, fx = F) + Condition + s(luna, bs="re"), data = fooofLong %>% filter(region == region_name))
+  gam.growthrate <- gam_growthrate(gam.model, idvar = 'luna', agevar = 'age')
+  
+  plots <- gam_growthrate_plot(fooofLong, gam.model, gam.growthrate, agevar = 'age', yvar = 'Exponent', draw_points = F, xplotname = "Age", yplotname = region_name)
+  
+  ageplot <- plots$ageplot
+  tile <- plots$tile
+  
+  # Set y-axis limits
+  ageplot <- ageplot + ylim(1, 2)
+  tile <- tile + theme(axis.title.y = element_text()) + ylab("             ")
+  
+  # Combine ageplot and tile for this region
+  combined_plot <- cowplot::plot_grid(ageplot, tile, nrow = 2)
+  
+  return(combined_plot)
+}
+
+# Get a list of all regions
+regions <- unique(fooofLong$region)
+
+# Generate plots for each region
+region_plots <- lapply(regions, get_plots_for_region)
+
+# Combine all region plots into a single grid
+all_combined_plots <- cowplot::plot_grid(plotlist = region_plots, nrow = 2)
+
+
+
+sevenmodel <- gam(Exponent ~ s(age,k=7) + Condition + s(luna, bs="re"), data = fooofLong %>% filter(region == 'Central'))
+sixmodel <- gam(Exponent ~ s(age,k=6) + Condition + s(luna, bs="re"), data = fooofLong %>% filter(region == 'Central'))
+fivemodel <- gam(Exponent ~ s(age,k=5) + Condition + s(luna, bs="re"), data = fooofLong %>% filter(region == 'Central'))
+fourmodel <- gam(Exponent ~ s(age,k=4) + Condition + s(luna, bs="re"), data = fooofLong %>% filter(region == 'Central'))
+threemodel <- gam(Exponent ~ s(age,k=3) + Condition + s(luna, bs="re"), data = fooofLong %>% filter(region == 'Central'))
+
+AIC(sevenmodel, sixmodel, fivemodel, fourmodel, threemodel)
+
 
 gam.model <-  gamm(Exponent ~ s(age, k = 3)  + Condition + Region, data = fooofLong, random=list(luna=~1))
 summary(gam.model$gam)

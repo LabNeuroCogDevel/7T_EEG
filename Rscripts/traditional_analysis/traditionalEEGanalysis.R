@@ -36,7 +36,7 @@ summary(lm.model)
 
 traditionalPower_allChannels <- function() {
   
-  sys.source("H:/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
+  sys.source("Hera/Volumes/Projects/7TBrainMech/scripts/eeg/Shane/Rscripts/spectral_event_scripts/01.PrepData.R", envir = knitr::knit_global(), chdir = TRUE)
   
   traditionalGammaPower_allChannels <- traditionalEEG_IndividualChannels()
   traditionalGammaPower_allChannels <- merge(traditionalGammaPower_allChannels, Behavior, by = c("Subject", "age", "inverseAge"))

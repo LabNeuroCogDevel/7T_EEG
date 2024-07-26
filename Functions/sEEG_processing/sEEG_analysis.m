@@ -1,15 +1,15 @@
 
-addpath(('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/1. Recording & Stimulation of iEEG/Image Reconstruction/customFcns'))
+addpath(('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/1. Recording & Stimulation of iEEG - pbelchps files/Image Reconstruction/customFcns'))
 addpath(genpath('Functions'));        
 addpath(genpath('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/abelCode/ripple/Tools/neuroshare'))
 
 
-datapath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/sEEG/sEEG_rawData/');
+datapath = ('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/PBE Lab/sEEG_backup/sEEG_rawData/');
 % patientAnatPath = ('C:\Users\sdm42\OneDrive - University of Pittsburgh\1. Recording & Stimulation of iEEG\Image Reconstruction\patients\');
-savePath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/sEEG/sEEG_rawData/');
+savePath = ('//Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/PBE Lab/sEEG_backup/sEEG_rawData');
 
 %load in all the files
-setfiles0 = dir([datapath, 'P*/Rest/rest*ns*']);
+setfiles0 = dir([datapath, 'P*/clicks/click*ns*']);
 setfiles = {};
 
 for epo = 1:length(setfiles0)

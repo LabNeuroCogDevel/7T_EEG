@@ -1,3 +1,4 @@
+
 import scipy
 
 # General imports
@@ -62,11 +63,11 @@ import glob
 
 files = glob.glob(
     '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data/Resting_State/AfterWhole/ICAwholeClean_homogenize/1*_2*_*_Rem_rerefwhole_ICA_icapru.set')
-outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/images/'
+outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/'
 
 # loop to find the whole spectrum for eyes open
 for fname in files:
-    sub = fname[103:117] + '_eyesOpen.npz'
+    sub = fname[121:135] + '_eyesOpen.npz'
     savefile = outpath + sub
     if path.exists(savefile):
         print(f"skipping {sub}")
@@ -135,9 +136,9 @@ for fname in files:
     # fg.plot()
      #plt.show()
     # # Report: fit the model, print the resulting parameters, and plot the reconstruction
-    fm = fg.get_fooof(ind=25, regenerate=True)
+    #fm = fg.get_fooof(ind=25, regenerate=True)
     # # # # # Print results and plot extracted model fit
-    fm.print_results()
+    #fm.print_results()
     # fm.plot()
     # plt.ylim([-2.5, 2.5])
     #plt.show()
@@ -156,18 +157,18 @@ for fname in files:
     errors = fg.get_params('error')
     r2s = fg.get_params('r_squared')
 
-    sub = fname[103:117] + '_eyesOpen'
+    sub = fname[121:135] + '_eyesOpen'
     savefile = outpath+sub
     np.savez_compressed(savefile, aperiodic=aps, exponents=exps, peakParam=peaks, centerFreq=cfs, Error=errors, Rsquared=r2s)
 
 # loop to find the whole spectrum for eyes closed
 
 for fname in files:
-    sub = fname[103:117] + '_eyesClosed.png'
+    sub = fname[121:135] + '_eyesClosed.npz'
     savefile = outpath + sub
-    # if path.exists(savefile):
-    #   print(f"skipping {sub}")
-    #   continue
+    if path.exists(savefile):
+        print(f"skipping {sub}")
+        continue
 
     raw = mne.io.read_raw_eeglab(fname, preload=True)
     raw = raw.pick_types(meg=False, eeg=True, eog=False, exclude='bads')
@@ -230,14 +231,14 @@ for fname in files:
     # fg.plot()
      #plt.show()
     # # Report: fit the model, print the resulting parameters, and plot the reconstruction
-    fm = fg.get_fooof(ind=4, regenerate=True)
+    #fm = fg.get_fooof(ind=4, regenerate=True)
     # # # # # Print results and plot extracted model fit
-    fm.print_results()
-    fm.plot()
-    plt.ylim([-2.5, 2.5])
-    plt.show()
-    plt.savefig(savefile)
-    plt.close()
+    #fm.print_results()
+    #fm.plot()
+    #plt.ylim([-2.5, 2.5])
+    #plt.show()
+    #lt.savefig(savefile)
+    #plt.close()
 
     # Extract aperiodic parameters
     aps = fg.get_params('aperiodic_params')
@@ -251,21 +252,23 @@ for fname in files:
     errors = fg.get_params('error')
     r2s = fg.get_params('r_squared')
 
-    sub = fname[103:117] + '_eyesClosed.npz'
+    sub = fname[121:135] + '_eyesClosed.npz'
     savefile = outpath+sub
-    #np.savez_compressed(savefile, aperiodic=aps, exponents=exps, peakParam=peaks, centerFreq=cfs, Error=errors, Rsquared=r2s)
+    np.savez_compressed(savefile, aperiodic=aps, exponents=exps, peakParam=peaks, centerFreq=cfs, Error=errors, Rsquared=r2s)
+
+
 
 # load in participant files and extract the data we want
 files = glob.glob(
-    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/fooof/Results/1*_2*_eyesClosed.npz') #load in eyes closed
-outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/'
+    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/Results/1*_2*_eyesClosed.npz') #load in eyes closed
+outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/Results/'
 
 overallDF = pd.DataFrame()
 
 for fname in files:
     loaded = np.load(fname)
-    sub = fname[67:81]
-    cond = fname[82:92]  # change to [82:92] for eyes closed; [] for eyes open
+    sub = fname[75:89]
+    cond = fname[90:100]
     subAps = loaded['aperiodic']
     offset = subAps[:, 0]
     exponent = subAps[:, 1]
@@ -280,8 +283,8 @@ files = glob.glob(
 
 for fname in files:
     loaded = np.load(fname)
-    sub = fname[67:81]
-    cond = fname[82:90]
+    sub = fname[75:89]
+    cond = fname[90:98]
     subAps = loaded['aperiodic']
     offset = subAps[:, 0]
     exponent = subAps[:, 1]
@@ -290,12 +293,12 @@ for fname in files:
 
     overallDF = pd.concat([overallDF, subDF])
 
-saveFile = outpath + 'allSubjectsFooofMeasures_20230516.csv'
+saveFile = outpath + 'allSubjectsFooofMeasures_20240625.csv'
 overallDF.to_csv(saveFile)
 
 # load in participant files and extract the error and rsquared values
 files = glob.glob(
-    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/fooof/Results/1*_2*_eyesOpen.npz')  #load in eyes open
+    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/1*_2*_eyesOpen.npz')  #load in eyes open
 outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Results/Shane/fooof/Results/'
 
 ## extract error and rsquared values
@@ -303,7 +306,7 @@ overallDF = pd.DataFrame()
 
 for fname in files:
     loaded = np.load(fname)
-    sub = fname[67:81]
+    sub = fname[75:89]
     cond = fname[82:90]
     subError = loaded['Error']
     subRsquared = loaded['Rsquared']
