@@ -1,3 +1,25 @@
+#!/usr/bin/env Rscript
+
+# Libraries ----
+
+library(LNCDR)
+library(data.table)
+library(dplyr)
+library(factoextra)
+library(ggplot2)
+library(e1071)
+attach(mtcars)
+library(grid)
+library(gridExtra)
+library(mgcv)
+library(readxl)
+library(lme4)
+library(lubridate)
+library(checkmate)
+library(lmerTest)
+library(mice)
+library(tidyr)
+
 
 # Define Outlier Function ----
 outliers <- function(x) {
@@ -9,8 +31,8 @@ naoutlier <- function(x) ifelse(outliers(x), NA, x)
 # 40-40 ----
 ## SNR ----
 
-SNRallChans_outlier <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/allSubjectsSNR_allChans_allfreqs.csv')
-chanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/ChannelLocs.csv')%>% select(-type)
+SNRallChans_outlier <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/allSubjectsSNR_allChans_allfreqs.csv')
+chanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/resources/ChannelLocs.csv')%>% select(-type)
 
 SNRallChans_outlier4040 <- SNRallChans_outlier %>% filter(freqs == 40 & hertz == 40)
 SNRallChans_outlier4040$SNR <- log(SNRallChans_outlier4040$Evoked/SNRallChans_outlier4040$Induced)
@@ -95,7 +117,7 @@ SNRchanLocs[SNRchanLocs$labels %in% frontalChannels, c("PC3")] <- -1*(snr.pca$ro
 
 SNRchanLocs$measure <- "SNR"
 
-write.csv(SNRchanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/rMarkdown/SNRchanlocs.csv')
+write.csv(SNRchanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRchanlocs.csv')
 
 snrAll <- imputeData %>% filter(labels %in% c('F3', 'F5', 'F7', 'F1', 'F2', 'F4', 'F6', 'F8', 'AFz', 'AF1', 'AF2', 'Fp1', 'Fp2', 'Fz', 'AF5', 'AF6')) %>%
   dplyr::select(SNR, labels, lunaID, age, visitno) %>%
@@ -159,7 +181,7 @@ evokedchanLocs[evokedchanLocs$labels %in% frontalChannels, c("PC3")] <- -1*(evok
 
 evokedchanLocs$measure <- "Evoked"
 
-write.csv(evokedchanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/evokedchanLocs.csv')
+write.csv(evokedchanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/evokedchanLocs.csv')
 
 
 evokedAll <- imputeData %>% filter(labels %in% c('F3', 'F5', 'F7', 'F1', 'F2', 'F4', 'F6', 'F8', 'AFz', 'AF1', 'AF2', 'Fp1', 'Fp2', 'Fz', 'AF5', 'AF6')) %>%
@@ -224,7 +246,7 @@ inducedchanLocs[inducedchanLocs$labels %in% frontalChannels, c("PC3")] <- 1*(ind
 
 inducedchanLocs$measure <- "Induced"
 
-write.csv(inducedchanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/inducedchanLocs.csv')
+write.csv(inducedchanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/inducedchanLocs.csv')
 
 inducedAll <- imputeData %>% filter(labels %in% c('F3', 'F5', 'F7', 'F1', 'F2', 'F4', 'F6', 'F8', 'AFz', 'AF1', 'AF2', 'Fp1', 'Fp2', 'Fz', 'AF5', 'AF6')) %>%
   dplyr::select(Induced, labels, lunaID, age, visitno) %>%
@@ -244,10 +266,10 @@ inducedAll <- inducedAll %>%
 ## Merge all measures ----
 
 allSNRmeasures_chanLocs <- rbind(inducedchanLocs, evokedchanLocs) %>% rbind(., SNRchanLocs)
-write.csv(allSNRmeasures_chanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/snrMeasures_chanLocs.csv')
+write.csv(allSNRmeasures_chanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/snrMeasures_chanLocs.csv')
 
 allSNRmeasures_imputed <- merge(snrImputed, evokedImputed, by = c("lunaID", "visitno", "age", "labels")) %>% merge(., inducedImputed, by = c("lunaID", "visitno", "age", "labels"))
-write.csv(allSNRmeasures_imputed, '//Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/snrImputed.csv')
+write.csv(allSNRmeasures_imputed, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/snrImputed.csv')
 
 snrAll$measure <- "SNR"
 evokedAll$measure <- "Evoked"
@@ -256,7 +278,7 @@ inducedAll$measure <- "Induced"
 allSNRmeasures4040 <- rbind(snrAll %>% select(lunaID, visitno, age, pc1, pc2, pc3, measure), evokedAll %>% select(lunaID, visitno, age, pc1, pc2, pc3, measure)) %>% 
   rbind(., inducedAll %>% select(lunaID, visitno, age, pc1, pc2, pc3, measure))
 
-write.csv(allSNRmeasures4040, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/SNRmeasures_PCAvalues.csv')
+write.csv(allSNRmeasures4040, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRmeasures_PCAvalues.csv')
 
 
 ## FOOOF ----
@@ -297,7 +319,7 @@ for (lunaID in unique_subjects) {
   }
 }
 
-write.csv(imputeDataFOOOF, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/imputeFOOOF.csv')
+write.csv(imputeDataFOOOF, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/imputeFOOOF.csv')
 
 
 
@@ -340,7 +362,7 @@ exponentchanLocs[exponentchanLocs$labels %in% frontalChannels, c("PC1")] <- (exp
 exponentchanLocs[exponentchanLocs$labels %in% frontalChannels, c("PC2")] <- (exponent.pca$rotation[,2])
 exponentchanLocs[exponentchanLocs$labels %in% frontalChannels, c("PC3")] <- (exponent.pca$rotation[,3])
 
-write.csv(exponentchanLocs, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/exponentchanLocs.csv')
+write.csv(exponentchanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/exponentchanLocs.csv')
 
 
 exponentAll <- imputeDataFOOOF %>% select("labels", "lunaID", "Exponent", "Condition", "age", "visitno") %>%
@@ -358,7 +380,7 @@ exponentAll$pc3 <- unname(unlist(exponent.pca$x[,3]))
 exponentAll <- exponentAll %>%
   mutate(across(c("pc1", "pc2", "pc3"), naoutlier)) %>% ungroup()
 
-write.csv(exponentAll, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/exponentAll.csv')
+write.csv(exponentAll, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/exponentAll.csv')
 
 
 Offset <- imputeDataFOOOF %>% select("labels", "lunaID", "Offset", "Condition", "visitno") %>%
@@ -397,7 +419,7 @@ offChanlocs[offChanlocs$labels %in% frontalChannels, c("PC1")] <- (off.pca$rotat
 offChanlocs[offChanlocs$labels %in% frontalChannels, c("PC2")] <- (off.pca$rotation[,2])
 offChanlocs[offChanlocs$labels %in% frontalChannels, c("PC3")] <- (off.pca$rotation[,3])
 
-write.csv(offChanlocs, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/offChanlocs.csv')
+write.csv(offChanlocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/offChanlocs.csv')
 
 
 OffsetAll <- imputeDataFOOOF %>% select("labels", "lunaID", "Offset", "Condition", "age", "visitno") %>%
@@ -416,7 +438,7 @@ OffsetAll <- OffsetAll %>%
   mutate(across(c("pc1", "pc2", "pc3"), naoutlier)) %>% ungroup()
 
 
-write.csv(OffsetAll, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/OffsetAll.csv')
+write.csv(OffsetAll, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/OffsetAll.csv')
 
 
 
@@ -508,7 +530,7 @@ SNRchanLocs[SNRchanLocs$labels %in% frontalChannels, c("PC3")] <- -1*(snr.pca$ro
 
 SNRchanLocs$measure <- "SNR"
 
-write.csv(SNRchanLocs, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/SNRchanlocs3030.csv')
+write.csv(SNRchanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRchanlocs3030.csv')
 
 snrAll <- imputeData %>% filter(labels %in% c('F3', 'F5', 'F7', 'F1', 'F2', 'F4', 'F6', 'F8', 'AFz', 'AF1', 'AF2', 'Fp1', 'Fp2', 'Fz', 'AF5', 'AF6')) %>%
   dplyr::select(SNR, labels, lunaID, age, visitno) %>%
@@ -572,7 +594,7 @@ evokedchanLocs[evokedchanLocs$labels %in% frontalChannels, c("PC3")] <- -1*(evok
 
 evokedchanLocs$measure <- "Evoked"
 
-write.csv(evokedchanLocs, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/evokedchanLocs3030.csv')
+write.csv(evokedchanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/evokedchanLocs3030.csv')
 
 
 evokedAll <- imputeData %>% filter(labels %in% c('F3', 'F5', 'F7', 'F1', 'F2', 'F4', 'F6', 'F8', 'AFz', 'AF1', 'AF2', 'Fp1', 'Fp2', 'Fz', 'AF5', 'AF6')) %>%
@@ -637,7 +659,7 @@ inducedchanLocs[inducedchanLocs$labels %in% frontalChannels, c("PC3")] <- 1*(ind
 
 inducedchanLocs$measure <- "Induced"
 
-write.csv(inducedchanLocs, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/inducedchanLocs3030.csv')
+write.csv(inducedchanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/inducedchanLocs3030.csv')
 
 inducedAll <- imputeData %>% filter(labels %in% c('F3', 'F5', 'F7', 'F1', 'F2', 'F4', 'F6', 'F8', 'AFz', 'AF1', 'AF2', 'Fp1', 'Fp2', 'Fz', 'AF5', 'AF6')) %>%
   dplyr::select(Induced, labels, lunaID, age, visitno) %>%
@@ -657,10 +679,10 @@ inducedAll <- inducedAll %>%
 ## Merge all measures ----
 
 allSNRmeasures_chanLocs <- rbind(inducedchanLocs, evokedchanLocs) %>% rbind(., SNRchanLocs)
-write.csv(allSNRmeasures_chanLocs, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/snrMeasures_chanLocs3030.csv')
+write.csv(allSNRmeasures_chanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/snrMeasures_chanLocs3030.csv')
 
 allSNRmeasures_imputed <- merge(snrImputed, evokedImputed, by = c("lunaID", "visitno", "age", "labels")) %>% merge(., inducedImputed, by = c("lunaID", "visitno", "age", "labels"))
-write.csv(allSNRmeasures_imputed, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/snrImputed3030.csv')
+write.csv(allSNRmeasures_imputed, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/snrImputed3030.csv')
 
 snrAll$measure <- "SNR"
 evokedAll$measure <- "Evoked"
@@ -669,7 +691,7 @@ inducedAll$measure <- "Induced"
 allSNRmeasures3030 <- rbind(snrAll %>% select(lunaID, visitno, age, pc1, pc2, pc3, measure), evokedAll %>% select(lunaID, visitno, age, pc1, pc2, pc3, measure)) %>% 
   rbind(., inducedAll %>% select(lunaID, visitno, age, pc1, pc2, pc3, measure))
 
-write.csv(allSNRmeasures3030, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/SNRmeasures_PCAvalues3030.csv')
+write.csv(allSNRmeasures3030, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRmeasures_PCAvalues3030.csv')
 
 
 
@@ -759,7 +781,7 @@ SNRchanLocs[SNRchanLocs$labels %in% frontalChannels, c("PC3")] <- -1*(snr.pca$ro
 
 SNRchanLocs$measure <- "SNR"
 
-write.csv(SNRchanLocs, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/SNRchanlocs2020.csv')
+write.csv(SNRchanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRchanlocs2020.csv')
 
 snrAll <- imputeData %>% filter(labels %in% c('F3', 'F5', 'F7', 'F1', 'F2', 'F4', 'F6', 'F8', 'AFz', 'AF1', 'AF2', 'Fp1', 'Fp2', 'Fz', 'AF5', 'AF6')) %>%
   dplyr::select(SNR, labels, lunaID, age, visitno) %>%
@@ -823,7 +845,7 @@ evokedchanLocs[evokedchanLocs$labels %in% frontalChannels, c("PC3")] <- -1*(evok
 
 evokedchanLocs$measure <- "Evoked"
 
-write.csv(evokedchanLocs, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/evokedchanLocs2020.csv')
+write.csv(evokedchanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/evokedchanLocs2020.csv')
 
 
 evokedAll <- imputeData %>% filter(labels %in% c('F3', 'F5', 'F7', 'F1', 'F2', 'F4', 'F6', 'F8', 'AFz', 'AF1', 'AF2', 'Fp1', 'Fp2', 'Fz', 'AF5', 'AF6')) %>%
@@ -888,7 +910,7 @@ inducedchanLocs[inducedchanLocs$labels %in% frontalChannels, c("PC3")] <- 1*(ind
 
 inducedchanLocs$measure <- "Induced"
 
-write.csv(inducedchanLocs, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/inducedchanLocs2020.csv')
+write.csv(inducedchanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/inducedchanLocs2020.csv')
 
 inducedAll <- imputeData %>% filter(labels %in% c('F3', 'F5', 'F7', 'F1', 'F2', 'F4', 'F6', 'F8', 'AFz', 'AF1', 'AF2', 'Fp1', 'Fp2', 'Fz', 'AF5', 'AF6')) %>%
   dplyr::select(Induced, labels, lunaID, age, visitno) %>%
@@ -908,10 +930,10 @@ inducedAll <- inducedAll %>%
 ## Merge all measures ----
 
 allSNRmeasures_chanLocs <- rbind(inducedchanLocs, evokedchanLocs) %>% rbind(., SNRchanLocs)
-write.csv(allSNRmeasures_chanLocs, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/snrMeasures_chanLocs2020.csv')
+write.csv(allSNRmeasures_chanLocs, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/snrMeasures_chanLocs2020.csv')
 
 allSNRmeasures_imputed <- merge(snrImputed, evokedImputed, by = c("lunaID", "visitno", "age", "labels")) %>% merge(., inducedImputed, by = c("lunaID", "visitno", "age", "labels"))
-write.csv(allSNRmeasures_imputed, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/snrImputed2020.csv')
+write.csv(allSNRmeasures_imputed, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/snrImputed2020.csv')
 
 snrAll$measure <- "SNR"
 evokedAll$measure <- "Evoked"
@@ -920,7 +942,7 @@ inducedAll$measure <- "Induced"
 allSNRmeasures2020 <- rbind(snrAll %>% select(lunaID, visitno, age, pc1, pc2, pc3, measure), evokedAll %>% select(lunaID, visitno, age, pc1, pc2, pc3, measure)) %>% 
   rbind(., inducedAll %>% select(lunaID, visitno, age, pc1, pc2, pc3, measure))
 
-write.csv(allSNRmeasures2020, '/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/SNRmeasures_PCAvalues2020.csv')
+write.csv(allSNRmeasures2020, '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRmeasures_PCAvalues2020.csv')
 
 
 

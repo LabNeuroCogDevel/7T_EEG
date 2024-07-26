@@ -8,7 +8,7 @@ addpath(genpath('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Preprocess
 %% set initial values
 datapath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data/SNR/AfterWhole/ICAwholeClean_homogenize');
 
-outpath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/TEI_indivSubs_allChans/');
+outpath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/individualSubFiles/');
 
 %% load in all the data files
 setfiles0 = dir([datapath,'/*icapru*.set']);

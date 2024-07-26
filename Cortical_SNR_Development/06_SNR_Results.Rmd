@@ -95,7 +95,7 @@ naoutlier <- function(x) ifelse(outliers(x), NA, x)
 # SNR PCA
 ```{r snrPCA2, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
 
-SNRchanLocs <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/SNRchanlocs.csv')
+SNRchanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRchanlocs.csv')
 
 lunaize(ggplot(SNRchanLocs, aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
           geom_topo(chan_markers = "text", interpolate = TRUE, interp_limit = "head") +
@@ -113,7 +113,7 @@ lunaize(ggplot(SNRchanLocs, aes(x = -Y, y = X, fill = PC3, z = PC3, label = labe
           scale_fill_gradient2(low="blue", mid="white", high="red") +
           theme(text = element_text(size = 30))) + ggtitle("Component 3")
 
-snrAll <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/SNRmeasures_PCAvalues.csv') %>% filter(measure == "SNR")
+snrAll <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRmeasures_PCAvalues.csv') %>% filter(measure == "SNR")
 
 
 SNRPC1 <- lunaize(ggplot(data = snrAll, aes(x = age, y = pc1)) +
@@ -160,7 +160,7 @@ summary(gam.model$gam)
 
 ```{r evokedPCA2, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
 
-evokedchanLocs <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/evokedchanLocs.csv')
+evokedchanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/evokedchanLocs.csv')
 
 
 lunaize(ggplot(evokedchanLocs, aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
@@ -180,7 +180,7 @@ lunaize(ggplot(evokedchanLocs, aes(x = -Y, y = X, fill = PC3, z = PC3, label = l
           theme(text = element_text(size = 30))) + ggtitle("Component 3")
 
 
-evokedAll <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/SNRmeasures_PCAvalues.csv') %>% filter(measure == "Evoked")
+evokedAll <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRmeasures_PCAvalues.csv') %>% filter(measure == "Evoked")
 
 evokedPC1 <- lunaize(ggplot(data = evokedAll, aes(x = age, y = pc1)) +
           geom_point() +
@@ -225,7 +225,7 @@ summary(gam.model$gam)
 
 ```{r inducedPCA2, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
 
-inducedchanLocs <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/inducedchanLocs.csv')
+inducedchanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/inducedchanLocs.csv')
 
 
 lunaize(ggplot(inducedchanLocs, aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
@@ -244,7 +244,7 @@ lunaize(ggplot(inducedchanLocs, aes(x = -Y, y = X, fill = PC3, z = PC3, label = 
           scale_fill_gradient2(low="blue", mid="white", high="red") +
           theme(text = element_text(size = 30))) + ggtitle("Component 3")
 
-inducedAll <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/SNRmeasures_PCAvalues.csv') %>% filter(measure == "Induced")
+inducedAll <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRmeasures_PCAvalues.csv') %>% filter(measure == "Induced")
 
 inducedPC1 <- lunaize(ggplot(data = inducedAll, aes(x = age, y = pc1)) +
           geom_point() +
@@ -291,7 +291,7 @@ summary(gam.model$gam)
 
 cowplot::plot_grid(SNRPC1, evokedPC1, inducedPC1, ncol=3, nrow = 1,labels = c("A", "B", "C"), label_size = 50, vjust = 1, hjust = 0.1)
 
-allSNRmeasures_chanLocs <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/snrMeasures_chanLocs.csv')
+allSNRmeasures_chanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/snrMeasures_chanLocs.csv')
 
 
 lunaize(ggplot(allSNRmeasures_chanLocs, aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
@@ -311,7 +311,7 @@ lunaize(ggplot(allSNRmeasures_chanLocs, aes(x = -Y, y = X, fill = PC3, z = PC3, 
           theme(text = element_text(size = 30))) + ggtitle("Component 3 Rotations") + facet_wrap(~ measure)
 
 
-allSNRmeasures <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/SNRmeasures_PCAvalues.csv')
+allSNRmeasures <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRmeasures_PCAvalues.csv')
 
 
 lunaize(ggplot(data = allSNRmeasures, aes(x = age, y = pc1)) +
@@ -323,8 +323,8 @@ lunaize(ggplot(data = allSNRmeasures, aes(x = age, y = pc1)) +
 
 # Load MRSI 
 ```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-
-MRS <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/MRS_dlpfc.csv')
+ 
+MRS <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/MRS_dlpfc.csv')
 MRS_longer <- MRS %>%
   pivot_longer(
     cols = c("RDLPFC_Glu", "LDLPFC_Glu", "RDLPFC_GABA", "LDLPFC_GABA", "RDLPFC_Ratio", "LDLPFC_Ratio", 
@@ -604,7 +604,7 @@ johnson_neyman(model = inducedfit, pred = RDLPFC_GluGABAimbalanceABS, modx = age
 # Load FOOOF, all channels
 ```{r , echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10, results = 'hide'}
 
-imputeDataFOOOF <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/imputeFOOOF.csv')
+imputeDataFOOOF <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/imputeFOOOF.csv')
 
 snr_pca_fooof <- merge(snrAll %>% select(lunaID, visitno, age, pc1, measure), imputeDataFOOOF, by = c("lunaID", "visitno", "age"))
 
@@ -663,7 +663,7 @@ ggplot(data = snr_pca_fooof %>% filter(labels %in% c(channels)), aes(x = Offset,
 
 ```{r exponentPCA2 , echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
 
-evokedchanLocs <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/exponentchanLocs.csv')
+evokedchanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/exponentchanLocs.csv')
 
 
 lunaize(ggplot(evokedchanLocs, aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
@@ -683,7 +683,7 @@ lunaize(ggplot(evokedchanLocs, aes(x = -Y, y = X, fill = PC3, z = PC3, label = l
           theme(text = element_text(size = 30))) + ggtitle("Exponent Component 3")
 
 
-exponentAll <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/exponentAll.csv')
+exponentAll <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/exponentAll.csv')
 
 lunaize(ggplot(data = exponentAll, aes(x = inverseAge, y = pc1)) +
           geom_point() +
@@ -844,14 +844,14 @@ summary(lm.model)
 # Offset PCA
 
 ```{r offsetPCA2, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-offChanlocs <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/offChanlocs.csv')
+offChanlocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/offChanlocs.csv')
 
 lunaize(ggplot(offChanlocs, aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
           geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
           scale_fill_gradient2(low="blue", mid="white", high="red") +
           theme(text = element_text(size = 30))) + ggtitle("Offset Component 1")
 
-OffsetAll <- read.csv('/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/rMarkdown/OffsetAll.csv')
+OffsetAll <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/OffsetAll.csv')
 
 
 lunaize(ggplot(data = OffsetAll, aes(x = age, y = pc1)) +
