@@ -1,14 +1,12 @@
+function [] = run_preprocessing_pipeline(task)
 
 % load in paths to feildtrip and eeglab 
-addpath(genpath('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Functions/preprocessing'));
+addpath(genpath('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Preprocessing_Functions/'));
 addpath(genpath('/resources/Euge/'))
 run('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1/eeglab.m');
 
 % Outpath
 maindir = hera('Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data');
-
-% which task do you want to run. CHANGE ACCORDING TO MGS, Resting_State, SNR, etc. 
-task = 'Resting_State'; 
   
 disp(["i am running" task]) 
    
@@ -99,13 +97,6 @@ for i = 1:length(setfiles)
     EEG = pop_eegfiltnew(EEG, 59, 61, [], 1, [], 0);
     EEG = pop_saveset(EEG, 'filename', filename, 'filepath', datapath);
 end
-
-
-
-
-
-
-
 
 
 if task == "MGS"

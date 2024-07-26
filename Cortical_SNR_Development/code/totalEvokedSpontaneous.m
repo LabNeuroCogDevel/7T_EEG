@@ -2,13 +2,12 @@ function [] = totalEvokedSpontaneous(triggerValue)
 
 %% set needed paths
 addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1')));
-addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/Functions/SNR_processing')));
-addpath(genpath('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Functions/preprocessing'));
+addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/code')));
+addpath(genpath('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Preprocessing_Functions'));
 
 %% set initial values
 datapath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data/SNR/AfterWhole/ICAwholeClean_homogenize');
-% triggerValue = '3';
-% channelValues = [4,5,6,36,37,38]; if you only want to run DLPFC
+
 outpath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/Results/SNR/TEI_indivSubs_allChans/');
 
 %% load in all the data files
@@ -35,11 +34,11 @@ for i = 1:numSubj
     inputfile = setfiles{i};
 
     if triggerValue == '2'
-        savePath = [outpath subject '_totalEvokedInduced_20Hz.csv'];
+        savePath = [outpath '20hz/' subject '_totalEvokedInduced_20Hz.csv'];
     elseif triggerValue =='3'
-        savePath = [outpath subject '_totalEvokedInduced_30Hz.csv'];
+        savePath = [outpath '30hz/' subject '_totalEvokedInduced_30Hz.csv'];
     elseif triggerValue == '4'
-        savePath = [outpath subject '_totalEvokedInduced_40Hz.csv'];
+        savePath = [outpath '40hz/' subject '_totalEvokedInduced_40Hz.csv'];
     end
 
 
@@ -140,7 +139,7 @@ for i = 1:numSubj
         maxf = 42;
 
 
-        for c = 1:64
+        for c = 1:EEG.nbchan
             chanData = squeeze(EEG.data(c,evokedIdx,:));
             avgData = mean(chanData,2); %avg all the epochs in the time domain then take fft to find evoked
             % window_percentage = 10;
@@ -157,18 +156,18 @@ for i = 1:numSubj
             newfreqs = frequencies(:, findx);
 
            %Plot the original signal and the FFT result
-            subplot(2,1,1);
-            plot(evokedtime, avgData);
-            title('Original Signal');
-            xlabel('Time (s)');
-            ylabel('Amplitude');
-            
-            subplot(2,1,2);
-            plot(frequencies(2:end), (evokedPower(2:end,6)));
-            xlim([0,70]);
-            title('FFT');
-            xlabel('Frequency (Hz)');
-            ylabel('Power');
+            % subplot(2,1,1);
+            % plot(evokedtime, avgData);
+            % title('Original Signal');
+            % xlabel('Time (s)');
+            % ylabel('Amplitude');
+            % 
+            % subplot(2,1,2);
+            % plot(frequencies(2:end), (evokedPower(2:end,6)));
+            % xlim([0,70]);
+            % title('FFT');
+            % xlabel('Frequency (Hz)');
+            % ylabel('Power');
             %
             % to find power on each individual trial
             for t = 1:size(chanData, 2)
@@ -203,19 +202,19 @@ for i = 1:numSubj
 
             totalPower(:,c) = mean(trialPower_spectrum,2);
             inducedPower(:,c) = totalPower(:,c) - evokedPower(:,c);
-            figure;
-%             semilogy(frequencies, trialPower_spectrum);
-            xlim([0,70]);
-            title('FFT ');
-            xlabel('Frequency (Hz)');
-            ylabel('Power');
-            hold on;
-            semilogy(frequencies, totalPower, 'LineWidth',4, 'Color','r');
-            hold on;
-            semilogy(frequencies, evokedPower, 'LineWidth',4, 'Color','b');
-            hold on;
-            semilogy(frequencies, inducedPower, 'LineWidth',4, 'Color','g');
-
+%             figure;
+% %             semilogy(frequencies, trialPower_spectrum);
+%             xlim([0,70]);
+%             title('FFT ');
+%             xlabel('Frequency (Hz)');
+%             ylabel('Power');
+%             hold on;
+%             semilogy(frequencies, totalPower, 'LineWidth',4, 'Color','r');
+%             hold on;
+%             semilogy(frequencies, evokedPower, 'LineWidth',4, 'Color','b');
+%             hold on;
+%             semilogy(frequencies, inducedPower, 'LineWidth',4, 'Color','g');
+% 
 
            
 
@@ -261,26 +260,5 @@ for i = 1:numSubj
 
 end
 
-% subjectTotalPower(i) = mean(totalPower(findx,:));
-% subjectEvokedPower(i) = mean(evokedPower(findx,:));
-% subjectInducedPower(i) = mean(inducedPower(findx,:));
-
-%
-% %% create a table witah all the info
-%
-%
-% T = table('Size', [0, 4], 'VariableTypes', {'string', 'double','double','double'});
-% T.Properties.VariableNames = {'Subject', 'TotalPower', 'EvokedPower','InducedPower'};
-%
-% for i = 1:length(idvalues)
-%     T.Subject(i) = idvalues{i};
-%     T.TotalPower(i) = subjectTotalPower(i);
-%     T.EvokedPower(i) = subjectEvokedPower(i);
-%     T.InducedPower(i) = subjectInducedPower(i);
-%
-% end
-%
-% savePath = [outpath '/SNRdata_40Hz_totalEvokedInduced_baselineRemoved.csv'];
-% writetable(T, savePath)
 
 end

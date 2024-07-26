@@ -8,6 +8,6 @@
 % 3: 30 Hz condition
 % 4: 40 Hz condition
 
-triggerValue = 4; 
+triggerValue = '4'; 
 
 totalEvokedSpontaneous(triggerValue)
