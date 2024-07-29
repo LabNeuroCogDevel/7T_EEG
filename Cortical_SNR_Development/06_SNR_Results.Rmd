@@ -1,5 +1,6 @@
+
 ---
-title: "SNR PCA"
+title: "SNR Paper Figures"
 date: "2024-01-29"
 geometry: margin = 1in
 output:
@@ -12,7 +13,7 @@ output:
 
 
 ```{r load-libraries, message=FALSE, echo = FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning=FALSE, dev='png', dpi=150, fig.height=4, fig.width = 6, fig.path='/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/SNR/PCA_figs/')
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, dev ='pdf', dpi=150, fig.height=4, fig.width = 6, fig.path='/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/rStudio_figs/')
 ```
 
 ```{r, echo= FALSE, message = FALSE, warning = FALSE}
@@ -41,1141 +42,428 @@ library(tvem)
 library(interactions)
 library(akima)
 library(mice)
+library(scales)
+library(asbio)
+library(r2glmm)
 
-fit_inverse_age<-function(thisdf, xvar, covars=''){
-  
-  modsum <- summary(lmerTest::lmer(as.formula(paste0(xvar, ' ~ invage ', covars, ' + (1|lunaID)')), 
-                                   data = thisdf))
-  int <- modsum$coefficients[1,1]
-  t <- modsum$coefficients[2,4]
-  p <- modsum$coefficients[2,5]
-  
-  return(data.frame(y0=int, p.value=p, t=-1*t))
+tag_facet <- function(p, open = "(", close = ")", tag_pool = letters, x = -Inf, y = Inf, 
+                      hjust = -0.5, vjust = 1.5, fontface = 2, ...) {
+
+  gb <- ggplot_build(p)
+  lay <- gb$layout$layout
+  tags <- cbind(lay, label = paste0(open, tag_pool[lay$PANEL], close), x = x, y = y)
+  p + geom_text(data = tags, aes_string(x = "x", y = "y", label = "label"), ..., hjust = hjust, 
+                vjust = vjust, fontface = fontface, inherit.aes = FALSE) 
 }
-
-fit_gam<-function(thisdf, xvar, covars=''){
-  
-  model <- paste0(xvar, ' ~ ',covars, 's(age, k = 3)')
-  model.out <- (mgcv::gamm(as.formula(model), data = thisdf, random=list(lunaID=~1)))
-  Fvalue <- summary(model.out$gam)$s.table[1,3]
-  p <- summary(model.out$gam)$s.table[1,4]
-  
-  return(data.frame(p.value=p, Fvalue=Fvalue))
-}
-
-fit_gam_fooof<-function(thisdf, xvar, fooofvar){
- 
-  model <- paste0(fooofvar, ' ~ ',xvar, ' + s(age, k = 3) + Condition')
-  model.out <- (mgcv::gamm(as.formula(model), data = thisdf, random=list(lunaID=~1)))
-  Fvalue <- summary(model.out$gam)$p.table[2,1]
-  p <- summary(model.out$gam)$p.table[2,4]
-  
-  return(data.frame(p.value=p, Fvalue=Fvalue))
-}
-
-fit_gam_mrs<-function(thisdf, xvar, mrsvar){
-  model <- paste0(mrsvar, ' ~ ',xvar, ' + s(age, k = 3)')
-  model.out <- (mgcv::gamm(as.formula(model), data = thisdf, random=list(lunaID=~1)))
-  Fvalue <- summary(model.out$gam)$p.table[2,1]
-  p <- summary(model.out$gam)$p.table[2,4]
-  t <- summary(model.out$gam)$p.table[2,3]
-  
-  return(data.frame(p.value=p, Fvalue=Fvalue, t.value = t))
-}
-
-# Define Outlier Function ----
-outliers <- function(x) {
-  (abs(x - mean(x, na.rm= T)) > (sd(x, na.rm= T) * 2))
-}
-naoutlier <- function(x) ifelse(outliers(x), NA, x)
-
 
 ```
 
-# SNR PCA
-```{r snrPCA2, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
+# SNR across freqs
+```{r SNRacrossFreqs, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=15}
+
+SNRallChans_outlier <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/allSubjectsSNR_allChans_allfreqs.csv')
+
+# pivot to long format
+SNRallChans_outlier_long <- pivot_longer(SNRallChans_outlier, cols = c("Total","Evoked", "SNR", "Induced"), names_to = 'measure', values_to = 'value')
+
+# summarize by age group & measurement
+SNRallChans_summary_byAge <- SNRallChans_outlier_long %>% 
+  mutate(ageGroup = as.factor(cut(age, c(0,17,23,Inf), labels = c('10-16','17-22','23-30')))) %>%
+  group_by(freqs, measure, ageGroup, hertz) %>%
+  summarize(y = mean(value, na.rm=T),
+            sd = sd(value, na.rm=T),
+            n = n(),
+            se = sd / sqrt(n))
+
+# summarize by age group & measurement
+SNRallChans_summary <- SNRallChans_outlier_long %>% 
+  mutate(ageGroup = as.factor(cut(age, c(0,17,23,Inf), labels = c('10-16','17-22','23-30')))) %>%
+  group_by(freqs, measure, hertz) %>%
+  summarize(y = mean(value, na.rm=T),
+            sd = sd(value, na.rm=T),
+            n = n(),
+            se = sd / sqrt(n))
+
+
+# evoked vs induced
+SNRallChans_summary$hertz <- as.factor(SNRallChans_summary$hertz)
+levels(SNRallChans_summary$hertz) <- c("20 Hz Clicks", "30 Hz Clicks", "40 Hz Clicks")
+
+
+lunaize(ggplot(data = SNRallChans_summary %>% filter(freqs <= 50, measure %in% c('Evoked')) %>% filter(hertz == "40 Hz Clicks"), 
+       aes(x = freqs, y = y, color = interaction(measure), 
+           fill = interaction(measure))) +
+  geom_line() +
+  geom_ribbon(aes(ymin = y - se, ymax = y + se), alpha = 0.8, linewidth = 1.5) +
+  scale_fill_manual(values = c("#E3B23C")) +
+  scale_color_manual(values = c("#E3B23C")) +
+  scale_y_log10() + 
+  theme_bw()) + xlab("Frequences (Hz)") + ylab("Power (\u00b5V\u00b2)") +
+   theme(strip.background = element_blank(), strip.placement = "outside", strip.text = element_text(size = 25, vjust = 1.5), text = element_text(size = 40), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"), aspect.ratio = 1, axis.title.y = element_text(vjust = 2), axis.title.x = element_text(vjust = -2), legend.position = "none", axis.text.y = element_blank(), panel.spacing = unit(3, "lines"), axis.ticks.y = element_blank()) 
+
+
+
+lunaize(ggplot(data = SNRallChans_summary %>% filter(freqs <= 50, measure %in% c('Induced')) %>% filter(hertz == "40 Hz Clicks"), 
+       aes(x = freqs, y = y, color = interaction(measure), 
+           fill = interaction(measure))) +
+  geom_line() +
+  geom_ribbon(aes(ymin = y - se, ymax = y + se), alpha = 0.8, linewidth = 1.5) +
+  scale_fill_manual(values = c("plum4")) +
+  scale_color_manual(values = c("plum4")) +
+  scale_y_log10() + 
+  theme_bw()) + xlab("Frequences (Hz)") + ylab("Power (\u00b5V\u00b2)") +
+   theme(strip.background = element_blank(), strip.placement = "outside", strip.text = element_text(size = 25, vjust = 1.5), text = element_text(size = 40), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"), aspect.ratio = 1, axis.title.y = element_text(vjust = 2), axis.title.x = element_text(vjust = -2), legend.position = "none", axis.text.y = element_blank(), panel.spacing = unit(3, "lines"), axis.ticks.y = element_blank()) 
+
+lunaize(ggplot(data = SNRallChans_summary %>% filter(freqs <= 50, measure %in% c('SNR')) %>% filter(hertz == "40 Hz Clicks"), 
+       aes(x = freqs, y = y, color = interaction(measure), 
+           fill = interaction(measure))) +
+  geom_line() +
+  geom_ribbon(aes(ymin = y - se, ymax = y + se), alpha = 0.8, linewidth = 1.5) +
+  scale_fill_manual(values = c("#2E041F")) +
+  scale_color_manual(values = c("#2E041F")) +
+  scale_y_log10() + 
+  theme_bw()) + xlab("Frequencies (Hz)") + ylab("SNR") +
+   theme(strip.background = element_blank(), strip.placement = "outside", strip.text.x = element_text(color = "white"), strip.text = element_text(size = 40, vjust = -4), text = element_text(size = 25), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"), aspect.ratio = 1, axis.title.y = element_text(vjust = 2), axis.title.x = element_text(vjust = -2), legend.position = "none", axis.text.y = element_blank(), panel.spacing = unit(3, "lines"), axis.ticks.y = element_blank()) 
+
+```
+
+# Topo plots
+```{r topo_plots, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=25}
 
 SNRchanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRchanlocs.csv')
 
-lunaize(ggplot(SNRchanLocs, aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
-          geom_topo(chan_markers = "text", interpolate = TRUE, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Component 1")
-
-
-lunaize(ggplot(SNRchanLocs, aes(x = -Y, y = X, fill = PC2, z = PC2, label = labels)) + 
-          geom_topo(chan_markers = "text", interpolate = FALSE, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Component 2")
-
-lunaize(ggplot(SNRchanLocs, aes(x = -Y, y = X, fill = PC3, z = PC3, label = labels)) + 
-          geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Component 3")
-
-snrAll <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRmeasures_PCAvalues.csv') %>% filter(measure == "SNR")
-
-
-SNRPC1 <- lunaize(ggplot(data = snrAll, aes(x = age, y = pc1)) +
-  geom_point() +
-    geom_line(aes(group= interaction(lunaID)), alpha = 0.2)+
-  stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("SNR PC1")+ theme(text = element_text(size = 40)) 
-
-gam.model <-  mgcv::gamm(pc1 ~ s(age, k = 3), data = snrAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
-lunaize(ggplot(data = snrAll, aes(x = age, y = pc1)) +
-  geom_point() +
-    geom_line(aes(group= interaction(lunaID)), alpha = 0.2)+
-  stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("SNR PC1")+ theme(text = element_text(size = 40)) 
-
-gam.model <-  mgcv::gamm(pc1 ~ s(age, k = 3), data = snrAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
-
-lunaize(ggplot(data = snrAll, aes(x = age, y = pc2)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("PC2") + ggtitle('PC2, 40 hz response at 40 hz clicks')
-
-gam.model <-  mgcv::gamm(pc2 ~ s(age, k = 3), data = snrAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
-
-lunaize(ggplot(data = snrAll, aes(x = age, y = pc3)) +
-          geom_point() +geom_line(aes(group= interaction(lunaID)), alpha = 0.2)+
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("PC3") + ggtitle('SNR PC3, 40 hz response at 40 hz clicks')
-
-gam.model <-  mgcv::gamm(pc3 ~ s(age, k = 3), data = snrAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
-
-```
-
-# Evoked PCA
-
-```{r evokedPCA2, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-
 evokedchanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/evokedchanLocs.csv')
+evokedchanLocs$measure <- "Evoked"
 
+inducedchanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/inducedchanLocs.csv') %>% select(-measure)
+inducedchanLocs$measure <- "Spontaneous"
 
-lunaize(ggplot(evokedchanLocs, aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
+allmeasuresChanLocs <- rbind(SNRchanLocs, evokedchanLocs) %>% rbind(., inducedchanLocs)
+
+lunaize(ggplot(allmeasuresChanLocs %>% filter(measure == "Spontaneous"), aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
           geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Component 1")
+          scale_fill_gradient2(low="white", mid="white", high="plum4")) +
+   theme(strip.background = element_blank(), strip.placement = "outside", strip.text = element_text(size = 40), text = element_text(size = 25), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"), aspect.ratio = 1, axis.title.y = element_text(vjust = 2), axis.title.x = element_text(vjust = -2), panel.spacing = unit(3, "lines"))
 
-lunaize(ggplot(evokedchanLocs, aes(x = -Y, y = X, fill = PC2, z = PC2, label = labels)) + 
+lunaize(ggplot(allmeasuresChanLocs %>% filter(measure == "Evoked"), aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
           geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Component 2")
+          scale_fill_gradient2(low="white", mid="white", high="#E3B23C")) +
+   theme(strip.background = element_blank(), strip.placement = "outside", strip.text = element_text(size = 40), text = element_text(size = 25), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"), aspect.ratio = 1, axis.title.y = element_text(vjust = 2), axis.title.x = element_text(vjust = -2), panel.spacing = unit(3, "lines"))
 
 
-lunaize(ggplot(evokedchanLocs, aes(x = -Y, y = X, fill = PC3, z = PC3, label = labels)) + 
+
+lunaize(ggplot(allmeasuresChanLocs %>% filter(measure == "SNR"), aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
           geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Component 3")
-
-
-evokedAll <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRmeasures_PCAvalues.csv') %>% filter(measure == "Evoked")
-
-evokedPC1 <- lunaize(ggplot(data = evokedAll, aes(x = age, y = pc1)) +
-          geom_point() +
-            geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("Evoked PC1")+ theme(text = element_text(size = 40)) 
-
-
-
-lunaize(ggplot(data = evokedAll, aes(x = age, y = pc1)) +
-          geom_point() +
-            geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("Evoked PC1")+ theme(text = element_text(size = 40)) 
-
-
-gam.model <-  mgcv::gamm(pc1 ~ s(age, k = 3), data = evokedAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
-
-lunaize(ggplot(data = evokedAll, aes(x = age, y = pc2)) +
-          geom_point() +
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("PC2") + ggtitle('PC2, 40 hz response at 40 hz clicks')
-
-gam.model <-  mgcv::gamm(pc2 ~ s(age, k = 3), data = evokedAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
-
-lunaize(ggplot(data = evokedAll, aes(x = age, y = pc3)) +
-          geom_point() +
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("PC3") + ggtitle('PC3, 40 hz response at 40 hz clicks')
-
-gam.model <-  mgcv::gamm(pc3 ~ s(age, k = 3), data = evokedAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
+          scale_fill_gradient2(low="white", mid="white", high="#2E041F")) +
+   theme(strip.background = element_blank(), strip.placement = "outside", strip.text = element_text(size = 40), text = element_text(size = 25), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"), aspect.ratio = 1, axis.title.y = element_text(vjust = 2), axis.title.x = element_text(vjust = -2), panel.spacing = unit(3, "lines"))
 
 ```
 
-# Induced PCA
-
-```{r inducedPCA2, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-
-inducedchanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/inducedchanLocs.csv')
-
-
-lunaize(ggplot(inducedchanLocs, aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
-          geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Component 1")
-
-lunaize(ggplot(inducedchanLocs, aes(x = -Y, y = X, fill = PC2, z = PC2, label = labels)) + 
-          geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Component 2")
-
-
-lunaize(ggplot(inducedchanLocs, aes(x = -Y, y = X, fill = PC3, z = PC3, label = labels)) + 
-          geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Component 3")
-
-inducedAll <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRmeasures_PCAvalues.csv') %>% filter(measure == "Induced")
-
-inducedPC1 <- lunaize(ggplot(data = inducedAll, aes(x = age, y = pc1)) +
-          geom_point() +
-            geom_line(aes(group= interaction(lunaID)), alpha = 0.2) + 
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("Induced PC1")+ theme(text = element_text(size = 40)) +
-  geom_text(aes(y = -3.5, x = 35, label = "***"), size = 20, color="black") 
-
-
-lunaize(ggplot(data = inducedAll, aes(x = age, y = pc1)) +
-          geom_point() +
-            geom_line(aes(group= interaction(lunaID)), alpha = 0.2) + 
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("Induced PC1")+ ggtitle('Induced PC1, 40 hz response at 40 hz clicks')
-
-gam.model <-  mgcv::gamm(pc1 ~ s(age, k = 3), data = inducedAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
-
-lunaize(ggplot(data = inducedAll, aes(x = age, y = pc2)) +
-          geom_point() + geom_line(aes(group= interaction(lunaID)), alpha = 0.2) + 
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("PC2") + ggtitle('Induced PC2, 40 hz response at 40 hz clicks')
-
-gam.model <-  mgcv::gamm(pc2 ~ s(age, k = 3), data = inducedAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
-
-
-lunaize(ggplot(data = inducedAll, aes(x = age, y = pc3)) +
-          geom_point() +
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.02)) + 
-  xlab("Age") + ylab("PC3") + ggtitle('Induced PC3, 40 hz response at 40 hz clicks')
-
-gam.model <-  mgcv::gamm(pc3 ~ s(age, k = 3), data = inducedAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
-```
-
-
-# Merge all SNR measures 
-
-```{r mergeSNR, echo= FALSE, message = FALSE, warning = FALSE, fig.height=12, fig.width=35}
-
-cowplot::plot_grid(SNRPC1, evokedPC1, inducedPC1, ncol=3, nrow = 1,labels = c("A", "B", "C"), label_size = 50, vjust = 1, hjust = 0.1)
-
-allSNRmeasures_chanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/snrMeasures_chanLocs.csv')
-
-
-lunaize(ggplot(allSNRmeasures_chanLocs, aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
-          geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Component 1 Rotations") + facet_wrap(~ measure)
-
-
-lunaize(ggplot(allSNRmeasures_chanLocs, aes(x = -Y, y = X, fill = PC2, z = PC2, label = labels)) + 
-          geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Component 2 Rotations") + facet_wrap(~ measure)
-
-lunaize(ggplot(allSNRmeasures_chanLocs, aes(x = -Y, y = X, fill = PC3, z = PC3, label = labels)) + 
-          geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Component 3 Rotations") + facet_wrap(~ measure)
-
+# Age plots
+```{r age_plots, echo= FALSE, message = FALSE, warning = FALSE, fig.height=18, fig.width=15}
 
 allSNRmeasures <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/SNRmeasures_PCAvalues.csv')
+allSNRmeasures$Stim <- "40 Hz"
+#allSNRmeasures$inverseAge <- 1/(allSNRmeasures$age)
+
+lunaize(ggplot(data = allSNRmeasures %>% filter(measure == "SNR"), aes(x = age, y = pc1)) +
+          geom_point(size = 5,alpha=.8, color = "#2E041F") +
+            geom_line(aes(group= interaction(lunaID)), alpha = 0.1) + 
+            geom_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, size=2, color = "#2E041F")) + 
+  xlab("Age") + ylab("SNR PC1") +
+  geom_text(aes(y = -0.9, x = 34.5, label = "*"), size = 15, color="#2E041F") + 
+   theme(text = element_text(size = 40), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"), aspect.ratio = 1,
+        axis.title.y = element_text(vjust = 2), 
+        axis.title.x = element_text(vjust = -2)) 
+ 
+gam.model <-  mgcv::gamm(pc1 ~ s(age, k = 3), data = allSNRmeasures %>% filter(measure == "SNR"), random=list(lunaID=~1))
+summary(gam.model$gam)
+ 
+ 
+lunaize(ggplot(data = allSNRmeasures %>% filter(measure == "Evoked"), aes(x = age, y = pc1)) +
+          geom_point(size =5,alpha=.8, color = "#E3B23C") +
+            geom_line(aes(group= interaction(lunaID)), alpha = 0.1) + 
+            geom_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, size=2, color = "#E3B23C")) + 
+  xlab("Age") + ylab("Evoked PC1") + 
+   theme(text = element_text(size = 40), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"), aspect.ratio = 1,
+        axis.title.y = element_text(vjust = 2), 
+        axis.title.x = element_text(vjust = -2)) 
+
+  gam.model <-  mgcv::gamm(pc1 ~ s(age, k = 3), data = allSNRmeasures %>% filter(measure == "Evoked"), random=list(lunaID=~1))
+summary(gam.model$gam)
 
 
-lunaize(ggplot(data = allSNRmeasures, aes(x = age, y = pc1)) +
-          geom_point() +
-          stat_smooth(method = "lm", alpha = 0.02)) + 
-  xlab("age") + ylab("PC1") + facet_wrap(~measure)
+lunaize(ggplot(data = allSNRmeasures %>% filter(measure == "Induced"), aes(x = age, y = pc1)) +
+          geom_point(size =5,alpha=.8, color = "plum4") +
+            geom_line(aes(group= interaction(lunaID)), alpha = 0.1) + 
+            geom_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, size=2, color = "plum4")) + 
+  xlab("Age") + ylab("Spontaneous PC1") +
+  geom_text(aes(y = -3, x = 35.5, label = "***"), size = 15, color="plum4") + 
+   theme(text = element_text(size = 40), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"), aspect.ratio = 1,
+        axis.title.y = element_text(vjust = 2), 
+        axis.title.x = element_text(vjust = -2)) 
+  
+gam.model <-  mgcv::gamm(pc1 ~ s(age, k = 3), data = allSNRmeasures %>% filter(measure == "Induced"), random=list(lunaID=~1))
+summary(gam.model$gam)
+
 
 ```
+
 
 # Load MRSI 
 ```{r, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
- 
-MRS <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/MRS_dlpfc.csv')
-MRS_longer <- MRS %>%
-  pivot_longer(
-    cols = c("RDLPFC_Glu", "LDLPFC_Glu", "RDLPFC_GABA", "LDLPFC_GABA", "RDLPFC_Ratio", "LDLPFC_Ratio", 
-             "RDLPFC_GluGABAimbalance", "LDLPFC_GluGABAimbalance", "RDLPFC_GluGABAimbalanceABS", "LDLPFC_GluGABAimbalanceABS"),
-    names_to = "region",
-    values_to = "value"
-  ) %>%
-  separate(col = "region", into = c("region", "measure"), sep = "_", extra = "merge") %>%
-  pivot_wider(names_from = "measure", values_from = "value")
 
+MRS <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/allSubjectsDLPFCMRSMeasures_20240223.csv') %>% select(-X)
+colnames(MRS) <- c("lunaID","visitno","age","region","GABA","Glu", "GluGABAimbalance", "GluGABAimbalanceABS", "Ratio")
 
 # merge PCA components and MRS
-allmeasures_mrs <- merge(allSNRmeasures, MRS_longer, by = c("lunaID", "visitno"))
+allmeasures_mrs <- merge(allSNRmeasures, MRS, by = c("lunaID", "visitno", "age"))
 allmeasures_mrs$inverseAge <- 1/allmeasures_mrs$age
 ```
 
-
-# MRSI
-## Glu
-```{r rGlu , echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-# SNR PC1
-lunaize(ggplot(data = allmeasures_mrs %>% filter(measure == 'SNR'), aes(x = Glu, y = pc1, color = region)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID, region)), alpha = 0.2) +
-          stat_smooth(method = "lm", alpha = 0.2)) + 
-  xlab("Glu") + ylab("SNR PC1")
+### L Glu
+```{r lGlu , echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
 
 
-lm.model <-  lmer(Glu ~ age + pc1 + region + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "SNR"))
-summary(lm.model)
+ lunaize(ggplot(data = allmeasures_mrs %>% filter(measure == 'Induced'), aes(x = Glu, y = pc1)) +
+            geom_point(size = 2,alpha=0.8, color = "plum4") +
+          geom_line(aes(group= interaction(lunaID, region), color = "plum4"), alpha = 0.2) +
+          geom_smooth(aes(group = 1), method="lm", alpha = 0.4, color="black",size=2)) + 
+  xlab("Glutamate") + ylab("Spontaneous PC1") + 
+         scale_color_manual(values=c("plum4")) +
+   theme(text = element_text(size = 40), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"), aspect.ratio = 1,
+        axis.title.y = element_text(vjust = 2), 
+        axis.title.x = element_text(vjust = -2), legend.position = "none") +
+    geom_text(aes(y = -1, x = 2.4, label = "*"), size = 15, color="plum4") 
 
-# age interaction 
-lm.model <-  lmer(Glu ~ inverseAge*pc1 + region +(1|lunaID), data = allmeasures_mrs %>% filter(measure == "SNR"))
-summary(lm.model)
+ 
+ 
 
-
-
-snrfit <- lmer(pc1 ~ age*Glu + (1|lunaID),
-              data = allmeasures_mrs%>% filter(measure == "SNR"))
-johnson_neyman(model = snrfit, pred = Glu, modx = age, alpha = .05,  title = "SNR")
-
-
-
-# Induced PC1
-lunaize(ggplot(data = allmeasures_mrs %>% filter(measure == 'Induced'), aes(x = RDLPFC_Glu, y = pc1)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          stat_smooth(method = "lm", alpha = 0.2)) + 
-  xlab("RDLPFC_Glu") + ylab("Induced PC1")
-
-lm.model <-  lmer(Glu ~ age + region + pc1 + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
+lm.model <-  lmer(Glu ~ age + pc1 + region + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
 summary(lm.model)
 
 #age interaction
-lm.model <-  lmer(pc1 ~ age*RDLPFC_Glu + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
+lm.model <-  lmer(Glu ~ age *pc1 +region + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
 summary(lm.model)
-
-inducedfit <- lmer(pc1 ~ age*RDLPFC_Glu + (1|lunaID),
-              data = allmeasures_mrs%>% filter(measure == "Induced"))
-johnson_neyman(model = inducedfit, pred = RDLPFC_Glu, modx = age, alpha = .05,  title = "Intrinsic")
-
-
-
-#Induced PC2
-lunaize(ggplot(data = allmeasures_mrs %>% filter(measure == 'Induced'), aes(x = RDLPFC_Glu, y = scale(pc2))) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          stat_smooth(method = "lm", alpha = 0.2)) + 
-  xlab("RDLPFC_Glu") + ylab("Induced PC2")
-
-lm.model <-  lmer(pc2 ~ age + RDLPFC_Glu + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc2 ~ age*RDLPFC_Glu + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
-summary(lm.model)
-
-inducedfit <- lmer(pc2 ~ age*RDLPFC_Glu + (1|lunaID),
-              data = allmeasures_mrs%>% filter(measure == "Induced"))
-johnson_neyman(model = inducedfit, pred = RDLPFC_Glu, modx = age, alpha = .05,  title = "Intrinsic")
 
 
 ```
 
-## GABA
-```{r rGABA, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
+### L Imbalance
+```{r lImbalance, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=18}
 
 # SNR pc1
-lunaize(ggplot(data = allmeasures_mrs %>% filter(measure == 'SNR'), aes(x = RDLPFC_GABA, y = pc1)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          stat_smooth(method = "lm", alpha = 0.2)) + 
-  xlab("RDLPFC_GABA") + ylab("SNR pc1")
+
+ lunaize(ggplot(data = allmeasures_mrs %>% filter(measure == 'SNR'), aes(x = sqrt(GluGABAimbalanceABS), y = pc1)) +
+            geom_point(size = 2,alpha=0.8, color = "#2E041F") +
+          geom_line(aes(group= interaction(lunaID, region), color = "#2E041F"), alpha = 0.2) +
+          geom_smooth(aes(group = 1), method="lm", alpha = 0.4, color="black",size=2)) + 
+  xlab("Glu GABA Asymmetry") + ylab("SNR PC1") + 
+         scale_color_manual(values=c("#2E041F")) +
+   theme(text = element_text(size = 40), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"), aspect.ratio = 1,
+        axis.title.y = element_text(vjust = 2), 
+        axis.title.x = element_text(vjust = -2), legend.position = "none")+ 
+  geom_text(aes(x = 0.98, y = -1.3, label = "*"), size = 15, color="black") 
 
 
-lm.model <-  lmer(GABA ~ age + region + pc1 + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "SNR"))
+lm.model <-  lmer(sqrt(GluGABAimbalanceABS) ~ age + pc1 + region + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "SNR"))
 summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1 ~ age*RDLPFC_GABA + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "SNR"))
-summary(lm.model)
-
-snrfit <- lmer(pc1 ~ age*RDLPFC_GABA + (1|lunaID),
-              data = allmeasures_mrs%>% filter(measure == "SNR"))
-johnson_neyman(model = snrfit, pred = RDLPFC_GABA, modx = age, alpha = .05,  title = "SNR")
-
-
-
-# Induced PC1
-lunaize(ggplot(data = allmeasures_mrs %>% filter(measure == 'Induced'), aes(x = RDLPFC_GABA, y = pc1)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          stat_smooth(method = "lm", alpha = 0.2)) + 
-  xlab("RDLPFC_GABA") + ylab("Induced PC1")
-
-lm.model <-  lmer(GABA ~ age + region + pc1 + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1 ~ age*RDLPFC_GABA + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
-summary(lm.model)
-
-inducedfit <- lmer(pc1 ~ age*RDLPFC_GABA + (1|lunaID),
-              data = allmeasures_mrs%>% filter(measure == "Induced"))
-johnson_neyman(model = inducedfit, pred = RDLPFC_GABA, modx = age, alpha = .05,  title = "Intrinsic")
-
-
-
-#Induced PC2
-lunaize(ggplot(data = allmeasures_mrs %>% filter(measure == 'Induced'), aes(x = RDLPFC_GABA, y = pc2)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          stat_smooth(method = "lm", alpha = 0.2)) + 
-  xlab("RDLPFC_GABA") + ylab("Induced PC2")
-
-lm.model <-  lmer(pc2 ~ age + RDLPFC_GABA + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc2 ~ age*RDLPFC_GABA + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
-summary(lm.model)
-
-
-inducedfit <- lmer(pc2 ~ age*RDLPFC_GABA + (1|lunaID),
-              data = allmeasures_mrs%>% filter(measure == "Induced"))
-johnson_neyman(model = inducedfit, pred = RDLPFC_GABA, modx = age, alpha = .05,  title = "Intrinsic")
-```
-
-## Ratio
-```{r rRatio , echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-
-# SNR pc1
-lunaize(ggplot(data = allmeasures_mrs %>% filter(measure == 'SNR'), aes(x = RDLPFC_Ratio, y = pc1)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          stat_smooth(method = "lm", alpha = 0.02)) + 
-  xlab("RDLPFC_Ratio") + ylab("SNR pc1")
-
-
-lm.model <-  lmer(Ratio ~ age + region + pc1 + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "SNR"))
-summary(lm.model)
-
-#age interactions
-lm.model <-  lmer(pc1 ~ age*RDLPFC_Ratio + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "SNR"))
-summary(lm.model)
-
-snrfit <- lmer(pc1 ~ age*RDLPFC_Ratio + (1|lunaID),
-              data = allmeasures_mrs%>% filter(measure == "SNR"))
-johnson_neyman(model = snrfit, pred = RDLPFC_Ratio, modx = age, alpha = .05,  title = "SNR")
-
-
-
-# Induced PC1
-lunaize(ggplot(data = allmeasures_mrs %>% filter(measure == 'Induced'), aes(x = RDLPFC_Ratio, y = pc1)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          stat_smooth(method = "lm", alpha = 0.2)) + 
-  xlab("RDLPFC_Ratio") + ylab("Induced PC1")
-
-lm.model <-  lmer(Ratio ~ age + pc1 + region + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1 ~ age*RDLPFC_Ratio + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
-summary(lm.model)
-
-inducedfit <- lmer(pc1 ~ age*RDLPFC_Ratio + (1|lunaID),
-              data = allmeasures_mrs%>% filter(measure == "Induced"))
-johnson_neyman(model = inducedfit, pred = RDLPFC_Ratio, modx = age, alpha = .05,  title = "Intrinsic")
-
-
-
-#Induced PC2
-lunaize(ggplot(data = allmeasures_mrs %>% filter(measure == 'Induced'), aes(x = RDLPFC_Ratio, y = pc2)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          stat_smooth(method = "lm", alpha = 0.2)) + 
-  xlab("RDLPFC_Ratio") + ylab("Induced PC2")
-
-lm.model <-  lmer(pc2 ~ age + RDLPFC_Ratio + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc2 ~ age*RDLPFC_Ratio + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
-summary(lm.model)
-
-inducedfit <- lmer(pc2 ~ age*RDLPFC_Ratio + (1|lunaID),
-              data = allmeasures_mrs%>% filter(measure == "Induced"))
-johnson_neyman(model = inducedfit, pred = RDLPFC_Ratio, modx = age, alpha = .05,  title = "Intrinsic")
-
-```
-
-## Imbalance
-```{r rImbalance, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-
-# SNR pc1
-lunaize(ggplot(data = allmeasures_mrs %>% filter(measure == 'SNR'), aes(x = sqrt(RDLPFC_GluGABAimbalanceABS), y = pc1)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          stat_smooth(method = "lm", alpha = 0.2)) + 
-  xlab("RDLPFC_GluGABAimbalanceABS") + ylab("SNR pc1")
-
-
-lm.model <-  lmer(sqrt(GluGABAimbalanceABS) ~ age + region + pc1 + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "SNR"))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1 ~ age*sqrt(RDLPFC_GluGABAimbalanceABS) + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "SNR"))
-summary(lm.model)
-
-snrfit <- lmer(pc1 ~ age*(RDLPFC_GluGABAimbalanceABS) + (1|lunaID),
-              data = allmeasures_mrs%>% filter(measure == "SNR"))
-johnson_neyman(model = snrfit, pred = RDLPFC_GluGABAimbalanceABS, modx = age, alpha = .05,  title = "SNR")
-
-
-
-# Induced PC1
-lunaize(ggplot(data = allmeasures_mrs %>% filter(measure == 'Induced'), aes(x = sqrt(RDLPFC_GluGABAimbalanceABS), y = pc1)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          stat_smooth(method = "lm", alpha = 0.2)) + 
-  xlab("RDLPFC_GluGABAimbalanceABS") + ylab("Induced PC1")
-
-lm.model <-  lmer( sqrt(GluGABAimbalanceABS) ~ age + region + pc1 + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1 ~ age*sqrt(RDLPFC_GluGABAimbalanceABS) + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
-summary(lm.model)
-
-
-inducedfit <- lmer(pc1 ~ age*RDLPFC_GluGABAimbalanceABS + (1|lunaID),
-              data = allmeasures_mrs%>% filter(measure == "Induced"))
-johnson_neyman(model = inducedfit, pred = RDLPFC_GluGABAimbalanceABS, modx = age, alpha = .05,  title = "Intrinsic")
-
-
-
-#Induced PC2
-lunaize(ggplot(data = allmeasures_mrs %>% filter(measure == 'Induced'), aes(x = sqrt(RDLPFC_GluGABAimbalanceABS), y = pc2)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          stat_smooth(method = "lm", alpha = 0.2)) + 
-  xlab("RDLPFC_GluGABAimbalanceABS") + ylab("Induced PC2")
-
-lm.model <-  lmer(pc2 ~ age + sqrt(RDLPFC_GluGABAimbalanceABS) + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc2 ~ age*sqrt(RDLPFC_GluGABAimbalanceABS) + (1|lunaID), data = allmeasures_mrs %>% filter(measure == "Induced"))
-summary(lm.model)
-
-inducedfit <- lmer(pc2 ~ age*RDLPFC_GluGABAimbalanceABS + (1|lunaID),
-              data = allmeasures_mrs%>% filter(measure == "Induced"))
-johnson_neyman(model = inducedfit, pred = RDLPFC_GluGABAimbalanceABS, modx = age, alpha = .05,  title = "Intrinsic")
-```
-
-# Load FOOOF, all channels
-```{r , echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10, results = 'hide'}
-
-imputeDataFOOOF <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/imputeFOOOF.csv')
-
-snr_pca_fooof <- merge(snrAll %>% select(lunaID, visitno, age, pc1, measure), imputeDataFOOOF, by = c("lunaID", "visitno", "age"))
-
-```
-
-## Exponent
-```{r exponent , echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10, results = 'hide'}
-
-
-SNR_ExpEffects4040 <- snr_pca_fooof %>% filter(measure == 'SNR') %>% 
-  mutate(invage = 1/age) %>% 
-  group_by(labels) %>% 
-  dplyr::do(fit_gam_fooof(thisdf=., 'pc1','Exponent'))
-
-SNR_ExpEffects4040 <- merge(SNR_ExpEffects4040, chanLocs, by = "labels") 
-SNR_ExpEffects4040 <- SNR_ExpEffects4040 %>% mutate(logp = -1*log10(p.value))
-SNR_ExpEffects4040$hertz <- '40 hz'
-SNR_ExpEffects4040$FOOOF <- 'Exponent'
-
-idx <- which(SNR_ExpEffects4040$p.value <= 0.05)
-SNR_ExpEffects4040sig <- SNR_ExpEffects4040[idx, ]
-channels <- (SNR_ExpEffects4040sig$labels)
-
-ggplot(data = snr_pca_fooof %>% filter(labels %in% c(channels)), aes(x = Exponent, y = pc1, color = labels)) +
-  stat_smooth(method = "lm", alpha = 0.02) + 
-  xlab("Exponent") + ylab("SNR PC1") + ggtitle('40hz response to 40hz stim SNR PC1 vs Exponent')
-
-```
-
-
-## Offset
-```{r offset , echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10, results = 'hide'}
-
-
-SNR_OffEffects4040 <- snr_pca_fooof %>% filter(measure == 'SNR') %>% 
-  mutate(invage = 1/age) %>% 
-  group_by(labels) %>% 
-  dplyr::do(fit_gam_fooof(thisdf=., 'pc1','Offset'))
-
-SNR_OffEffects4040 <- merge(SNR_OffEffects4040, chanLocs, by = "labels") 
-SNR_OffEffects4040 <- SNR_OffEffects4040 %>% mutate(logp = -1*log10(p.value))
-SNR_OffEffects4040$hertz <- '40 hz'
-SNR_OffEffects4040$FOOOF <- 'Offset'
-
-idx <- which(SNR_OffEffects4040$p.value <= 0.05)
-SNR_ExpEffects4040sig <- SNR_OffEffects4040[idx, ]
-channels <- (SNR_ExpEffects4040sig$labels)
-
-ggplot(data = snr_pca_fooof %>% filter(labels %in% c(channels)), aes(x = Offset, y = pc1, color = labels)) +
-  stat_smooth(method = "lm", alpha = 0.02) + 
-  xlab("Offset") + ylab("SNR pc1") + ggtitle('40hz response to 40hz stim SNR PC1 vs Offset')
-
-```
-
-# Exponent PCA
-
-```{r exponentPCA2 , echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-
-evokedchanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/exponentchanLocs.csv')
-
-
-lunaize(ggplot(evokedchanLocs, aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
-          geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Exponent Component 1")
-
-lunaize(ggplot(evokedchanLocs, aes(x = -Y, y = X, fill = PC2, z = PC2, label = labels)) + 
-          geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Exponent Component 2")
-
-
-lunaize(ggplot(evokedchanLocs, aes(x = -Y, y = X, fill = PC3, z = PC3, label = labels)) + 
-          geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Exponent Component 3")
-
-
-exponentAll <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/exponentAll.csv')
-
-lunaize(ggplot(data = exponentAll, aes(x = inverseAge, y = pc1)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) +
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("PC1") + ggtitle('Exponent PC1, 40 hz response at 40 hz clicks')
-
-gam.model <-  mgcv::gamm(pc1 ~ s(age, k = 3), data = exponentAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
-
-lunaize(ggplot(data = exponentAll, aes(x = age, y = pc2)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) +
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("PC2") + ggtitle('Exponent PC2, 40 hz response at 40 hz clicks')
-
-gam.model <-  mgcv::gamm(pc2 ~ s(age, k = 3), data = exponentAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
-
-
-lunaize(ggplot(data = exponentAll, aes(x = age, y = pc3)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) +
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("PC3") + ggtitle('Exponent PC3, 40 hz response at 40 hz clicks')
-
-gam.model <-  mgcv::gamm(pc3 ~ s(age, k = 3), data = exponentAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
-```
-
-## SNR PCA
-```{r snrExp, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-snr_exp <- merge(exponentAll %>% select("lunaID", "Condition", "age", "pc1","pc2", "visitno"), snrAll %>% select("lunaID", "age", "pc1", "visitno"), by = c("lunaID", "age", "visitno"), suffixes = c("_exp", "_snr"))
-
-ggplot(data = snr_exp, aes(y = pc1_exp, x = pc1_snr, color = Condition)) +
-  geom_point() +
-  geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) + 
-  stat_smooth(method = "lm", alpha = 0.02) + 
-  ylab("Exponent PC1") + xlab("SNR pc1") + ggtitle('40hz response to 40hz stim SNR pc1 vs Exponent PC1')
-
-lm.model <-  lmer( pc1_exp ~ age+  pc1_snr+ Condition + (1|lunaID), data = snr_exp)
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer( pc1_exp ~ age*pc1_snr+ Condition + (1|lunaID), data = snr_exp)
-summary(lm.model)
-
-fit <- lmer(pc1_exp ~ age*pc1_snr + Condition + (1|lunaID),
-              data = snr_exp)
   
-johnson_neyman(model = fit, pred = pc1_snr, modx = age, alpha = .05)
-
-
-
-lunaize(ggplot(data = snr_exp, aes(y = pc2, x = pc1_snr, color = Condition)) +
-  geom_point() +
-  geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2)) + 
-  stat_smooth(method = "lm", alpha = 0.02) + 
-  ylab("Exponent PC2") + xlab("SNR pc1") + ggtitle('40hz response to 40hz stim SNR pc1 vs Exponent PC1')
-
-lm.model <-  lmer( pc2 ~ age+  pc1_snr+ Condition + (1|lunaID), data = snr_exp)
-summary(lm.model)
-
 #age interaction
-lm.model <-  lmer( pc2 ~ age*pc1_snr+ Condition + (1|lunaID), data = snr_exp)
+lm.model <-  lmer(pc1 ~ age*sqrt(GluGABAimbalanceABS) + region+ (1|lunaID), data = allmeasures_mrs %>% filter(measure == "SNR"))
 summary(lm.model)
 
-```
-
-
-## Evoked PCA
-### Evoked had no significant PCA changes across age 
-```{r evkExp, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-# evk_exp <- merge(exponentAll %>% select("lunaID", "Condition", "age", "pc1", "pc1", "visitno"), evokedAll %>% select("lunaID", "age", "pc1", "visitno"), by = c("lunaID", "age", "visitno"), suffixes = c("_exp", "_evk"))
-# 
-# ggplot(data = evk_exp, aes(y = pc1_exp, x = pc1_evk, color = Condition)) +
-#   geom_point() +
-#   geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) + 
-#   stat_smooth(method = "lm", alpha = 0.02) + 
-#   ylab("Exponent PC1") + xlab("Evoked PC1") + ggtitle('40hz response to 40hz stim Evoked PC1 vs Exponent PC1')
-# 
-# lm.model <-  lmer(pc1_exp ~ age + pc1_evk + Condition +(1|lunaID), data = evk_exp)
-# summary(lm.model)
-# 
-# fit <- lmer(pc1_exp ~ age*pc1_evk + Condition + (1|lunaID),
-#               data = evk_exp)
-#   
-# johnson_neyman(model = fit, pred = pc1_evk, modx = age, alpha = .05)
-
-```
-
-## Induced PCA
-```{r indExp, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-ind_exp <- merge(exponentAll %>% select("lunaID", "Condition", "age", "pc1", "pc2", "visitno"), inducedAll%>% select("lunaID", "age", "pc1","pc2", "visitno"), by = c("lunaID", "age", "visitno"), suffixes = c("_exp", "_ind"))
-
-lunaize(ggplot(data = ind_exp, aes(y = pc1_exp, x = pc1_ind, color = Condition)) +
-  geom_point() +
-  geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) + 
-  stat_smooth(method = "lm", alpha = 0.2)) + 
-  ylab("Exponent PC1") + xlab("Induced PC1") + ggtitle('40hz response to 40hz stim Induced PC1 vs Exponent PC1')
-
-lm.model <-  lmer(pc1_exp ~ age+ pc1_ind + Condition + (1|lunaID), data = ind_exp)
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1_exp ~ age*pc1_ind + Condition + (1|lunaID), data = ind_exp)
-summary(lm.model)
-
-fit <- lmer(pc1_exp ~ age*pc1_ind + Condition + (1|lunaID),
-              data = ind_exp)
-  
-johnson_neyman(model = fit, pred = pc1_ind, modx = age, alpha = .05)
-
-
-
-lunaize(ggplot(data = ind_exp, aes(y = pc1_exp, x = pc2, color = Condition)) +
-  geom_point() +
-  geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2)) + 
-  stat_smooth(method = "lm", alpha = 0.2) + 
-  ylab("Exponent PC1") + xlab("Induced PC2") + ggtitle('40hz response to 40hz stim Induced PC2 vs Exponent PC1')
-
-lm.model <-  lmer(pc1_exp ~ age+ pc2 + Condition + (1|lunaID), data = ind_exp)
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1_exp ~ age*pc2 + Condition + (1|lunaID), data = ind_exp)
-summary(lm.model)
-
-fit <- lmer(pc1_exp ~ age*pc2 + Condition + (1|lunaID),
-              data = ind_exp)
-  
-johnson_neyman(model = fit, pred = pc2, modx = age, alpha = .05)
-
-
-
-
-lunaize(ggplot(data = ind_exp, aes(y = pc2_exp, x = pc2_ind, color = Condition)) +
-  geom_point() +
-  geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) + 
-  stat_smooth(method = "lm", alpha = 0.2)) + 
-  ylab("Exponent PC2") + xlab("Induced PC2") + ggtitle('40hz response to 40hz stim Induced PC2 vs Exponent PC2')
-
-lm.model <-  lmer(pc2_exp ~ age+ pc2_ind + Condition + (1|lunaID), data = ind_exp)
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc2_exp ~ age*pc2_ind + Condition + (1|lunaID), data = ind_exp)
-summary(lm.model)
-
-
-
-```
-
-
-# Offset PCA
-
-```{r offsetPCA2, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-offChanlocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/offChanlocs.csv')
-
-lunaize(ggplot(offChanlocs, aes(x = -Y, y = X, fill = PC1, z = PC1, label = labels)) + 
-          geom_topo(chan_markers = "text", interpolate = F, interp_limit = "head") +
-          scale_fill_gradient2(low="blue", mid="white", high="red") +
-          theme(text = element_text(size = 30))) + ggtitle("Offset Component 1")
-
-OffsetAll <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/OffsetAll.csv')
-
-
-lunaize(ggplot(data = OffsetAll, aes(x = age, y = pc1)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) +
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("PC1") + ggtitle('Offset PC1, 40 hz response at 40 hz clicks')
-
-gam.model <-  mgcv::gamm(pc1 ~ s(age, k = 3), data = OffsetAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
-
-
-
-lunaize(ggplot(data = OffsetAll, aes(x = age, y = pc2)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) + 
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("PC2") + ggtitle('PC2, 40 hz response at 40 hz clicks')
-
-
-gam.model <-  mgcv::gamm(pc2 ~ s(age, k = 3), data = OffsetAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-
-
-
-
-lunaize(ggplot(data = OffsetAll, aes(x = age, y = pc3)) +
-          geom_point() +
-          geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) + 
-          stat_smooth(method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha = 0.2)) + 
-  xlab("Age") + ylab("PC3") + ggtitle('PC3, 40 hz response at 40 hz clicks')
-
-gam.model <-  mgcv::gamm(pc3 ~ s(age, k = 3), data = OffsetAll, random=list(lunaID=~1))
-summary(gam.model$gam)
-```
-
-## SNR PCA
-```{r snrOff, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-snr_Off <- merge(OffsetAll %>% select("lunaID", "Condition", "age", "pc1", "visitno"), snrAll %>% select("lunaID", "age", "pc1", "visitno"), by = c("lunaID", "age", "visitno"), suffixes = c("_Off", "_snr"))
-
-ggplot(data = snr_Off, aes(y = pc1_Off, x = pc1_snr, color = Condition)) +
-  geom_point() +
-  geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) + 
-  stat_smooth(method = "lm", alpha = 0.2) + 
-  ylab("Offset PC1") + xlab("SNR PC1") + ggtitle('40hz response to 40hz stim SNR PC1 vs Offset PC1')
-
-lm.model <-  lmer( pc1_Off ~ age+  pc1_snr + Condition + (1|lunaID), data = snr_Off)
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer( pc1_Off ~ age*pc1_snr + Condition + (1|lunaID), data = snr_Off)
-summary(lm.model)
-
-
-fit <- lmer(pc1_Off ~ age*pc1_snr + Condition + (1|lunaID),
-              data = snr_Off)
-  
-johnson_neyman(model = fit, pred = pc1_snr, modx = age, alpha = .05)
-
-
-```
-
-
-## Evoked PCA
-### Evoked has no significant PCA changes across age
-```{r evkOff, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-# evk_Off <- merge(OffsetAll_outlier %>% select("lunaID", "Condition", "age", "pc1", "visitno"), evokedAll_outlier %>% select("lunaID", "age", "pc1", "visitno"), by = c("lunaID", "age", "visitno"), suffixes = c("_Off", "_evk"))
-# 
-# ggplot(data = evk_Off, aes(y = pc1_Off, x = pc1_evk, color = Condition)) +
-#   geom_point() +
-#   geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) + 
-#   stat_smooth(method = "lm", alpha = 0.02) + 
-#   ylab("Offset PC1") + xlab("Evoked PC1") + ggtitle('40hz response to 40hz stim Evoked PC1 vs Offset PC1')
-# 
-# lm.model <-  lmer(pc1_Off ~ age + pc1_evk + Condition +(1|lunaID), data = evk_Off)
-# summary(lm.model)
-# 
-# fit <- lmer(pc1_Off ~ age*pc1_evk + Condition + (1|lunaID),
-#               data = evk_Off)
-#   
-# johnson_neyman(model = fit, pred = pc1_evk, modx = age, alpha = .05)
-```
-
-## Induced PCA
-```{r indOff, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-ind_Off <- merge(OffsetAll %>% select("lunaID", "Condition", "age", "pc1", "visitno"), inducedAll %>% select("lunaID", "age", "pc1", "pc2", "visitno"), by = c("lunaID", "age", "visitno"), suffixes = c("_Off", "_ind"))
-
-lunaize(ggplot(data = ind_Off, aes(y = pc1_Off, x = pc1_ind, color = Condition)) +
-  geom_point() +
-  geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2)) + 
-  stat_smooth(method = "lm", alpha = 0.2) + 
-  ylab("Offset PC1") + xlab("Induced PC1") + ggtitle('40hz response to 40hz stim Induced PC1 vs Offset PC1')
-
-lm.model <-  lmer(pc1_Off ~ age+ pc1_ind + Condition + (1|lunaID), data = ind_Off)
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1_Off ~ age*pc1_ind + Condition + (1|lunaID), data = ind_Off)
-summary(lm.model)
-
-fit <- lmer(pc1_Off ~ age*pc1_ind + Condition + (1|lunaID),
-              data = ind_Off)
-  
-johnson_neyman(model = fit, pred = pc1_ind, modx = age, alpha = .05)
-
-
-
-
-
-
-lunaize(ggplot(data = ind_Off, aes(y = pc1_Off, x = pc2, color = Condition)) +
-  geom_point() +
-  geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2)) + 
-  stat_smooth(method = "lm", alpha = 0.2) + 
-  ylab("Offset PC1") + xlab("Induced PC2") + ggtitle('40hz response to 40hz stim Induced PC2 vs Offset PC1')
-
-lm.model <-  lmer(pc1_Off ~ age+ pc2 + Condition + (1|lunaID), data = ind_Off)
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1_Off ~ age*pc2 + Condition + (1|lunaID), data = ind_Off)
-summary(lm.model)
-
-fit <- lmer(pc1_Off ~ age*pc2 + Condition + (1|lunaID),
-              data = ind_Off)
-  
-johnson_neyman(model = fit, pred = pc2, modx = age, alpha = .05)
 ```
 
 
 # Behavior
-## absBestError
-```{r bestError, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
+```{r bestError, echo= FALSE, message = FALSE, warning = FALSE, fig.height=15, fig.width=30}
 behav <- read.csv("/Users/shanemckeon/Library/CloudStorage/OneDrive-UniversityofPittsburgh/Lab/Projects/FOOOF/R_Markdown/allSubjectsBehavior.csv")
 names(behav)[names(behav) == "luna"] <- "lunaID"
 
 SNRbehavior <-  merge(allSNRmeasures, behav, by= c("lunaID", "visitno", "age")) %>% select(-X.x, -X.y)
 
-lunaize(ggplot(data = SNRbehavior, aes(y = pc1, x = absBestError)) +
-  geom_point() +
-  geom_line(aes(group= interaction(lunaID)), alpha = 0.2)) + 
-  stat_smooth(method = "lm", alpha = 0.2) + 
-  ylab("PC1") + xlab("Accuracy") + facet_wrap(~measure)
+SNRbehavior$measure <- as.factor(SNRbehavior$measure)
+levels(SNRbehavior$measure) <- c("Evoked", "Spontaneous", "SNR")
 
-print("SNR")
+
+SNRbehavior$zscore_Acc <- zscore(SNRbehavior$absBestError)
+SNRbehavior$zscore_Accsd <- zscore(SNRbehavior$absBestError_sd)
+SNRbehavior$zscore_Lat <- zscore(SNRbehavior$mgsLatency)
+SNRbehavior$zscore_Latsd <- zscore(SNRbehavior$mgsLatency_sd)
+
+
+SNRbehavior_long <- SNRbehavior %>%
+  pivot_longer(
+    cols = starts_with("zscore_"),
+    names_to = "behavioral",
+    names_prefix = "zscore_",
+    values_to = "value"
+  )
+
+lunaize(ggplot(data = SNRbehavior_long %>% 
+  mutate(ageGroup = as.factor(cut(age, c(0,15,21,Inf), labels = c('10-14','15-20','21-30')))), aes(y = value, x = age, color = behavioral)) +
+          geom_smooth(aes(group = behavioral), method="lm",formula = 'y~I(1/x)', alpha = 0.2,size=1)) + 
+  ylab("Behavioral Measure Zscore") + xlab("Age") +      
+  scale_color_manual(values=c("#E3B23C", "plum4","#2E041F","black"))+
+   theme(strip.background = element_blank(), strip.placement = "outside", strip.text = element_text(size = 30), text = element_text(size = 40), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"),  legend.position = "right", aspect.ratio = 1, axis.title.y = element_text(vjust = 2),
+        axis.title.x = element_text(vjust = -2), panel.spacing = unit(3, "lines"))
+
+
+# accuracy 
+lunaize(ggplot(data = SNRbehavior %>% 
+  mutate(ageGroup = as.factor(cut(age, c(0,15,21,Inf), labels = c('10-14','15-20','21-30')))), aes(y = pc1, x = absBestError, color = measure)) +
+          geom_point(size = 2,alpha=0.8) +
+          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
+          geom_smooth(aes(group = 1, color = measure), method="lm", alpha = 0.4,size=2)) + 
+  ylab("PC1") + xlab("Accuracy (degs)") + facet_wrap(~measure)+      
+  scale_color_manual(values=c("#E3B23C", "plum4","#2E041F"))+
+   theme(strip.background = element_blank(), strip.placement = "outside", strip.text = element_text(size = 30), text = element_text(size = 40), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"),  legend.position = "none", aspect.ratio = 1, axis.title.y = element_text(vjust = 2),
+        axis.title.x = element_text(vjust = -2), panel.spacing = unit(3, "lines"))
+
+## vs SNR
 lm.model <-  lmer(pc1 ~ age+ absBestError + (1|lunaID), data = SNRbehavior %>% filter(measure == 'SNR'))
 summary(lm.model)
 
-#age interaction
 lm.model <-  lmer(pc1 ~ age*absBestError + (1|lunaID), data = SNRbehavior %>% filter(measure == 'SNR'))
 summary(lm.model)
 
-
-print("Induced")
-lm.model <-  lmer(pc1 ~ age+ absBestError + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Induced'))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1 ~ age*absBestError + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Induced'))
-summary(lm.model)
-
-
-print("Evoked")
+## vs evoked
 lm.model <-  lmer(pc1 ~ age+ absBestError + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Evoked'))
 summary(lm.model)
 
-#age interaction
 lm.model <-  lmer(pc1 ~ age*absBestError + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Evoked'))
 summary(lm.model)
 
-```
+## vs spontaneous
+lm.model <-  lmer(pc1 ~ age+ absBestError + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Spontaneous'))
+summary(lm.model)
 
+lm.model <-  lmer(pc1 ~ age*absBestError + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Spontaneous'))
+summary(lm.model)
 
-## absBestError_sd
-```{r bestErrorSD, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
+# accuracy var
 
-lunaize(ggplot(data = SNRbehavior, aes(y = pc1, x = absBestError_sd)) +
-  geom_point() +
-  geom_line(aes(group= interaction(lunaID)), alpha = 0.2)) + 
-  stat_smooth(method = "lm", alpha = 0.2) + 
-  ylab("PC1") + xlab("Accuracy SD") + facet_wrap(~measure)
+lunaize(ggplot(data = SNRbehavior %>% 
+  mutate(ageGroup = as.factor(cut(age, c(0,15,21,Inf), labels = c('10-14','15-20','21-30')))), aes(y = pc1, x = absBestError_sd, color = measure)) + geom_point(size = 2,alpha=0.8) +
+          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
+          geom_smooth(aes(group = 1, color = measure), method="lm", alpha = 0.4,size=2)) + 
+  ylab("PC1") + xlab("Accuracy Var (degs)") + facet_wrap(~measure)+      
+  scale_color_manual(values=c("#E3B23C", "plum4","#2E041F"))+
+   theme(strip.background = element_blank(), strip.placement = "outside", strip.text = element_text(size = 30), text = element_text(size = 40), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"),  legend.position = "none", aspect.ratio = 1, axis.title.y = element_text(vjust = 2),
+        axis.title.x = element_text(vjust = -2), panel.spacing = unit(3, "lines"))
 
-print("SNR")
+## vs SNR
 lm.model <-  lmer(pc1 ~ age+ absBestError_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'SNR'))
 summary(lm.model)
 
-#age interaction
 lm.model <-  lmer(pc1 ~ age*absBestError_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'SNR'))
 summary(lm.model)
 
-
-print("Induced")
-lm.model <-  lmer(pc1 ~ age+ absBestError_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Induced'))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1 ~ age*absBestError_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Induced'))
-summary(lm.model)
-
-
-print("Evoked")
+## vs evoked
 lm.model <-  lmer(pc1 ~ age+ absBestError_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Evoked'))
 summary(lm.model)
 
-#age interaction
 lm.model <-  lmer(pc1 ~ age*absBestError_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Evoked'))
 summary(lm.model)
 
-```
-
-
-## mgs latency
-```{r mgsLatency, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-
-lunaize(ggplot(data = SNRbehavior, aes(y = pc1, x = mgsLatency)) +
-  geom_point() +
-  geom_line(aes(group= interaction(lunaID)), alpha = 0.2)) + 
-  stat_smooth(method = "lm", alpha = 0.2) + 
-  ylab("PC1") + xlab("mgsLatency") + facet_wrap(~measure)
-
-print("SNR")
-lm.model <-  lmer(pc1 ~ age+ mgsLatency + (1|lunaID), data = SNRbehavior %>% filter(measure == 'SNR'))
+## vs spontaneous
+lm.model <-  lmer(pc1 ~ age+ absBestError_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Spontaneous'))
 summary(lm.model)
 
-#age interaction
-lm.model <-  lmer(pc1 ~ age*mgsLatency + (1|lunaID), data = SNRbehavior %>% filter(measure == 'SNR'))
+lm.model <-  lmer(pc1 ~ age*absBestError_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Spontaneous'))
 summary(lm.model)
 
 
-print("Induced")
-lm.model <-  lmer(pc1 ~ age+ mgsLatency + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Induced'))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1 ~ age*mgsLatency + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Induced'))
-summary(lm.model)
-
-
-print("Evoked")
-lm.model <-  lmer(pc1 ~ age+ mgsLatency + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Evoked'))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1 ~ age*mgsLatency + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Evoked'))
-summary(lm.model)
-
-```
-
-## mgs latency sd
-```{r mgsLatencySD, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
-
-lunaize(ggplot(data = SNRbehavior, aes(y = pc1, x = mgsLatency_sd)) +
-  geom_point() +
-  geom_line(aes(group= interaction(lunaID)), alpha = 0.2)) + 
-  stat_smooth(method = "lm", alpha = 0.2) + 
-  ylab("PC1") + xlab("mgsLatency_sd") + facet_wrap(~measure)
-
-print("SNR")
-lm.model <-  lmer(pc1 ~ age+ mgsLatency_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'SNR'))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1 ~ age*mgsLatency_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'SNR'))
-summary(lm.model)
+lunaize(ggplot(data = SNRbehavior %>% 
+  mutate(ageGroup = as.factor(cut(age, c(0,15,21,Inf), labels = c('10-14','15-20','21-30')))), aes(y = pc1, x = mgsLatency, color = measure)) + geom_point(size = 2,alpha=0.8) +
+          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
+          geom_smooth(aes(group = 1, color = measure), method="lm", alpha = 0.4,size=2)) + 
+  ylab("PC1") + xlab("MGS Latency (s)") + facet_wrap(~measure)+      
+  scale_color_manual(values=c("#E3B23C", "plum4","#2E041F"))+
+   theme(strip.background = element_blank(), strip.placement = "outside", strip.text = element_text(size = 30), text = element_text(size = 40), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"),  legend.position = "none", aspect.ratio = 1, axis.title.y = element_text(vjust = 2),
+        axis.title.x = element_text(vjust = -2), panel.spacing = unit(3, "lines"))+ scale_x_continuous(labels = label_number(accuracy = 0.01))
 
 
-print("Induced")
-lm.model <-  lmer(pc1 ~ age+ mgsLatency_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Induced'))
-summary(lm.model)
 
-#age interaction
-lm.model <-  lmer(pc1 ~ age*mgsLatency_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Induced'))
-summary(lm.model)
-
-
-print("Evoked")
 lm.model <-  lmer(pc1 ~ age+ mgsLatency_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Evoked'))
 summary(lm.model)
 
-#age interaction
+lm.model <-  lmer(mgsLatency_sd ~ age+ pc1 + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Evoked'))
+summary(lm.model)
+
+p.adjust(0.023, method = 'bonferroni', n=3)
+
+
 lm.model <-  lmer(pc1 ~ age*mgsLatency_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Evoked'))
 summary(lm.model)
 
-```
 
-## Spatial Span Max
-```{r SSP, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=10}
 
-lunaize(ggplot(data = SNRbehavior, aes(y = pc1, x = SSP_maxSpan)) +
-  geom_point() +
-  geom_line(aes(group= interaction(lunaID)), alpha = 0.2)) + 
-  stat_smooth(method = "lm", alpha = 0.2) + 
-  ylab("PC1") + xlab("SSP_maxSpan") + facet_wrap(~measure)
+lunaize(ggplot(data = SNRbehavior %>% 
+  mutate(ageGroup = as.factor(cut(age, c(0,15,21,Inf), labels = c('10-14','15-20','21-30')))), aes(y = pc1, x = mgsLatency_sd, color = measure)) + geom_point(size = 2,alpha=0.8) +
+          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
+          geom_smooth(aes(group = 1, color = measure), method="lm", alpha = 0.4,size=2)) + 
+  ylab("PC1") + xlab("MGS Latency Var (s)") + facet_wrap(~measure)+      
+  scale_color_manual(values=c("#E3B23C", "plum4","#2E041F"))+
+   theme(strip.background = element_blank(), strip.placement = "outside", strip.text = element_text(size = 30), text = element_text(size = 40), plot.margin = margin(0.5,0.5,0.5,0.5,"cm"),  legend.position = "none", aspect.ratio = 1, axis.title.y = element_text(vjust = 2),
+        axis.title.x = element_text(vjust = -2), panel.spacing = unit(3, "lines")) + scale_x_continuous(labels = label_number(accuracy = 0.01))
 
-print("SNR")
-lm.model <-  lmer(pc1 ~ age+ SSP_maxSpan + (1|lunaID), data = SNRbehavior %>% filter(measure == 'SNR'))
+
+
+lm.model <-  lmer(pc1 ~ age+ mgsLatency_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'SNR'))
 summary(lm.model)
 
-#age interaction
-lm.model <-  lmer(pc1 ~ age*SSP_maxSpan + (1|lunaID), data = SNRbehavior %>% filter(measure == 'SNR'))
-summary(lm.model)
-
-
-print("Induced")
-lm.model <-  lmer(pc1 ~ age+ SSP_maxSpan + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Induced'))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1 ~ age*SSP_maxSpan + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Induced'))
+lm.model <-  lmer(pc1 ~ age*mgsLatency_sd + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Spontaneous'))
 summary(lm.model)
 
 
-print("Evoked")
-lm.model <-  lmer(pc1 ~ age+ SSP_maxSpan + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Evoked'))
-summary(lm.model)
-
-#age interaction
-lm.model <-  lmer(pc1 ~ age*SSP_maxSpan + (1|lunaID), data = SNRbehavior %>% filter(measure == 'Evoked'))
-summary(lm.model)
+#cowplot::plot_grid(bestErrorSD, mgsLat, ncol = 1)
 
 ```
+# Behavior Loops 
+```{r behavLoop, echo= FALSE, message = FALSE, warning = FALSE, fig.height=20, fig.width=22}
+
+df_long <- SNRbehavior %>%
+  pivot_longer(
+    cols = starts_with("pc"),
+    names_to = "pc",
+    values_to = "pc_value"
+  )
+
+# Pivot wider to spread the measure values
+df_wide <- df_long %>%
+  unite("pc_measure", pc, measure, sep = "_") %>%
+  pivot_wider(
+    names_from = pc_measure,
+    values_from = pc_value
+  )
 
 
+behavVars <- c('absBestError','mgsLatency_sd')
+PCAVars <- c('pc1_Spontaneous','pc1_Evoked', 'pc1_SNR')
 
+# main effect
+output <- c()  
+for (behavVar in behavVars) {
+  for (PCAVar in PCAVars) {
+   
+    model <- paste0(behavVar, ' ~ ', PCAVar, '+ age + (1|lunaID)')
+    
+    model.out <- summary(lmerTest::lmer(model, data = df_wide))  
+    b <- model.out$coefficients[2,1]
+    t <- model.out$coefficients[2,4]
+    p <- model.out$coefficients[2,5]
+    pcor <- p.adjust((p), method = "bonferroni", n = 3)
 
+    lm.with <- lmerTest::lmer(model, data = df_wide)
 
+    out <- r2beta(lm.with, partial = TRUE, method = "sgv", data = NULL)
+
+    R2 <- out$Rsq[3]
+    
+    output <- rbind(output, data.frame(PCAVar, behavVar, R2, b, t, pcor))   
+  }
+}  
+
+```
