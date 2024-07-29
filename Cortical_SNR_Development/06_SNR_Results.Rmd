@@ -58,7 +58,7 @@ tag_facet <- function(p, open = "(", close = ")", tag_pool = letters, x = -Inf, 
 
 ```
 
-# SNR across freqs
+# SNR across freqs 
 ```{r SNRacrossFreqs, echo= FALSE, message = FALSE, warning = FALSE, fig.height=10, fig.width=15}
 
 SNRallChans_outlier <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Cortical_SNR_Development/results/allSubjectsSNR_allChans_allfreqs.csv')
