@@ -6,19 +6,18 @@ gems:
 # Site settings
 title: "7T EEG Projects"
 description: > # this means to ignore newlines until "email:"
-   A Jekyll theme - Medium inspired
 
-email: 
+email: ""
 #blog logo
-logo: 
-float_logo: false # true, false (default)
+logo: "/assets/images/df_logo.jpg"
+float_logo: true # true, false (default)
 
 # blog cover
 cover: 
 
-name: 
-author: 
-author_image:
+name: 'Shane McKeon'
+author: 'Shane McKeon'
+author_image: "/assets/images/author.jpg"
 
 paginate:	5
 
@@ -34,12 +33,12 @@ baseurl: ""
 
 # social icons and sharing options
 social:
- # - icon:	twitter
- #   url:	https://twitter.com/dirkfabisch
- #   desc: Follow me on twitter
- #   share_url: http://twitter.com/share
- #   share_title: ?text=
- #   share_link: "&amp;url="
+#  - icon:	twitter
+#    url:	https://twitter.com/dirkfabisch
+#    desc: Follow me on twitter
+#    share_url: http://twitter.com/share
+#    share_title: ?text=
+#    share_link: "&amp;url="
 
 #  - icon:	facebook
 #    url:	https://facebook.com/???
