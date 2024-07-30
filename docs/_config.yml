@@ -4,21 +4,21 @@ gems:
   - jekyll-paginate
 
 # Site settings
-title: "7T EEG Projects"
+title: "Mediator"
 description: > # this means to ignore newlines until "email:"
    A Jekyll theme - Medium inspired
 
-email:
+email: a-mail@mail.mail
 #blog logo
-logo: 
-float_logo: false # true, false (default)
+logo: "/assets/images/df_logo.jpg"
+float_logo: true # true, false (default)
 
 # blog cover
-cover: 
+cover: "/assets/images/cA4aKEIPQrerBnp1yGHv_IMG_9534-3-2.jpg"
 
-name: ''
-author: ''
-author_image: 
+name: 'Dirk Fabisch'
+author: 'Dirk Fabisch'
+author_image: "/assets/images/author.jpg"
 
 paginate:	5
 
@@ -34,23 +34,23 @@ twitter_handle: '@dirkfabisch'
 
 # social icons and sharing options
 social:
- # - icon:	twitter
- #   url:	https://twitter.com/dirkfabisch
- #   desc: Follow me on twitter
- #   share_url: http://twitter.com/share
- #   share_title: ?text=
- #   share_link: "&amp;url="
+  - icon:	twitter
+    url:	https://twitter.com/dirkfabisch
+    desc: Follow me on twitter
+    share_url: http://twitter.com/share
+    share_title: ?text=
+    share_link: "&amp;url="
 
 #  - icon:	facebook
-#    url:	
+#    url:	https://facebook.com/???
 #    desc: Connect with me facebook
 #    share_url: https://www.facebook.com/sharer.php
 #    share_title: ?t=
 #    share_link: "&amp;u="
 
   - icon:	github
-    url:	https://github.com/LabNeuroCogDevel/7T_EEG
-    desc:	
+    url:	https://github.com/dirkfabisch
+    desc:	Fork me on github
     share_url:
     share_title:
     share_link:
