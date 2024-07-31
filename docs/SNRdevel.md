@@ -115,4 +115,8 @@ Due to missing data from outlier detection on each electrode, we imputed the mis
 
 To assess developmental trajectories of cortical SNR activity, we implemented GAMMs on the first principal component, PC1, of evoked power, spontaneous power, and SNR, including random intercepts estimated for each participant. Regression splines were implemented (4 degrees of freedom) to assess linear and non-linear effects. Auditory measures that were found to significantly change across adolescence were then used to test for associations with our MRSI measures, glutamate (Glu), GABA, and Glu GABA Asymmetry using linear mixed effect models (lmer function, lme4 package in Rstudio). We first tested for significant main effects of the auditory measure on the MRSI parameter while controlling for age and hemisphere (left or right DLPFC). We additionally tested for auditory measure-by-age interactions while controlling for hemisphere. 	We then investigated whether our auditory measures had significant associations with our working memory measures (accuracy, accuracy trial variability, response latency, response latency variability) using linear mixed effect models (lmer function, lme4 package in Rstudio). 
 
-  
+## Project Software 
+The following external software was used for this project:
+
+R version 4.2.3; packages: dplyr, ggplot2, caret, mtcars, grid, gridExtra, plotrix, mgcv, readxl, lme4, lmerTest, tidyr, jtools, mice, scales
+
