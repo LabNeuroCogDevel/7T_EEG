@@ -119,5 +119,6 @@ To assess developmental trajectories of cortical SNR activity, we implemented GA
 The following external software was used for this project:
 
 MATLAB: eeglab 2022.1
+<br>
 R version 4.2.3; packages: dplyr, ggplot2, caret, mtcars, grid, gridExtra, plotrix, mgcv, readxl, lme4, lmerTest, tidyr, jtools, mice, scales
 
