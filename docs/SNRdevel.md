@@ -70,7 +70,9 @@ Run the bash script [02_CreateIndividualSubjectFiles_EvokedSpontaneous.sh](https
  
 Cortical signal-to-noise ratio (SNR) was computed by calculating the evoked (stimulus-locked) and total power during the 20, 30, and 40Hz click train frequency conditions. Prestimulus values (-200 to 0ms) were extracted to provide a baseline reference. A task epoch was then defined over the first 800ms following stimulus onset, and the auditory steady state response (ASSR) was computed for each electrode based on methods based on previous literature. Briefly, a Fast Fourier Transform (FFT) was applied to each single-trial epoch, resulting in per-trial power spectra. Power spectra were then averaged across trials to compute total power as a function of frequency. Evoked power was then derived by averaging the single trial time courses and calculating the resulting power spectra using FFT. By averaging across trials, only activity which was consistently timed relative to the stimulus onset remained, providing an estimate of the stimulus-evoked power. Spontaneous power was then derived by subtracting the evoked power from the total power. Finally, SNR was calculated as the ratio of evoked power to spontaneous power. A methodological representation of the method can be seen in the figure below.
 
-<img width="1441" alt="SNR_methods" src= images/SNR_methods.png>
+![SNR Methods Image](images/SNR_methods.png "SNR Methods")
+
+
 
 
  
