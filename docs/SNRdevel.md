@@ -24,7 +24,7 @@ LNCD 7T
 <https://github.com/LabNeuroCogDevel/7T_EEG/tree/main/Cortical_SNR_Development>
 
 ## Code Documentation
-**Preprocessing**: 
+**Preprocessing:**
 <br>
 Preprocessing can be run using [01_Cortical_SNR_Preprocessing.sh](/LabNeuroCogDevel/7T_EEG/blob/main/Cortical_SNR_Development/01_Cortical_SNR_Preprocessing.sh)
 <br>
@@ -55,7 +55,7 @@ Preprocessing can be run using [01_Cortical_SNR_Preprocessing.sh](/LabNeuroCogDe
   - Read in the channel locations and make sure all files have the correct locations, especially the few subjects who were ran using a 128 channel cap
 * Filter out 60 Hz artifact from line noise
 
-**Calculate Total, Evoked, and Spontaneous Activity**: 
+**Calculate Total, Evoked, and Spontaneous Activity:**
 <br>
 Run the bash script [02_CreateIndividualSubjectFiles_EvokedSpontaneous.sh](https://github.com/LabNeuroCogDevel/7T_EEG/blob/main/Cortical_SNR_Development/02_CreateIndividualSubjectFiles_EvokedSpontaneous.sh)
 
@@ -76,7 +76,7 @@ Cortical signal-to-noise ratio (SNR) was computed by calculating the evoked (sti
 
 
  
-**Combine Individual Subject Files**: 
+**Combine Individual Subject Files:**
 <br>
 [03_CombineSubDataframes.R](https://github.com/LabNeuroCogDevel/7T_EEG/blob/main/Cortical_SNR_Development/03_CombineSubDataframes.R)
 
@@ -92,14 +92,14 @@ combineSubjectDataframes(20)
  - 40: 40 Hz condition
 * This will create one csv files with all subjects and all electrodes for one of the frequency conditions
 
-**Combine All Stimulus Conditions**: 
+**Combine All Stimulus Conditions:**
 <br>
 [04_combineAllStimConditions.R](https://github.com/LabNeuroCogDevel/7T_EEG/blob/main/Cortical_SNR_Development/04_combineAllStimConditions.R)
 
 * Combines the csv files on the previous step into one large csv files with all frequency stimulus conditions
 * Preforms outlier detection (2 SDs above the mean)
 
-**Impute missing data and Calculate frontal region PCA**
+**Impute missing data and Calculate frontal region PCA:**
 <br>
 [05_createImputed_PCA_dataFrames.R](https://github.com/LabNeuroCogDevel/7T_EEG/blob/main/Cortical_SNR_Development/05_createImputed_PCA_dataFrames.R)
 
@@ -109,7 +109,7 @@ Due to missing data from outlier detection on each electrode, we imputed the mis
 
 
 
-**Figures and Statistics**
+**Figures and Statistics:**
 <br>
 [06_SNR_Results.Rmd](https://github.com/LabNeuroCogDevel/7T_EEG/blob/main/Cortical_SNR_Development/06_SNR_Results.Rmd)
 
