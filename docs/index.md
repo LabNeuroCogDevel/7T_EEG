@@ -1,16 +1,7 @@
 <br>
+
+## [Prefrontal Excitation/ Inhibition Balance Supports Adolescent Enhancement in Circuit Signal to Noise Ratio](./SNRdevel.md)
+
 <br>
 
-# Prefrontal Excitation/ Inhibition Balance Supports Adolescent Enhancement in Circuit Signal to Noise Ratio
-
-### Project Lead
-Shane D. McKeon
-
-### Faculty Lead
-Beatriz Luna
-
-### Project Start Date
-January 2023
-
-### Current Project Status
-Manuscript in preparation
+## [Aperiodic EEG and 7T MRSI evidence for maturation of E/I balance supporting the development of working memory through adolescence](./fooofMRS.md)
