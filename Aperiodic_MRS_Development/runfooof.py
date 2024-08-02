@@ -63,7 +63,7 @@ import glob
 
 files = glob.glob(
     '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data/Resting_State/AfterWhole/ICAwholeClean_homogenize/1*_2*_*_Rem_rerefwhole_ICA_icapru.set')
-outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/'
+outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/Individual_Files/'
 
 # loop to find the whole spectrum for eyes open
 for fname in files:
@@ -260,8 +260,8 @@ for fname in files:
 
 # load in participant files and extract the data we want
 files = glob.glob(
-    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/Results/1*_2*_eyesClosed.npz') #load in eyes closed
-outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/Results/'
+    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/Individual_Files/1*_2*_eyesClosed.npz') #load in eyes closed
+outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/Individual_Files/'
 
 overallDF = pd.DataFrame()
 
@@ -279,7 +279,7 @@ for fname in files:
 
 
 files = glob.glob(
-    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/1*_2*_eyesOpen.npz') #load in eyes open
+    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/Individual_Files/1*_2*_eyesOpen.npz') #load in eyes open
 
 for fname in files:
     loaded = np.load(fname)
@@ -298,8 +298,8 @@ overallDF.to_csv(saveFile)
 
 # load in participant files and extract the error and rsquared values
 files = glob.glob(
-    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/1*_2*_eyesOpen.npz')  #load in eyes open
-outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Results/Shane/fooof/Results/'
+    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/Individual_Files/1*_2*_eyesOpen.npz')  #load in eyes open
+outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Results/Aperiodic_MRS_Development/Results/Individual_Files/'
 
 ## extract error and rsquared values
 overallDF = pd.DataFrame()
@@ -316,8 +316,8 @@ for fname in files:
     overallDF = pd.concat([overallDF, subDF])
 
 files = glob.glob(
-    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/1*_2*_eyesClosed.npz')  #load in eyes closed
-outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/'
+    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/Individual_Files/1*_2*_eyesClosed.npz')  #load in eyes closed
+outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/Individual_Files/'
 
 ## extract error and rsquared values
 for fname in files:
@@ -338,8 +338,8 @@ overallDF.to_csv(saveFile)
 
 # to extract freq specific peak info
 files = glob.glob(
-    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/1*_2*_eyesOpen.npz')  # change open to closed or visa versa
-outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/'
+    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/Individual_Files/1*_2*_eyesOpen.npz')  # change open to closed or visa versa
+outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/Individual_Files/'
 overallDF = pd.DataFrame()
 for fname in files:
     loaded = np.load(fname)
@@ -363,8 +363,8 @@ overallDF.to_csv(saveFile)
 
 
 files = glob.glob(
-    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/1*_2*_eyesClosed.npz')  # change open to closed or visa versa
-outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/'
+    '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/Individual_Files/1*_2*_eyesClosed.npz')  # change open to closed or visa versa
+outpath = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/Individual_Files/'
 for fname in files:
     loaded = np.load(fname)
     sub = fname[67:81]
@@ -387,7 +387,7 @@ overallDF.to_csv(saveFile)
 ##run to get fooof gamma peak info
 files = glob.glob(
     'H:/Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data/Resting_State/AfterWhole/ICAwholeClean_homogenize/1*_2*_*_Rem_rerefwhole_ICA_icapru.set')
-outpath = 'H:/Projects/7TBrainMech/scripts/eeg/Shane/fooof/Results/Peaks/'
+outpath = 'H:/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/Peaks/'
 
 # loop to find the whole spectrum
 for fname in files:
@@ -483,8 +483,8 @@ for fname in files:
 
 # to extract freq specific peak info
 files = glob.glob(
-    'H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/Peaks/1*_2*_gammaPeaks_eyesOpen.npz')  # change open to closed or visa versa
-outpath = 'H:/Projects/7TBrainMech/scripts/eeg/Shane/Results/fooof/Results/Peaks/'
+    'H:/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/Peaks/1*_2*_gammaPeaks_eyesOpen.npz')  # change open to closed or visa versa
+outpath = 'H:/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/Peaks/'
 overallDF = pd.DataFrame()
 for fname in files:
     loaded = np.load(fname)
