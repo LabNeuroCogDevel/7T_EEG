@@ -94,3 +94,10 @@ We next investigated the relationship between the individual aperiodic parameter
 To assess associations between 1/f aperiodic parameters (exponent and offset), MGS behavioral measures (accuracy, accuracy variability, response latency, and response latency variability), and spatial span measure (maximum length of sequence), we used linear mixed effect models (lmer function, lme4 package in Rstudio (Bates et al., 2015)). Using AIC, we determined an inverse age (age−1) model was more appropriate for both the exponent vs behavior and offset vs behavior associations. We first tested for significant main effects of the behavioral measure on the aperiodic parameter while controlling for inverse age (age−1), condition (eyes open or eyes closed), and hemisphere (left of right DLPFC). We additionally tested for behavior-by-inverse age interactions while controlling for condition and hemisphere. Bonferroni correction was used for multiple comparisons.
 
 To assess associations between MRS measures (asymmetry) and MGS behavioral measures (accuracy, accuracy variability, response latency, and response latency variability), and spatial span measure (maximum length of sequence), we used linear mixed effect models (lmer function, lme4 package in Rstudio (Bates et al., 2015)). Using AIC, we determined an inverse age model was best for the glutamate, GABA, and asymmetry vs behavioral associations. We first tested for significant main effects of the behavioral measure on the aperiodic parameter while controlling for age−1 and hemisphere (left of right DLPFC). We additionally tested for behavior-by-age interactions while controlling hemisphere. Bonferroni correction was used for multiple comparisons.
+
+## Project Software
+The following external software was used for this project: 
+
+Python: scipy, matplotlib, mne, fooof, numpy, mpl_toolkits, os, pandas
+<br>
+R version 4.2.3: data.table, dplyr, knitr, ggplot2, e1071, caret, readxl, Hmisc, lmerTest, corrplot, cowplot, mgcv, tidyr
