@@ -53,7 +53,8 @@ Preprocessing can be run using [01_Aperiodic_Preprocessing.sh](/LabNeuroCogDevel
   - Read in the channel locations and make sure all files have the correct locations, especially the few subjects who were ran using a 128 channel cap
 * Filter out 60 Hz artifact from line noise
 
-<br> </br>
+<br> 
+
 **Calculate the Aperiodic Activity**
 
 This work was done using the FOOOF package (previous to new edition SpecParam) using [02_runFOOOF.py](https://github.com/LabNeuroCogDevel/7T_EEG/blob/main/Aperiodic_MRS_Development/02_runFOOOF.py) using the following parameters: <br>
@@ -66,17 +67,20 @@ Power spectral density (PSD) was calculated separately for each participant and 
 
 ![FOOOF methods image](images/fooofMethods.png)
 
-<br> </br>
+<br> 
+
 **Extract Aperiodic Measures from Individual Files**
 
 [03_ExtractFOOOFmeasures.py](https://github.com/LabNeuroCogDevel/7T_EEG/blob/main/Aperiodic_MRS_Development/03_ExtractFOOOFmeasures.py) will load in each individual persons npz files and select the desired measures (exponent, offset, error and/or peak information) and save out one csv file with all subject, all channel information. This information is then loaded into merge7T by Will Foran
 
-<br></br>
+<br>
+
 **Create Dataframes for Paper Analyses** 
 
 [04_CreateFOOOFdataframes.R](https://github.com/LabNeuroCogDevel/7T_EEG/blob/main/Aperiodic_MRS_Development/04_CreateFOOOFdataframes.R) loads in the merge7T file and extracts out the wanted ages, fooof info, behavioral, and MRS measures that will be used to create figures and statistics for publication. Note, MRS and behavioral measures were previously calculated for these participants. 
 
-<br></br>
+<br>
+
 **Figures and Statistics**
 
 [05_FOOOFMRSPaper.Rmd](https://github.com/LabNeuroCogDevel/7T_EEG/blob/main/Aperiodic_MRS_Development/05_FOOOFMRSPaper.Rmd) 
