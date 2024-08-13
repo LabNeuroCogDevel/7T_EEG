@@ -26,6 +26,8 @@ https://github.com/LabNeuroCogDevel/7T_EEG/tree/main/Entropy
 
 Preprocessing can be run using [01_Entropy_Preprocessing.sh](/LabNeuroCogDevel/7T_EEG/blob/main/Entropy/01_Entropy_Preprocessing.sh)
 
+Note this is the same preprocessing as the resting state data in the [Aperiodic EEG Project](https://labneurocogdevel.github.io/7T_EEG/fooofMRS.html)
+
   ```matlab -nodesktop -r "addpath(genpath('../Preprocessing_Functions/')); run_preprocessing_pipeline('Resting_State')" ```
   
 * Initial preprocessing was done using matlab code run_preprocessing_pipeline.m (../Preprocessing_Functions) which first pulls in raw data from 'Raw/EEG/7TBrainMech'.
