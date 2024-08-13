@@ -6,7 +6,7 @@ addpath(hera('/Projects/7TBrainMech/scripts/fieldtrip-20220104'))
 ft_defaults
 
 datapath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data/Resting_State/AfterWhole/ICAwholeClean_homogenize');
-entropyPath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/Results/Entropy/');
+entropyPath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/Entropy/Results/individual_subject_files/');
 
 %load in all the delay files
 setfiles0 = dir([datapath,'/*icapru.set']);
