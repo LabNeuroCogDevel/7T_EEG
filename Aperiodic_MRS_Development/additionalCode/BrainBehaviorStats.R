@@ -1,3 +1,7 @@
+#!/usr/bin/env Rscript
+
+BrainBehaviorStats <- function () {
+
 # Libraries ----
 
 library(LNCDR)
@@ -21,7 +25,7 @@ library(tidyr)
 library(jtools)
 
 # Brain vs Beh ----
-fooofMRSbehavior <- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/Results/allSubjectsDLPFCfooofMRSBehaviorMeasures_20230822.csv")
+fooofMRSbehavior <- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/allSubjectsDLPFCfooofMRSBehaviorMeasures_20230822.csv")
 
 ### Accuracy vs Exponent ----
 
@@ -979,3 +983,5 @@ for (mrsiVar in mrsiVars) {
   }
 }
 output  
+
+}

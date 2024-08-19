@@ -1,3 +1,7 @@
+#!/usr/bin/env Rscript
+
+MSRIvsFOOOFstats <- function () {
+  
 # Libraries ----
 
 library(LNCDR)
@@ -701,6 +705,6 @@ for (mrsiVar in mrsiVars) {
 }
 output  
 
-
+}
 
 

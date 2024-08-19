@@ -1,3 +1,7 @@
+#!/usr/bin/env Rscript
+
+
+FOOOFageStats <- function () {
 # Libraries ----
 
 library(LNCDR)
@@ -21,14 +25,14 @@ library(tidyr)
 library(jtools)
 
 # Load Dataframe ----
-fooofLong <- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/Results/allSubjectsFooofMeasures_20240625.csv")
+fooofLong <- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/allSubjectsFooofMeasures_20230516.csv")
 agefile <- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/subject_ages.csv")
 
 fooofLong <- merge(fooofLong, agefile, by = "Subject")
 
 
 # FOOOF error measures ---- 
-fooofErrors <- read.csv(hera('/Projects/7TBrainMech/scripts/eeg/Shane/fooof/Results/allSubjectsErrorMeasures_20230516.csv'))
+fooofErrors <- read.csv(hera('/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/allSubjectsErrorMeasures_20230516.csv'))
 
 fooof_channels <- merge(fooofErrors, chanLocs, by = c("Channel"))
 
@@ -337,4 +341,4 @@ for (fooofVar in fooofVars) {
   output <- rbind(output, data.frame(fooofVar, RegionF, Regionp))
 }
 output  
-
+}

@@ -1,3 +1,6 @@
+#!/usr/bin/env Rscript
+BehaviorVsAgeStats <- function (){
+
 # Libraries ----
 
 library(LNCDR)
@@ -21,7 +24,7 @@ library(tidyr)
 library(jtools)
 
 ## Load Dataframes ----
-behav <- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/Results/allSubjectsBehavior.csv")
+behav <- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/allSubjectsBehavior.csv")
 
 ## Behavior vs age ----
 
@@ -129,3 +132,6 @@ summary(lm.model)
 gam.model <- gam(SSP_nTrials ~ s(age), data = behav, random=list(luna=~1))
 gam.growthrate <- gam_growthrate(gam.model, agevar = 'age')
 lunaize(gam_growthrate_plot(behav, gam.model, gam.growthrate, idvar = "luna", agevar = 'age', yvar = 'SSP_nTrials', draw_points = T, xplotname = "Age", yplotname = "SSP nTrials"))
+
+
+}

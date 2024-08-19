@@ -1,3 +1,8 @@
+
+#!/usr/bin/env Rscript
+
+MSRIageStats <- function () {
+  
 # Libraries ----
 
 library(LNCDR)
@@ -22,7 +27,7 @@ library(jtools)
 
 # Load Dataframe ----
 
-MRSlong <- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/Results/allSubjectsDLPFCMRSMeasures_20230613.csv")
+MRSlong <- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/allSubjectsDLPFCMRSMeasures_20230613.csv")
 
 # MRSI stats ----
 
@@ -161,4 +166,4 @@ for (mrsiVar in mrsiVars) {
 output  
 
 
-
+}
