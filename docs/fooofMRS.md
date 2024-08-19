@@ -82,8 +82,8 @@ Power spectral density (PSD) was calculated separately for each participant and 
 <br>
 
 **Figures and Statistics**
-
-[05_FOOOFMRSPaper.Rmd](https://github.com/LabNeuroCogDevel/7T_EEG/blob/main/Aperiodic_MRS_Development/05_FOOOFMRSPaper.Rmd) 
+[05_RunStatistics.R](https://github.com/LabNeuroCogDevel/7T_EEG/blob/main/Aperiodic_MRS_Development/05_RunStatistics.R)
+[06_FOOOFMRSPaperFigs.Rmd](https://github.com/LabNeuroCogDevel/7T_EEG/blob/main/Aperiodic_MRS_Development/06_FOOOFMRSPaperFigs.Rmd) 
 
 To assess developmental trajectories of aperiodic activity, we implemented GAMMs on aperiodic parameter (exponent and offset), including random intercepts estimated for each participant. Regression splines were implemented (4 degrees of freedom) to assess linear and non-linear effects (Wood, 2017, Wood, 2013). We first tested for a main effect of age on aperiodic parameter while controlling for hemisphere (either ‘right’ or ‘left’ DLPFC) and condition (eyes open or eyes closed during resting state). We additionally tested for age-by-hemisphere interactions while controlling for condition, and age-by-condition interactions while controlling for region. Correlations between the exponent and the offset, for both the eyes open and eyes closed conditions were calculated using Pearson correlations.
 
