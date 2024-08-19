@@ -24,7 +24,6 @@ library(eegUtils)
 library(tvem)
 library(interactions)
 library(akima)
-library(mice)
 
 
 outliers <- function(x) {
@@ -35,7 +34,7 @@ naoutlier <- function(x) ifelse(outliers(x), NA, x)
 
 # Load Dataframe
 
-entropy <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/Entropy/allSubjects_allChans_MultiScaleEntropy.csv') %>% select(c(-type))
+entropy <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Entropy/Results/allSubjects_allChans_MultiScaleEntropy.csv') %>% select(c(-type))
 
 # Entropy Outlier Detection ----
 entropy_outlier <- entropy %>% group_by(Subject) %>%
@@ -51,6 +50,9 @@ entropyAge <- merge(entropy_outlier, ageValues, by = "Subject")
 
 # Entropy averaged across all electrodes ----
 entropyAgeAvg <- aggregate(cbind(MSx1, MSx2, MSx3, MSx4, MSx5, MSx6, MSx7, MSx8, MSx9, MSx10, Var1, age) ~ Subject + visitno, data = entropyAge, FUN = mean)
+write.csv(entropyAgeAvg, file = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Entropy/Results/allSubjects_multiscaleEntropy_allChansAvg.csv')
+
+
 
 entropyAgeAvg_outlier <- entropyAgeAvg %>%
   mutate(across(c("MSx1", "MSx2", "MSx3", "MSx4", "MSx5", "MSx6", 
@@ -67,8 +69,6 @@ entropyAgeAvg_outlier_long <- entropyAgeAvg_outlier %>%
                                     "MSx7", "MSx8", "MSx9", "MSx10")),
                names_to = c(".value", "timeScale"),
                names_pattern = "(\\D+)(\\d+)") %>%  mutate(ageGroup = cut(age, c(0,14,17,20,23,Inf), labels = c('10-13','14-16','17-19','20-22','23-30')))
-
-
 
 
 lunaize(ggplot(data = entropyAgeAvg_outlier_long, aes(x = age, y = MSx, color = timeScale)) + 
@@ -105,7 +105,7 @@ for (subject in subs) {
 }
 
 maxValuesAge <- merge(maxValues, ageValues, by = c('lunaID', "visitno"))
-
+write.csv(maxValues, file = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Entropy/Results/allSubjects_maxEntropy_allChansAvg.csv')
 
 lunaize(ggplot(data = maxValuesAge, aes(x = age, y = maxEntropy)) + geom_point() +
           geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
