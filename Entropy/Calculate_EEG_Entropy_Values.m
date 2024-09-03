@@ -1,12 +1,11 @@
 
 
-addpath(genpath('Functions'));
 addpath(genpath(hera('/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1')));
 addpath(hera('/Projects/7TBrainMech/scripts/fieldtrip-20220104'))
 ft_defaults
 
 datapath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data/Resting_State/AfterWhole/ICAwholeClean_homogenize');
-entropyPath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/Entropy/Results/individual_subject_files/');
+entropyPath = hera('/Projects/7TBrainMech/scripts/eeg/Shane/Entropy/Results/individual_subject_files/timeScale20/');
 
 %load in all the delay files
 setfiles0 = dir([datapath,'/*icapru.set']);
@@ -22,26 +21,27 @@ for j = 1 : length(setfiles0)
 end
 
 %% multiscale entropy
+parpool('local', 20);
 
 for j = 1:length(setfiles0)
 
     idvalues(j,:) = (setfiles0(j).name(1:14));
     inputfile = setfiles{j};
-    if ~isfile([entropyPath idvalues(j,:) '_MultiScaleEntropy.csv'])
+    if ~isfile([entropyPath idvalues(j,:) '_MultiScaleEntropy_eyesClosed.csv'])
 
         EEG = pop_loadset(inputfile); % load in eeg file
-        EEGopeneyes = pop_rmdat(EEG, {'16130'},[0 4] ,0);
-        onemin = EEGopeneyes.data(:,1:9000);
+        %EEGopeneyes = pop_rmdat(EEG, {'16130', '15362','1'},[0 4] ,0);
+        EEGclosedeyes = pop_rmdat(EEG, {'16129', '15261','0'},[0 4] ,0);
 
-        parpool('local', 20);
+        % onemin = EEGopeneyes.data(:,1:9000);
+
 
         parfor c = 1:size(EEGopeneyes.data, 1)
 
             Mobj = MSobject("SampEn");
-            [MSx(c,:), Ci(:,c)] = MSEn(onemin(c,:), Mobj, 'Scales', 20, 'Methodx', 'coarse', 'RadNew', 0, 'Plotx', false);
+            [MSx(c,:), Ci(:,c)] = MSEn(EEGopeneyes.data(c,:), Mobj, 'Scales', 20, 'Methodx', 'coarse', 'RadNew', 0, 'Plotx', false);
 
         end
-        delete(gcp); % gcp stands for "get current parallel pool"
 
         MSxTable = array2table(MSx);
         CiTable = array2table(Ci');
@@ -55,7 +55,7 @@ for j = 1:length(setfiles0)
         subjectTable = [table(subjectIDColumn, 'VariableNames', {'Subject'}), subjectTable];
 
 
-        subjectSavePath = [entropyPath idvalues(j,:) '_MultiScaleEntropy.csv'];
+        subjectSavePath = [entropyPath idvalues(j,:) '_MultiScaleEntropy_eyesClosed.csv'];
         writetable(subjectTable, subjectSavePath)
 
 
@@ -67,61 +67,61 @@ for j = 1:length(setfiles0)
 
 end
 
-
+ delete(gcp);
 
 %% spectral entropy
 
-for j = 1:length(setfiles0)
-
-    idvalues(j,:) = (setfiles0(j).name(1:14));
-    inputfile = setfiles{j};
-    if ~isfile([entropyPath idvalues(j,:) '_SpectralEntropy_broadband.csv'])
-
-        EEG = pop_loadset(inputfile); % load in eeg file
-        EEGopeneyes = pop_rmdat(EEG, {'16130'},[0 4] ,0);
-        onemin = EEGopeneyes.data(:,1:9000);
-
-
-        parpool('local', 25);
-
-        parfor c = 1:size(onemin, 1)
-
-            [Spec(c,:), gammaBandEn(c,:)] = SpecEn(onemin(c,:), 'N', 150, 'Freqs', [.4, 1], 'Logx', exp(1), 'Norm' , true);
-            [Spec(c,:), betaBandEn(c,:)] = SpecEn(onemin(c,:), 'N', 150, 'Freqs', [.16, .4], 'Logx', exp(1), 'Norm' , true);
-            [Spec(c,:), alphaBandEn(c,:)] = SpecEn(onemin(c,:), 'N', 150, 'Freqs', [.1, .16], 'Logx', exp(1), 'Norm' , true);
-            [Spec(c,:), thetaBandEn(c,:)] = SpecEn(onemin(c,:), 'N', 150, 'Freqs', [.04, .1], 'Logx', exp(1), 'Norm' , true);
-
-        end
-        delete(gcp('nocreate'));
-
-
-        gammaBandEnTable = array2table(gammaBandEn);
-        betaBandEnTable = array2table(betaBandEn);
-        alphaBandEnTable = array2table(alphaBandEn);
-        thetaBandEnTable = array2table(thetaBandEn);
-        SpecTable = array2table(Spec);
-
-
-
-        subjectTable = horzcat(gammaBandEnTable, betaBandEnTable, alphaBandEnTable, thetaBandEnTable, SpecTable);
-
-        % Create a new column with subject ID repeated for every row
-        subjectIDColumn = repmat(idvalues(j,:), size(subjectTable, 1),1);
-
-        % Add the new column to the existing table
-        subjectTable = [table(subjectIDColumn, 'VariableNames', {'Subject'}), subjectTable];
-
-
-        subjectSavePath = [entropyPath idvalues(j,:) '_SpectralEntropy_broadband.csv'];
-        writetable(subjectTable, subjectSavePath)
-
-
-    end
-
-    clear gammaBandEn
-    clear betaBandEn
-    clear alphaBandEn
-    clear thetaBandEn
-    clear Spec
-
-end
+% for j = 1:length(setfiles0)
+% 
+%     idvalues(j,:) = (setfiles0(j).name(1:14));
+%     inputfile = setfiles{j};
+%     if ~isfile([entropyPath idvalues(j,:) '_SpectralEntropy_broadband.csv'])
+% 
+%         EEG = pop_loadset(inputfile); % load in eeg file
+%         EEGopeneyes = pop_rmdat(EEG, {'16130'},[0 4] ,0);
+%         onemin = EEGopeneyes.data(:,1:9000);
+% 
+% 
+%         parpool('local', 25);
+% 
+%         parfor c = 1:size(onemin, 1)
+% 
+%             [Spec(c,:), gammaBandEn(c,:)] = SpecEn(onemin(c,:), 'N', 150, 'Freqs', [.4, 1], 'Logx', exp(1), 'Norm' , true);
+%             [Spec(c,:), betaBandEn(c,:)] = SpecEn(onemin(c,:), 'N', 150, 'Freqs', [.16, .4], 'Logx', exp(1), 'Norm' , true);
+%             [Spec(c,:), alphaBandEn(c,:)] = SpecEn(onemin(c,:), 'N', 150, 'Freqs', [.1, .16], 'Logx', exp(1), 'Norm' , true);
+%             [Spec(c,:), thetaBandEn(c,:)] = SpecEn(onemin(c,:), 'N', 150, 'Freqs', [.04, .1], 'Logx', exp(1), 'Norm' , true);
+% 
+%         end
+%         delete(gcp('nocreate'));
+% 
+% 
+%         gammaBandEnTable = array2table(gammaBandEn);
+%         betaBandEnTable = array2table(betaBandEn);
+%         alphaBandEnTable = array2table(alphaBandEn);
+%         thetaBandEnTable = array2table(thetaBandEn);
+%         SpecTable = array2table(Spec);
+% 
+% 
+% 
+%         subjectTable = horzcat(gammaBandEnTable, betaBandEnTable, alphaBandEnTable, thetaBandEnTable, SpecTable);
+% 
+%         % Create a new column with subject ID repeated for every row
+%         subjectIDColumn = repmat(idvalues(j,:), size(subjectTable, 1),1);
+% 
+%         % Add the new column to the existing table
+%         subjectTable = [table(subjectIDColumn, 'VariableNames', {'Subject'}), subjectTable];
+% 
+% 
+%         subjectSavePath = [entropyPath idvalues(j,:) '_SpectralEntropy_broadband.csv'];
+%         writetable(subjectTable, subjectSavePath)
+% 
+% 
+%     end
+% 
+%     clear gammaBandEn
+%     clear betaBandEn
+%     clear alphaBandEn
+%     clear thetaBandEn
+%     clear Spec
+% 
+% end

@@ -31,8 +31,8 @@ outliers <- function(x) {
 }
 naoutlier <- function(x) ifelse(outliers(x), NA, x)
 
-
-# Load Dataframe
+# MSE Entropy 10 ----
+# Load Dataframe ----
 
 entropy <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Entropy/Results/allSubjects_allChans_MultiScaleEntropy.csv') %>% select(c(-type))
 
@@ -68,16 +68,17 @@ entropyAgeAvg_outlier_long <- entropyAgeAvg_outlier %>%
   pivot_longer(cols = starts_with(c("MSx1", "MSx2", "MSx3", "MSx4", "MSx5", "MSx6", 
                                     "MSx7", "MSx8", "MSx9", "MSx10")),
                names_to = c(".value", "timeScale"),
-               names_pattern = "(\\D+)(\\d+)") %>%  mutate(ageGroup = cut(age, c(0,14,17,20,23,Inf), labels = c('10-13','14-16','17-19','20-22','23-30')))
+               names_pattern = "(\\D+)(\\d+)") %>%  mutate(ageGroup = cut(age, c(0,13,16,19,Inf), labels = c('10-12','13-15','16-18','Adults')))
 
 
-lunaize(ggplot(data = entropyAgeAvg_outlier_long, aes(x = age, y = MSx, color = timeScale)) + 
-          geom_smooth(aes(group = timeScale, color = timeScale), method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, linewidth=2))
+lunaize(ggplot(data = entropyAgeAvg_outlier_long, aes(x = as.numeric(timeScale), y = MSx)) + 
+          geom_smooth(aes(group = ageGroup, color = ageGroup), method=mgcv::"gam", 
+                      formula = y ~ s(x, k = 3, fx = T), alpha=0.4, linewidth=2)) + xlab("Time Scale")
 
 
 lunaize(ggplot(data = entropyAgeAvg_outlier_long, aes(x = age, y = Var1)) + geom_point() +
           geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
-          geom_smooth(group = 1, method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, linewidth=2)) + ylab("AOC")  
+          geom_smooth(group = 1, method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, linewidth=2)) + ylab("AUC")  
 
 
 gam.model <-  mgcv::gamm(Var1 ~ s(age, k = 3), data = entropyAgeAvg_outlier_long, random=list(lunaID=~1))
@@ -96,9 +97,14 @@ for (subject in subs) {
   for (visitNum in visits) {
     if (any(entropyAgeAvg_outlier_long$lunaID == subject & entropyAgeAvg_outlier_long$visitno == visitNum)) {
       subData <- entropyAgeAvg_outlier_long %>% filter(lunaID == subject) %>% filter(visitno == visitNum)
-      maxSubEntropy <- max(subData$MSx)
+      if (all(is.na(subData$MSx))) {
+        next
+      }
+    
+      maxSubEntropy <- max(subData$MSx, na.rm = T)
+      timescale <- subData$timeScale[which(subData$MSx == maxSubEntropy)]
       
-      subInfo <- data.frame(lunaID = subject, visitno = visitNum, maxEntropy = maxSubEntropy)
+      subInfo <- data.frame(lunaID = subject, visitno = visitNum, maxEntropy = maxSubEntropy, maxTimeScale = timescale)
       maxValues <- rbind(maxValues, subInfo)
     }
   }
@@ -116,6 +122,13 @@ gam.model <-  mgcv::gamm(maxEntropy ~ s(age, k = 3), data = maxValuesAge, random
 summary(gam.model$gam)
 
 
+lunaize(ggplot(data = maxValuesAge %>% filter(maxTimeScale > 3), aes(x = age, y = as.numeric(maxTimeScale))) + geom_point() +
+          geom_line(aes(group= interaction(lunaID)), alpha = 0.2) +
+          geom_smooth(group = 1, method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, linewidth=2)) + ylab("Max Entropy TimeScale")  
+
+
+gam.model <-  mgcv::gamm(maxEntropy ~ s(age, k = 3), data = maxValuesAge, random=list(lunaID=~1))
+summary(gam.model$gam)
 
 
 # Entropy averaged across only frontal electrodes ----
@@ -323,7 +336,7 @@ summary(lm.model)
 
 # MSE Entropy vs FOOOF ----
 
-entropy <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/Entropy/allSubjects_allChans_MultiScaleEntropy.csv') %>% select(c(-type))
+entropy <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Entropy/Results/allSubjects_allChans_MultiScaleEntropy.csv') %>% select(c(-type))
 
 entropy_outlier <- entropy %>% group_by(Subject) %>%
   mutate(across(c("MSx1", "MSx2", "MSx3", "MSx4", "MSx5", "MSx6", 
@@ -345,7 +358,7 @@ entropyAgeAvg_outlier_long <- entropyAgeAvg_outlier %>%
                names_pattern = "(\\D+)(\\d+)") %>%  mutate(ageGroup = cut(age, c(0,14,17,20,23,Inf), labels = c('10-13','14-16','17-19','20-22','23-30')))
 
 ## Load and avg fooof across all electrodes ----
-fooofAllchans <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/FOOOF/allSubjectsAllChannelsFooofMeasures_20230911.csv')
+fooofAllchans <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/allSubjectsAllChannelsFooofMeasures_20230911.csv')
 
 fooofAllchans <- fooofAllchans %>% 
   rename(labels = Channel)
@@ -357,20 +370,48 @@ fooofAvg_outlier <- fooofAvg %>% group_by(Condition) %>%
 
 ## Merge MSE and fooof ----
 
-MSEfooof <- merge(fooofAvg_outlier, entropyAgeAvg_outlier_long, by = "Subject") %>% separate(Subject, c('lunaID','vdate'))
+MSEfooof <- merge(fooofAvg_outlier, entropyAgeAvg_outlier, by = "Subject") %>% separate(Subject, c('lunaID','vdate')) %>%
+  merge(., maxEntropy, by = c("lunaID", "visitno"))
 
 
 lunaize(ggplot(data = MSEfooof, aes(x = Exponent, y = MSx))+ 
           geom_smooth(aes(group = timeScale, color = timeScale), method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, linewidth=2))
 
+### AUC ----
+lunaize(ggplot(data = MSEfooof, aes(y = Exponent, x = Var1)) + geom_point() +
+          geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) +
+          geom_smooth(aes(group = Condition, color = Condition),
+                      method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, linewidth=2))+xlab("AUC")
 
-lunaize(ggplot(data = MSEfooof, aes(y = Exponent, x = Var1))+ geom_point() +
-          geom_smooth(aes(group = 1), method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, linewidth=2))
 
+gam.model <-  mgcv::gamm(Exponent ~ s(age, k = 3)+ Condition + Var1, data = MSEfooof, random=list(lunaID=~1))
+summary(gam.model$gam)
 
 lunaize(ggplot(data = MSEfooof, aes(y = Offset, x = Var1))+ geom_point() +
-          geom_smooth(aes(group = 1), method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, linewidth=2))
+          geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2)+
+          geom_smooth(aes(group = Condition, color = Condition), method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, linewidth=2))+xlab("AUC")
 
+gam.model <-  mgcv::gamm(Offset ~ s(age, k = 3)+ Condition + Var1, data = MSEfooof, random=list(lunaID=~1))
+summary(gam.model$gam)
+
+### Max Entropy ----
+
+lunaize(ggplot(data = MSEfooof, aes(y = Exponent, x = maxEntropy)) + geom_point() +
+          geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) +
+          geom_smooth(aes(group = Condition, color = Condition),
+                      method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, linewidth=2))
+
+
+gam.model <-  mgcv::gamm(Exponent ~ s(age, k = 3)+ Condition + maxEntropy, data = MSEfooof, random=list(lunaID=~1))
+summary(gam.model$gam)
+
+lunaize(ggplot(data = MSEfooof, aes(y = Offset, x = maxEntropy))+ geom_point() +
+          geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2)+
+          geom_smooth(aes(group = Condition, color = Condition), 
+                      method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, linewidth=2))
+
+gam.model <-  mgcv::gamm(Offset ~ s(age, k = 3)+ Condition + maxEntropy, data = MSEfooof, random=list(lunaID=~1))
+summary(gam.model$gam)
 
 # Spectral Entropy ----
 
@@ -453,5 +494,312 @@ lunaize(ggplot(data = entropyFooof, aes(x = gammaBandEn, y = Offset)) + geom_poi
 lunaize(ggplot(data = entropyFooof, aes(x = Spec, y = Exponent)) + geom_point() + 
           geom_line(aes(group= interaction(lunaID, Condition)), alpha = 0.2) +
           geom_smooth(aes(group = 1), method=mgcv::"gam", formula = y ~ s(x, k = 3, fx = T), alpha=0.4, linewidth=2)) + facet_wrap(~Condition)
+
+
+
+# Entropy vs MRS ----
+MRSlong <- read.csv("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Aperiodic_MRS_Development/Results/allSubjectsDLPFCMRSMeasures_20230613.csv")
+
+## GLU VS Exponent ----
+
+lunaize(ggplot(data = fooofMRS , 
+               aes(x = Exponent, y = Glu_gamadj, by = luna, color = ageGroup))+ 
+          geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) +
+          geom_point(aes(shape=Region),alpha=.5) + geom_smooth(aes(group = 1), method="lm", alpha = 0.8) + 
+          scale_color_manual(values=c("gold3", "blue4"))) + 
+  ylab("Glutamate") + xlab("Exponent") + theme(text = element_text(size = 30))+ theme(legend.position='none')
+
+
+lm.model <- lmer(Glu_gamadj ~ Exponent + age + Condition + Region + (1|luna), data = fooofMRS )
+car::Anova(lm.model)
+summ(lm.model)
+
+
+lm.model <- lmer(Glu_gamadj ~ Exponent * age + Condition + Region + (1|luna), data = fooofMRS )
+car::Anova(lm.model)
+summary(lm.model)
+summ(lm.model)
+
+
+summary(lmerTest::lmer(Exponent ~ Glu_gamadj + age + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zExp < 2)))
+summary(lmerTest::lmer(Exponent ~ Glu_gamadj + inverseAge + Region + Condition + (1|luna), data = fooofMRS))
+
+summary(lmerTest::lmer(Exponent ~ Glu_gamadj*age + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zExp < 2)))
+summary(lmerTest::lmer(Exponent ~ Glu_gamadj*inverseage + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zExp < 2)))
+
+
+# gam approach, with non-linear form of age
+gam.model <- gamm(Exponent ~ Glu_gamadj + s(age, k=3) + Region + Condition, 
+                  data = fooofMRS, random=list(luna=~1))
+summary(gam.model$gam)
+print(plot(getViz(gam.model$gam), allTerms = T), pages = 1)
+
+
+AIC(lmer(Exponent ~ Glu_gamadj + age + Condition + Region + (1|luna), data = fooofMRS), 
+    lmer(Exponent ~ Glu_gamadj + inverseAge + Condition + Region + (1|luna), data = fooofMRS))
+
+
+
+## GLU VS Offset ----
+lunaize(ggplot(data = fooofMRS, 
+               aes(x = Offset, y = Glu_gamadj, by = luna, color = ageGroup))+ 
+          geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) + 
+          geom_point(aes(shape =Region),alpha=.5) + geom_smooth(aes(group = 1), method="lm", alpha = 0.8) + 
+          scale_color_manual(values=c("gold3", "blue4"))) + 
+  ylab("Glutamte") + xlab("Offset") + theme(text = element_text(size = 30))+ theme(legend.position='none')
+
+
+lm.model <- lmer( Glu_gamadj ~ Offset + age + Condition + Region + (1|luna), data = fooofMRS )
+car::Anova(lm.model)
+summary(lm.model)
+
+
+lm.model <- lmer(Glu_gamadj ~  Offset * age +Condition +Region +   (1|luna), data = fooofMRS )
+car::Anova(lm.model)
+summary(lm.model)
+summ(lm.model)
+
+
+summary(lmerTest::lmer(Offset ~ Glu_gamadj + age + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2)))
+summary(lmerTest::lmer(Offset ~ Glu_gamadj + inverseage + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2)))
+
+summary(lmerTest::lmer(Offset ~ Glu_gamadj*age + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2)))
+summary(lmerTest::lmer(Offset ~ Glu_gamadj*inverseage + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2)))
+
+
+# gam approach, with non-linear form of age
+gam.model <- gamm(Offset ~ Glu_gamadj + s(age, k=3) + Region + Condition, 
+                  data = fooofMRS %>% filter(zOffset < 2), random=list(luna=~1))
+
+summary(gam.model$gam)
+print(plot(getViz(gam.model$gam), allTerms = T), pages = 1)
+
+# gam approach, with non-linear form of age
+gam.model <- gamm(Offset ~ Glu_gamadj + s(age, k=3) + Region + Condition, 
+                  data = fooofMRS %>% filter(zOffset < 2), random=list(luna=~1))
+
+summary(gam.model$gam)
+print(plot(getViz(gam.model$gam), allTerms = T), pages = 1)
+
+AIC(lmer(Offset ~ Glu_gamadj + age + Condition + Region + (1|luna), data = fooofMRS), 
+    lmer(Offset ~ Glu_gamadj + inverseAge + Condition + Region + (1|luna), data = fooofMRS))
+
+
+
+
+## GABA VS Exponent ----
+
+lunaize(ggplot(data = fooofMRS , 
+               aes(x = Exponent, y = GABA_gamadj, by = luna, color = ageGroup))+ 
+          geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) + 
+          geom_point(aes(shape=Region),alpha=.5) + geom_smooth(aes(group = 1), method="lm", alpha = 0.8) + 
+          scale_color_manual(values=c("gold3", "blue4"))) + 
+  ylab("GABA") + xlab("Exponent") + theme(text = element_text(size = 30))+ theme(legend.position='none')
+
+lm.model <- lmer(GABA_gamadj ~ Exponent + age + Condition + Region + (1|luna), data = fooofMRS )
+summ(lm.model)
+
+
+lm.model <- lmer(GABA_gamadj ~ Exponent *  age +Condition + Region+ (1|luna), data = fooofMRS )
+summ(lm.model)
+
+
+summary(lmerTest::lmer(Exponent ~ GABA_gamadj + age + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zExp < 2)))
+summary(lmerTest::lmer(Exponent ~ GABA_gamadj + inverseage + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zExp < 2)))
+
+summary(lmerTest::lmer(Exponent ~ GABA_gamadj*age + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zExp < 2)))
+summary(lmerTest::lmer(Exponent ~ GABA_gamadj*inverseage + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zExp < 2)))
+
+# gam approach, with non-linear form of age
+gam.model <- gamm(Exponent ~ GABA_gamadj + s(age, k=3) + Region + Condition, 
+                  data = fooofMRS %>% filter(zExp < 2), random=list(luna=~1))
+
+summary(gam.model$gam)
+print(plot(getViz(gam.model$gam), allTerms = T), pages = 1)
+
+AIC(lmer(Exponent ~ GABA_gamadj + age + Condition + Region + (1|luna), data = fooofMRS), 
+    lmer(Exponent ~ GABA_gamadj + inverseAge + Condition + Region + (1|luna), data = fooofMRS))
+
+## GABA VS Offset ----
+
+lunaize(ggplot(data = fooofMRS , 
+               aes(x = Offset, y = GABA_gamadj, by = luna, color = ageGroup))+ 
+          geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) + 
+          geom_point(aes(shape=Region),alpha=.5) + geom_smooth(aes(group = 1), method="lm", alpha = 0.8) + 
+          scale_color_manual(values=c("gold3", "blue4"))) + 
+  ylab("GABA") + xlab("Offset")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
+
+lm.model <- lmer(GABA_gamadj  ~ Offset + age + Condition + Region + (1|luna), data = fooofMRS )
+summ(lm.model)
+
+
+lm.model <- lmer(GABA_gamadj  ~ Offset * age + Condition +Region +   (1|luna), data = fooofMRS )
+car::Anova(lm.model)
+summ(lm.model)
+
+
+summary(lmerTest::lmer(Offset ~ GABA_gamadj + age + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2) ))
+summary(lmerTest::lmer(Offset ~ GABA_gamadj + inverseage + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2) ))
+
+summary(lmerTest::lmer(Offset ~ GABA_gamadj*age + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2) ))
+summary(lmerTest::lmer(Offset ~ GABA_gamadj*inverseage + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2) ))
+
+# gam approach, with non-linear form of age
+gam.model <- gamm(Offset ~ GABA_gamadj + s(age, k=3) + Region + Condition, 
+                  data = fooofMRS %>% filter(zOffset < 2), random=list(luna=~1))
+
+summary(gam.model$gam)
+print(plot(getViz(gam.model$gam), allTerms = T), pages = 1)
+
+AIC(lmer(Offset ~ GABA_gamadj + age + Condition + Region + (1|luna), data = fooofMRS), 
+    lmer(Offset ~ GABA_gamadj + inverseAge + Condition + Region + (1|luna), data = fooofMRS))
+
+## Ratio VS Exponent ----
+
+lunaize(ggplot(data = fooofMRS, 
+               aes(x = Exponent, y = Ratio_gamadj, by = luna, color = ageGroup)) + 
+          geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) + 
+          geom_point(aes(shape=Region),alpha=.5) + 
+          geom_smooth(aes(group = 1, alpha = 0.1), method="lm", alpha = 0.8)  + 
+          scale_color_manual(values=c("gold3", "blue4"))) +
+  ylab("Glu/GABA Ratio") + xlab("Exponent")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
+
+
+lm.model <- lmer(Ratio_gamadj  ~ Exponent + age + Condition + Region + (1|luna), data = fooofMRS )
+summ(lm.model)
+car::Anova(lm.model)
+
+
+lm.model <- lmer(Ratio_gamadj  ~ Exponent *age +Condition +Region+   (1|luna), data = fooofMRS )
+summ(lm.model)
+car::Anova(lm.model)
+
+
+summary(lmerTest::lmer(Exponent ~ Ratio_gamadj + age + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zExp < 2)))
+summary(lmerTest::lmer(Exponent ~ Ratio_gamadj + inverseage + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zExp < 2)))
+
+summary(lmerTest::lmer(Exponent ~ Ratio_gamadj*age + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zExp < 2)))
+summary(lmerTest::lmer(Exponent ~ Ratio_gamadj*inverseage + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zExp < 2)))
+
+# gam approach, with non-linear form of age
+gam.model <- gamm(Exponent ~ Ratio_gamadj + s(age, k=3) + Region + Condition, 
+                  data = fooofMRS %>% filter(zExp < 2), random=list(luna=~1))
+
+summary(gam.model$gam)
+print(plot(getViz(gam.model$gam), allTerms = T), pages = 1)
+
+AIC(lmer(Exponent ~ Ratio_gamadj + age + Condition + Region + (1|luna), data = fooofMRS), 
+    lmer(Exponent ~ Ratio_gamadj + inverseAge + Condition + Region + (1|luna), data = fooofMRS))
+
+
+## Ratio VS Offset ----
+
+lunaize(ggplot(data = fooofMRS, 
+               aes(x = Offset, y = Ratio_gamadj, by = luna, color = ageGroup)) + 
+          geom_line(aes(group=interaction(luna,Region,Condition)), alpha = 0.2) + 
+          geom_point(aes(shape=Region),alpha=.5) + 
+          geom_smooth(aes(group = 1, alpha = 0.1), method="lm", alpha = 0.8) + 
+          scale_color_manual(values=c("gold3", "blue4"))) + 
+  ylab("Glu/GABA Ratio") + xlab("Offset")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
+
+
+
+lm.model <- lmer(Ratio_gamadj  ~  Offset + age + Condition  + Region + (1|luna), data = fooofMRS)
+summ(lm.model)
+car::Anova(lm.model)
+
+
+lm.model <- lmer(Ratio_gamadj  ~ Offset *sex +age +Condition + Region + (1|luna), data = fooofMRS )
+summ(lm.model)
+car::Anova(lm.model)
+
+
+summary(lmerTest::lmer(Offset ~ Ratio_gamadj + age + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2) ))
+summary(lmerTest::lmer(Offset ~ Ratio_gamadj + inverseage + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2) ))
+
+summary(lmerTest::lmer(Offset ~ Ratio_gamadj*age + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2) ))
+summary(lmerTest::lmer(Offset ~ Ratio_gamadj*inverseage + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2) ))
+
+# gam approach, with non-linear form of age
+gam.model <- gamm(Offset ~ Ratio_gamadj + s(age, k=3) + Region + Condition, 
+                  data = fooofMRS %>% filter(zOffset < 2), random=list(luna=~1))
+summary(gam.model$gam)
+print(plot(getViz(gam.model$gam), allTerms = T), pages = 1)
+
+
+# gam approach, with non-linear form of age
+gam.model <- gamm(Offset ~ Ratio_gamadj + s(age, k=3) + Region + Condition, 
+                  data = fooofMRS %>% filter(zOffset < 2), random=list(luna=~1))
+summary(gam.model$gam)
+print(plot(getViz(gam.model$gam), allTerms = T), pages = 1)
+
+AIC(lmer(Offset ~ Ratio_gamadj + age + Condition + Region + (1|luna), data = fooofMRS), 
+    lmer(Offset ~ Ratio_gamadj + inverseAge + Condition + Region + (1|luna), data = fooofMRS))
+
+
+## Gaba glu imbalance VS offset ----
+
+lunaize(ggplot(data = fooofMRS, 
+               aes(x = Offset, y = GluGABAimbalanceABS, by =luna, color = ageGroup)) + 
+          geom_line(aes(group=interaction(luna,Region, Condition)), alpha = 0.2) + 
+          geom_point(aes(shape=Region),alpha=.5) + 
+          geom_smooth(aes(group = 1, alpha = 0.01), method="lm",alpha=.8,size=1)) + 
+  scale_color_manual(values=c("gold3", "blue4")) + 
+  ylab("Glu GABA Imbalance") + xlab("Offset")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
+
+
+summary(lmerTest::lmer(Offset ~ GluGABAimbalanceABS + age + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2) ))
+summary(lmerTest::lmer(Offset ~ GluGABAimbalanceABS + inverseage + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2) ))
+
+summary(lmerTest::lmer(Offset ~ GluGABAimbalanceABS*age + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2) ))
+summary(lmerTest::lmer(Offset ~ GluGABAimbalanceABS*inverseage + Region + Condition + (1|subjID), data = fooofMRS %>% filter(zOffset < 2) ))
+
+# gam approach, with non-linear form of age
+gam.model <- gamm(Offset ~ GluGABAimbalanceABS + s(age, k=3) + Region + Condition, 
+                  data = fooofMRS %>% filter(zOffset < 2), random=list(luna=~1))
+summary(gam.model$gam)
+print(plot(getViz(gam.model$gam), allTerms = T), pages = 1)
+
+
+AIC(lmer(Offset ~ GluGABAimbalanceABS + age + Condition + Region + (1|luna), data = fooofMRS), 
+    lmer(Offset ~ GluGABAimbalanceABS + inverseAge + Condition + Region + (1|luna), data = fooofMRS))
+
+
+## Gaba glu imbalance VS exponent ----
+
+lunaize(ggplot(data = fooofMRS, 
+               aes(y = GluGABAimbalanceABS, x = Exponent, by =luna, color = ageGroup)) + 
+          geom_line(aes(group=interaction(luna,Region, Condition)), alpha = 0.2) + geom_point(aes(shape=Region),alpha=.5) + 
+          geom_smooth(aes(group = 1, alpha = 0.01), method="lm",formula = y ~ poly(x,2),alpha=.8,size=1)) + 
+  scale_color_manual(values=c("gold3", "blue4")) + 
+  ylab("Glu GABA Imbalance") + xlab("Exponent")+ theme(text = element_text(size = 30))+ theme(legend.position='none')
+
+
+
+
+# lmer approach, different forms of age, w/ and w/out interactions
+summary(lmerTest::lmer(Exponent ~ GluGABAimbalanceABS + age + Region + Condition + (1|subjID), 
+                       data = fooofMRS %>% filter(zExp < 2)))
+summary(lmerTest::lmer(Exponent ~ GluGABAimbalanceABS + inverseage + Region + Condition + (1|subjID), 
+                       data = fooofMRS %>% filter(zExp < 2) ))
+
+summary(lmerTest::lmer(Exponent ~ GluGABAimbalanceABS*age + Region + Condition + (1|subjID), 
+                       data = fooofMRS %>% filter(zExp < 2) ))
+summary(lmerTest::lmer(Exponent ~ GluGABAimbalanceABS*inverseage + Region + Condition + (1|subjID), 
+                       data = fooofMRS %>% filter(zExp < 2) ))
+
+summary(lmerTest::lmer(Exponent ~ GluGABAimbalanceABS + inverseage + Condition + Region + (1|subjID), 
+                       data = fooofMRS %>% filter(zExp < 2) ))
+
+
+# gam approach, with non-linear form of age
+gam.model <- gamm(Exponent ~ GluGABAimbalanceABS + s(age, k=3) + Region + Condition, 
+                  data = fooofMRS %>% filter(zExp < 2), random=list(luna=~1))
+summary(gam.model$gam)
+print(plot(getViz(gam.model$gam), allTerms = T), pages = 1)
+
+AIC(lmer(Exponent ~ GluGABAimbalanceABS + age + Condition + Region + (1|luna), data = fooofMRS), 
+    lmer(Exponent ~ GluGABAimbalanceABS + inverseAge + Condition + Region + (1|luna), data = fooofMRS))
+
 
 

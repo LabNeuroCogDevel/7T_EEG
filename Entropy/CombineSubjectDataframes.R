@@ -21,13 +21,13 @@ library(tidyr)
 library(jtools)
 
 # Initialize directory and empty dataframes ----
-chanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/ChannelLocs.csv')
+chanLocs <- read.csv('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Entropy/Results/ChannelLocs.csv')
 
 # Set your working directory to the folder containing your CSV files
-setwd("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/Entropy/")
+setwd("/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Entropy/Results/individual_subject_files/timeScale20")
 
 # List all CSV files in the directory
-csv_files <- list.files(pattern = "SpectralEntropy_broadband.csv")
+csv_files <- list.files(pattern = "MultiScaleEntropy.csv")
 
 # Initialize an empty data frame to store the combined data
 combined_data <- data.frame()
@@ -41,5 +41,5 @@ for (file in csv_files) {
 }
 
 
-write.csv(combined_data, file = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Results/Entropy/allSubjects_allChans_SpectralEntropy_broadband.csv', row.names = F)
+write.csv(combined_data, file = '/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Entropy/Results/allSubjects_allChans_MSE20.csv', row.names = F)
 
