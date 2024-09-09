@@ -12,4 +12,3 @@
 
 <br>
 ## [Age-related differences in transient gamma band activity during working memory maintenance through adolescence](https://labneurocogdevel.github.io/Spectral_Events/)
-0c43526d20387f01a0f149d0888f1f5d27d85850
