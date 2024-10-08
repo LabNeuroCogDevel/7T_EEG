@@ -10,7 +10,7 @@ EEG = eeg_checkset( EEG );
 %% DB point on 12
 [EEG, com] = pop_selectcomps(EEG, [1:30] );pop_eegplot(EEG, 0, 1, 1);
 pop_saveset( EEG, 'filename',[filename(1:end-4),'_pesos.set'],'filepath',CleanICApath);
-% pop_eegplot( EEG, 0, 1, 1);
+%pop_eegplot( EEG, 0, 1, 1);
 eeglab redraw
 lowBP
 % TEXTO = 'Lista la sel de comp? (If not put [0])';

@@ -3,14 +3,16 @@ function [] = run_preprocessing_pipeline(task)
 % load in paths to feildtrip and eeglab 
 addpath(genpath('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Preprocessing_Functions/'));
 addpath(genpath('/resources/Euge/'))
-run('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1/eeglab.m');
+% run('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1/eeglab.m');
+run('/Volumes/Hera/Abby/Resources/eeglab_current/eeglab2024.2/eeglab.m')
 
 % Outpath
-maindir = hera('Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data');
-  
+% maindir = hera('Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data');
+maindir = hera('Abby/preprocessed_data');
+
 disp(["i am running" task]) 
    
-taskdirectory = [maindir, '/', task]; 
+taskdirectory = [maindir '/' task]; 
 
 % initial values
 lowBP = 0.5;

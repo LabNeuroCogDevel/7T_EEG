@@ -36,7 +36,7 @@ if task == "MGS"
         eeglab redraw
 
         [micromed_time,mark]=make_photodiodevector(EEG);
-       
+
         mark = mark - min(mark(mark>0));
         mark(mark>65000) = 0;
         % isi (150+x) and iti (254) are different
@@ -78,6 +78,64 @@ if task == "MGS"
     end
 
 
+elseif task == "anti"
+    antiIDX = find (cellfun (@any,regexpi ( {namesOri.name}.', 'anti')));
+
+    for idx = antiIDX'
+
+        currentName = namesOri(idx).name(1:end-4);
+        d = [namesOri(idx).folder '/'];
+
+        %% skip if we've already done
+        finalfile=fullfile(outputpath, [currentName '_Rem.set']);
+        if exist(finalfile,'file')
+            fprintf('already have %s\n', finalfile)
+            continue
+        end
+        if dryrun
+            fprintf('want to run %s; set dryrun=0 to actually run\n', finalfile)
+            continue
+        end
+        fprintf('making %s\n',finalfile);
+
+        %% load EEG set
+        EEG = pop_biosig([d currentName '.bdf']);
+        EEG.setname=[currentName 'Rem']; %name the EEGLAB set (this is not the set file itself)
+
+        eeglab redraw
+
+        [micromed_time, mark]=make_photodiodevector(EEG);
+
+        iti = mode(mark); 
+
+        mark = mark - iti + 254;
+       
+        % 101-105: anti cue 
+        % 151-155: target (dot on, look away)
+        % 254 = back to fixation
+
+        simple = nan(size(mark));
+        simple(mark == 254)= 1; % (New ITI)
+        simple(mark>=100 & mark<110)= 2; % (new Anti cue - red fixation cross, prepatory)
+        simple(mark>=150 & mark<= 155)= 3; % (new dot on, look away) 
+
+
+        for i=unique(simple)
+            mmark=find(simple==i);
+            if ~isempty(mmark)
+                for j = 1:length(mmark)
+                    EEG = pop_editeventvals(EEG,'changefield',{mmark(j) 'type' i});
+                end
+            end
+        end
+
+        EEG = pop_saveset( EEG, 'filename',[currentName '_Rem.set'],'filepath',outputpath);
+
+    end
+
+
+
+
 elseif task == "Resting_State"
 
     restIDX = find (cellfun (@any,regexpi ( {namesOri.name}.', 'rest')));
@@ -106,7 +164,7 @@ elseif task == "Resting_State"
         eeglab redraw
 
         [micromed_time,mark]=make_photodiodevector(EEG);
-   
+
         mark = mark - min(mark);
         mark(mark>65000) = 0;
 
@@ -125,7 +183,7 @@ elseif task == "Resting_State"
         end
 
 
-        EEG = pop_resample( EEG, 512);
+        EEG = pop_resample(EEG, 512);
 
         EEG = pop_saveset( EEG, 'filename',[currentName '_Rem.set'],'filepath',outputpath);
 
@@ -134,7 +192,7 @@ elseif task == "Resting_State"
 elseif task == "SNR"
 
     AudSSIDX = find (cellfun (@any,regexpi ( {namesOri.name}.', 'ss')));
-   
+
     for idx = AudSSIDX'
 
         currentName = namesOri(idx).name(1:end-4);
@@ -146,7 +204,7 @@ elseif task == "SNR"
         %     fprintf('already have %s\n', finalfile)
         %     continue
         % end
-        
+
         fprintf('making %s\n',finalfile);
 
         %% load EEG set
@@ -159,7 +217,7 @@ elseif task == "SNR"
             eeglab redraw
 
             [micromed_time,mark]=make_photodiodevector(EEG); % micromed_time: the time the trigger goes off; mark: the trigger value
-      
+
             mark = mark - min(mark(mark>0));
 
             %changes the triggers to be single digit numbers

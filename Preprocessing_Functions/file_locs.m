@@ -11,6 +11,8 @@ elseif task == "SNR"
 elseif task == "Resting_State"
     id_task_regexp='(?<id>\d{5}_\d{8})_(?<task>REST)(?<extra>.*)';
 
+elseif task == "anti"
+    id_task_regexp='(?<id>\d{5}_\d{8})_(?<task>anti)(?<extra>.*)';
 
 end
 

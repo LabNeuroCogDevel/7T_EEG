@@ -124,7 +124,7 @@ else
     %% Resample data
 
     % Downsample the data to 150Hz using antialiasing filter
-    if task == "MGS" || task == "Resting_State"
+    if task == "MGS" || task == "Resting_State" || task == "anti"
         EEG = pop_resample(EEG, 150, 0.8, 0.4); %0.8 is fc and 0.4 is dc. Default is .9 and .2. We dont know why Alethia changed them
     elseif task == "SNR"
         EEG = pop_resample(EEG, 512, 0.8, 0.4); %0.8 is fc and 0.4 is dc. Default is .9 and .2. We dont know why Alethia changed them
