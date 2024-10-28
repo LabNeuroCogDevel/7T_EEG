@@ -96,7 +96,6 @@ ALLEEG = [];
 % fprintf('saving %s\n', fullfile(outpath, [name '_SAS.set']))
 % EEG = pop_saveset( EEG, 'filename',[name,'_SAS.set'], 'filepath', outpath); %save final preprocessed output
 
-
 EEG = pop_runica(EEG, 'extended',1,'interupt','on','PCA',30); 
 
 %create file name

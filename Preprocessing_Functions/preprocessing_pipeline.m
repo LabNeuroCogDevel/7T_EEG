@@ -209,7 +209,7 @@ if isstruct(xEEG)
 else
     [ALLEEG EEG] = eeg_store(ALLEEG, EEG, CURRENTSET);
 
-    if ~any(find(cellfun (@any,regexpi (fieldnames(EEG.etc), 'clean_channel_mask'))));
+    if ~any(find(cellfun (@any,regexpi (fieldnames(EEG.etc), 'clean_channel_mask'))))
         EEG.etc.clean_channel_mask=42;
     else
     end

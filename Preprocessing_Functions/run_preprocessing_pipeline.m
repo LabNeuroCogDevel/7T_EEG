@@ -3,8 +3,10 @@ function [] = run_preprocessing_pipeline(task)
 % load in paths to feildtrip and eeglab 
 addpath(genpath('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Preprocessing_Functions/'));
 addpath(genpath('/resources/Euge/'))
+addpath('/Volumes/Hera/Projects/7TBrainMech/scripts/fieldtrip-20220104/')
 % run('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1/eeglab.m');
 run('/Volumes/Hera/Abby/Resources/eeglab_current/eeglab2024.2/eeglab.m')
+
 
 % Outpath
 % maindir = hera('Projects/7TBrainMech/scripts/eeg/Shane/preprocessed_data');
@@ -101,12 +103,12 @@ for i = 1:length(setfiles)
 end
 
 
-if task == "MGS"
+if task == "MGS" || task == "anti"
     %% Clean epochs to remove
-
-    epoch_path = [outpath '/AfterWhole/ICAwholeClean/'];
-    epoch_folder = [outpath '/AfterWhole/epoch/'];
-    epoch_rj_marked_folder = [outpath '/AfterWhole/epochclean/'];
+    path_data = [taskdirectory '/AfterWhole/ICAwholeClean/'];
+    epoch_path = [taskdirectory '/AfterWhole/ICAwholeClean/'];
+    epoch_folder = [taskdirectory '/AfterWhole/epoch/'];
+    epoch_rj_marked_folder = [taskdirectory '/AfterWhole/epochclean/'];
 
     EEGfileNames = dir([path_data, '/*_icapru.set']);
 
@@ -114,7 +116,7 @@ if task == "MGS"
     for currentEEG = 1:size(EEGfileNames,1)
         filename = [EEGfileNames(currentEEG).name];
         inputfile = [epoch_path,filename];
-        revisar{currentEEG} = epochlean(inputfile,epoch_folder,epoch_rj_marked_folder);
+        revisar{currentEEG} = epochlean(inputfile,epoch_folder,epoch_rj_marked_folder,task,taskdirectory);
     end
 end
 

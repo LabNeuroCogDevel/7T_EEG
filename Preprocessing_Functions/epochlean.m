@@ -1,8 +1,9 @@
-function [revisar] = epochlean(inputfile,epoch_folder,epoch_rj_marked_folder)
+function [revisar] = epochlean(inputfile,epoch_folder,epoch_rj_marked_folder,task,taskdirectory)
 revisar = {};
 % what file are we using
 
-locs = file_locs(inputfile);
+% locs = file_locs(inputfile,epoch_folder,task);
+locs = file_locs(inputfile,taskdirectory,task);
 if exist(locs.epochClean, 'file')
     OUTEEG = [];
     fprintf('skipping; already created %s\n', locs.epochClean);
@@ -34,7 +35,15 @@ end
 
 %% epoching: -0.500 to 2 seconds
 %extract epochs
-EEG = pop_epoch( EEG, {'-5' '-3' '0' '1' '2' '3' '4' '5'}, [-0.5  2], 'newname', [currentName '_epochs'], 'epochinfo', 'yes');
+if task == "MGS"
+    EEG = pop_epoch( EEG, {'-5' '-3' '0' '1' '2' '3' '4' '5'}, [-0.5  2], 'newname', [currentName '_epochs'], 'epochinfo', 'yes');
+
+elseif task == "anti"
+
+    EEG = pop_epoch( EEG, {'1' '2' '3'}, [0  0.5], 'newname', [currentName '_epochs'], 'epochinfo', 'yes');
+
+
+end
 
 % %remove baseline
 % EEG = pop_rmbase( EEG, [-400    0]);
