@@ -40,7 +40,7 @@ if task == "MGS"
 
 elseif task == "anti"
 
-    EEG = pop_epoch( EEG, {'1' '2' '3'}, [0  0.5], 'newname', [currentName '_epochs'], 'epochinfo', 'yes');
+    EEG = pop_epoch( EEG, {'2'}, [-0.1  2], 'newname', [currentName '_epochs'], 'epochinfo', 'yes');
 
 
 end

@@ -114,11 +114,12 @@ if task == "MGS" || task == "anti"
 
     revisar = {};
     for currentEEG = 1:size(EEGfileNames,1)
+        if currentEEG == 59 || currentEEG == 97 || currentEEG == 115 || currentEEG == 127 || currentEEG == 195 || currentEEG == 284 || currentEEG == 289% skipping error participants for now
+            continue
+        end
         filename = [EEGfileNames(currentEEG).name];
         inputfile = [epoch_path,filename];
         revisar{currentEEG} = epochlean(inputfile,epoch_folder,epoch_rj_marked_folder,task,taskdirectory);
     end
 end
-
-
 
