@@ -53,7 +53,6 @@ if task == "MGS"
 
         ending = mod(mark',10);
 
-
         simple = nan(size(mark));
         simple(mark == 254)= 1;
         simple(mark>=50 & mark<100)= 2;
@@ -100,16 +99,17 @@ elseif task == "anti"
 
         %% load EEG set
         EEG = pop_biosig([d currentName '.bdf']);
-        EEG.setname=[currentName 'Rem']; %name the EEGLAB set (this is not the set file itself)
-
+        EEG.setname=[currentName 'Rem']; %name the EEGLAB setclc (this is not the set file itself)
+    
         eeglab redraw
 
         [micromed_time, mark]=make_photodiodevector(EEG);
+        if mark > 500
 
         iti = mode(mark); 
 
         mark = mark - iti + 254;
-       
+        end
         % 101-105: anti cue 
         % 151-155: target (dot on, look away)
         % 254 = back to fixation

@@ -162,6 +162,8 @@ if size(EEG.data,1) > 100
     % 128    'AF4' --> 64    'AF2'
     % 128    'AF3' --> 64    'AF1'
     Flag128 = 1;
+else
+    Flag128 = 0;
 end
 [ALLEEG EEG] = eeg_store(ALLEEG, EEG, CURRENTSET);
 

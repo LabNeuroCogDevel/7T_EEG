@@ -25,7 +25,7 @@ for i=1:max(size(EEG.event))
         if isempty(EEG.event(i).edftype)
             EEG.event(i).edftype = EEG.event(i-1).edftype; 
         end
-        mark(i)=EEG.event(i).edftype;
+        % mark(i)=EEG.event(i).edftype;
         
     else
         if isempty(EEG.event(i).type)
@@ -39,5 +39,4 @@ for i=1:max(size(EEG.event))
 end
 
 mark(mark>65000) = 0;
-
 micromed_time=micromed_time/EEG.srate;

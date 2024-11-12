@@ -3,8 +3,9 @@ function [] = run_preprocessing_pipeline(task)
 % load in paths to feildtrip and eeglab 
 addpath(genpath('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/Preprocessing_Functions/'));
 addpath(genpath('/resources/Euge/'))
-addpath('/Volumes/Hera/Projects/7TBrainMech/scripts/fieldtrip-20220104/')
-% run('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1/eeglab.m');
+addpath('/Volumes/Hera/Projects/7TBrainMech/scripts/fieldtrip-20180926/')
+% addpath('/Volumes/Hera/Projects/7TBrainMech/scripts/fieldtrip-20220104/')
+%run('/Volumes/Hera/Projects/7TBrainMech/scripts/eeg/Shane/resources/eeglab2022.1/eeglab.m');
 run('/Volumes/Hera/Abby/Resources/eeglab_current/eeglab2024.2/eeglab.m')
 
 
@@ -24,16 +25,34 @@ FLAG = 1;
 %% settings
 only128 = 0; % 0==do all, 1==only 128 channel subjects
 condition = 1; %0 - if you want to overwrite an already existing file; 1- if you want it to skip subjects who have already been run through singlesubject
-dryrun = 0; 
+dryrun = 1; 
 
 remark(task, taskdirectory, dryrun); % change the trigger values to be single digit 
-
+remarkAS(taskdirectory,dryrun) % remarking antisaccade trials
 
 % gather all file paths for all subjects remarked data 
 setfilesDir = [taskdirectory, '/remarked/1*_20*.set'];    
 setfiles = all_remarked_set(setfilesDir);
 
 n = size(setfiles,1); %number of EEG sets to preprocess
+
+% first steps of preprocessing then epoch anti data first so we do not lose events 
+if task == "anti"
+    path_data = [taskdirectory '/remarked/'];
+    epoch_folder = [taskdirectory '/epoched/'];
+    EEGfileNames = dir([path_data, '/*_Rem.set']);
+
+    revisar = {};
+    for currentEEG = 1:size(EEGfileNames,1)
+        % skipping weird participants for now (38 = 11632_201901001, 87 = 11681_2018011, 100 = 11688-20190614, 291 = 11821_320210630)
+        if currentEEG == 38 || currentEEG == 87 || currentEEG == 100 || currentEEG == 291
+            continue
+        end
+        filename = [EEGfileNames(currentEEG).name];
+        inputfile = [path_data,filename];
+        revisar{currentEEG} = epochAS(inputfile,epoch_folder,task,taskdirectory,condition,lowBP,topBP);
+    end
+end
 
 % loop through every subject to preprocess
 for i = 1:n
@@ -105,8 +124,8 @@ end
 
 if task == "MGS" || task == "anti"
     %% Clean epochs to remove
-    path_data = [taskdirectory '/AfterWhole/ICAwholeClean/'];
-    epoch_path = [taskdirectory '/AfterWhole/ICAwholeClean/'];
+    path_data = [taskdirectory '/AfterWhole/ICAwholeClean_homogenize/'];
+    epoch_path = [taskdirectory '/AfterWhole/ICAwholeClean_homogenize/'];
     epoch_folder = [taskdirectory '/AfterWhole/epoch/'];
     epoch_rj_marked_folder = [taskdirectory '/AfterWhole/epochclean/'];
 
@@ -114,7 +133,7 @@ if task == "MGS" || task == "anti"
 
     revisar = {};
     for currentEEG = 1:size(EEGfileNames,1)
-        if currentEEG == 59 || currentEEG == 97 || currentEEG == 115 || currentEEG == 127 || currentEEG == 195 || currentEEG == 284 || currentEEG == 289% skipping error participants for now
+        if currentEEG == 284
             continue
         end
         filename = [EEGfileNames(currentEEG).name];
