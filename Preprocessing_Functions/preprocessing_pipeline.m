@@ -15,8 +15,8 @@ if ~exist(correction_cap_location, 'file'), error('cannot find file for correcti
 subj_files = file_locs(inputfile, outpath, task);
 
 % to know how far your script is with running
-fprintf('==========\n%s:\n\t Initial Preprocessing(%s,%f,%f,%s)\n',...
-    currentName, inputfile, lowBP, topBP, outpath)
+fprintf('==========\n%s:\n\t Initial Preprocessing(%s,%f,%f,%s,%s)\n',...
+    currentName, inputfile, lowBP, topBP, outpath,task)
 
 
 % where to save things
@@ -61,7 +61,7 @@ if exist(icawholeoutFile, 'file')
     return
 end
 
-if condition == 1
+if condition == 1 
     xEEG = load_if_exists(subj_files.filter);
 end
 

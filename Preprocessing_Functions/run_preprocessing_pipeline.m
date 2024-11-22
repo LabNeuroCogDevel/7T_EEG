@@ -33,32 +33,24 @@ remarkAS(taskdirectory,dryrun) % remarking antisaccade trials
 % gather all file paths for all subjects remarked data 
 setfilesDir = [taskdirectory, '/remarked/1*_20*.set'];    
 setfiles = all_remarked_set(setfilesDir);
-
 n = size(setfiles,1); %number of EEG sets to preprocess
 
-% first steps of preprocessing then epoch anti data first so we do not lose events 
-if task == "anti"
-    path_data = [taskdirectory '/remarked/'];
-    epoch_folder = [taskdirectory '/epoched/'];
-    EEGfileNames = dir([path_data, '/*_Rem.set']);
-
-    revisar = {};
-    for currentEEG = 1:size(EEGfileNames,1)
-        % skipping weird participants for now (38 = 11632_201901001, 87 = 11681_2018011, 100 = 11688-20190614, 291 = 11821_320210630)
-        if currentEEG == 38 || currentEEG == 87 || currentEEG == 100 || currentEEG == 291
-            continue
-        end
-        filename = [EEGfileNames(currentEEG).name];
-        inputfile = [path_data,filename];
-        revisar{currentEEG} = epochAS(inputfile,epoch_folder,task,taskdirectory,condition,lowBP,topBP);
-    end
+% some participants are left out from lines 33 and 34 for AS
+if task=="anti"
+    setfilesDir = [taskdirectory, '/remarked/*.set'];
+    setfiles = all_remarked_setAS(setfilesDir);
+    n = length(setfiles);
 end
 
 % loop through every subject to preprocess
 for i = 1:n
     inputfile = setfiles{i};
     try
-      preprocessing_pipeline(inputfile, taskdirectory, lowBP, topBP, FLAG, condition, task)
+        if task ~= "anti"
+            preprocessing_pipeline(inputfile, taskdirectory, lowBP, topBP, FLAG, condition, task)
+        elseif task == "anti"
+            preprocessing_pipelineAS(inputfile,taskdirectory,lowBP,topBP,FLAG,condition,task)
+        end
    catch e
       fprintf('Error processing "%s": %s\n',inputfile, e.message)
       for s=e.stack
@@ -66,6 +58,7 @@ for i = 1:n
       end
    end
 end
+
 
 %% select ICA values to reject
 

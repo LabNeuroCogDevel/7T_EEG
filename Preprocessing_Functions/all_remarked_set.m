@@ -1,4 +1,4 @@
-function [setfiles] = all_remarked_set(setfilesDir, varargin)
+function [setfiles] = all_remarked_set(setfilesDir,varargin)
 % ALL_REMARKED_SET - return cell array of paths to initial set files
  % handle options
     p = inputParser;
